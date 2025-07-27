@@ -1,9 +1,9 @@
-import * as v from "./env.js";
-import {debounce, isEmpty} from "./tools/base_utilities.js";
-import createAlert, {appendChildren} from "./tools/base_page.js";
-import {IndexedDBHelper} from "./tools/db.js";
+import * as v from "./env";
+import {debounce, isEmpty} from "./tools/base_utilities";
+import createAlert, {appendChildren} from "./tools/base_page";
+import {IndexedDBHelper} from "./tools/db";
 import {AbsAudioModel, Local, VSM} from "./plugins/exports";
-import {createCleanObj, defaultLyrics, IFolderInfo} from "./default.js";
+import {createCleanObj, defaultLyrics, IFolderInfo} from "./default";
 import {IAudioInfo, ILyric, IStandardAudio} from "../type/audio";
 
 

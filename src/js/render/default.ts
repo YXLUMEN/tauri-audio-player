@@ -1,5 +1,3 @@
-import {ILyric} from "../type/audio";
-
 function deepFreeze(obj: any): any {
     if (obj === null || typeof obj !== 'object') return obj;
 

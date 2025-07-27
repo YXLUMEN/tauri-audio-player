@@ -1,10 +1,10 @@
 import * as v from "./env";
 import * as d from "./data";
-import createAlert, {appendChildren} from "./tools/base_page.js";
-import {applyPlayerAction, enableShortcut, reMapKeys, togglePlayer} from "./player.js";
-import {VSM} from "./plugins/vsm.js";
+import createAlert, {appendChildren} from "./tools/base_page";
+import {applyPlayerAction, enableShortcut, reMapKeys, togglePlayer} from "./player";
+import {VSM} from "./plugins/vsm";
 import {defaultFolder, defaultShortcuts, IFolderInfo} from "./default";
-import {throttleTimeOut} from "./tools/base_utilities.js";
+import {throttleTimeOut} from "./tools/base_utilities";
 import {open} from '@tauri-apps/plugin-dialog';
 import {IAudioInfo, IStandardAudio} from "../type/audio";
 

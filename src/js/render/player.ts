@@ -1,15 +1,16 @@
 import * as d from "./data";
 import * as v from "./env";
 import {defaultShortcuts} from "./default";
-import {debounce, throttleTimeOut} from "./tools/base_utilities.js";
-import {generateUniqueRandomNumbers} from "./tools/GenerateRandomNums.js";
+import {debounce, throttleTimeOut} from "./tools/base_utilities";
+import {generateUniqueRandomNumbers} from "./tools/GenerateRandomNums";
 import {displayedContent, renderCustomFolder, setDisplayFolder} from "./index";
-import createAlert, {ECategories} from "./tools/base_page.js";
-import {VSM} from "./plugins/vsm.js";
+import createAlert, {ECategories} from "./tools/base_page";
+import {VSM} from "./plugins/vsm";
+import {IAudioInfo} from "../type/audio";
 
 import {invoke} from '@tauri-apps/api/core';
 import {open} from '@tauri-apps/plugin-dialog';
-import {IAudioInfo} from "../type/audio";
+
 
 // 播放模式设置
 let playMode = 0;
@@ -173,9 +174,9 @@ async function reMapKeys() {
     }
 }
 
-async function onAudioError(event: Event) {
+async function onAudioError(event: ErrorEvent) {
     console.log(event);
-    createAlert('未能加载音频');
+    createAlert(`未能加载音频: ${event.message}`);
 }
 
 // 关闭 player 页面
@@ -381,6 +382,15 @@ function enableShortcut(bl: boolean) {
 
 const keyControlFn = throttleTimeOut((code: string) => shortcuts.get(code)?.(), 100);
 document.addEventListener('keydown', (event) => {
+    if (
+        event.key === 'F5' ||
+        (event.ctrlKey && event.key === 'r') ||
+        (event.metaKey && event.key === 'r')
+    ) {
+        event.preventDefault();
+        return;
+    }
+
     if (!ableShortcuts || event.ctrlKey || event.metaKey || !shortcuts.has(event.code)) return;
     if ((<HTMLElement>event.target).classList.contains('base-input')) return;
     event.stopPropagation();

@@ -1,4 +1,4 @@
-import SpectrumDiagram from "./tools/spectrum_diagram.js";
+import SpectrumDiagram from "./tools/spectrum_diagram";
 
 const indexContextmenu = document.getElementById('index-contextmenu');
 
