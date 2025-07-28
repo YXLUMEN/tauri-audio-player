@@ -676,6 +676,10 @@ body {
         padding: 2px;
         cursor: pointer;
     }
+
+    span {
+        white-space: nowrap;
+    }
 }
 
 .index-control-tool {

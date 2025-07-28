@@ -407,9 +407,9 @@ const clearCache = throttleTimeOut(async (event: Event) => {
     if (!action) return;
 
     switch (action) {
-        case 'clean-cover':
-            await d.clearPluginsCache();
-            createAlert('已清理封面缓存', 'success');
+        case 'clean-parse-cache':
+            d.forceClearPluginsCache();
+            createAlert('已清理解析缓存', 'success');
             break;
         case 'clean-history':
             localStorage.removeItem('playing');

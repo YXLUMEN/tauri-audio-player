@@ -1,6 +1,6 @@
 mod audio;
 
-use crate::audio::get_audio_metadata;
+use crate::audio::fetch_meta;
 use sha2::{Digest, Sha256};
 use std::fs::File;
 use std::io::{BufReader, Read};
@@ -39,7 +39,7 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![calculate_hash, get_audio_metadata])
+        .invoke_handler(tauri::generate_handler![calculate_hash, fetch_meta])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

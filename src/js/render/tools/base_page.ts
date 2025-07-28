@@ -177,7 +177,7 @@ export function createConfirm(message: string = '是否确认操作?', opts: ICo
     // @ts-ignore
     const {promise, resolve, reject} = Promise.withResolvers();
 
-    let timeoutId: NodeJS.Timeout | null = null;
+    let timeoutId: number = null;
     if (timeout) {
         timeoutId = setTimeout(() => {
             strictTimeout ? reject(defaultResult) : resolve(defaultResult);

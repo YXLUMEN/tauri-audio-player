@@ -25,7 +25,7 @@ export class VSM extends AbsAudioModel {
         this.transform = this.transform.bind(this);
     }
 
-    public async getAudioList(opts: IVSMOptions = {}): Promise<Promise<IAudioInfo[]>> {
+    public async getAudioList(opts: IVSMOptions = {}): Promise<IAudioInfo[]> {
         if (VSM.vsmCache.length > 0 && !opts.seq && !opts.search) {
             return VSM.vsmCache;
         }

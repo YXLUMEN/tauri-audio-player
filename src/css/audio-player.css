@@ -315,6 +315,10 @@
     background-image: url("/img/audio/ico/volume.svg");
 }
 
+.muted {
+    background-image: url("/img/audio/ico/mute.svg");
+}
+
 .list {
     position: absolute;
     right: 80px;

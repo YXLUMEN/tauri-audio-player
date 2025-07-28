@@ -12,11 +12,11 @@ export function throttleDateTime(func: Function, wait: number = 200) {
 
 // 节流函数
 export function throttleTimeOut(func: Function, wait: number = 200) {
-    let timer: NodeJS.Timeout = null;
+    let timer: number = null;
     return function (...args: any[]) {
         if (timer) return;
         func.apply(this, args);
-        timer = setTimeout(() => timer = null, wait);
+        timer = setTimeout((): any => timer = null, wait);
     }
 }
 
@@ -27,7 +27,7 @@ export function throttleTimeOut(func: Function, wait: number = 200) {
  * @param immediate
  * */
 export function debounce(func: Function, wait: number = 50, immediate: boolean = false) {
-    let timer: NodeJS.Timeout;
+    let timer: number;
     return function (...args: any[]) {
         if (immediate) wait = 0;
         if (timer) clearTimeout(timer);

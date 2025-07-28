@@ -1,4 +1,6 @@
 export default class SpectrumDiagram {
+    public audioContext: AudioContext;
+
     private _canvas: HTMLCanvasElement;
     private canvasContext: CanvasRenderingContext2D;
     private _color: string;
@@ -6,7 +8,6 @@ export default class SpectrumDiagram {
     private cachedBarWidth: number;
     private cachedSliceWidth: number;
 
-    public audioContext: AudioContext;
     private analyser: AnalyserNode;
     private source: MediaElementAudioSourceNode | null;
 

@@ -1,7 +1,7 @@
 import {IAudioInfo, IStandardAudio} from "../../type/audio";
 
 export abstract class AbsAudioModel {
-    public abstract getAudioList(opt?: any): Promise<Promise<IAudioInfo[]> | Promise<IStandardAudio[]>>;
+    public abstract getAudioList(opt?: any): Promise<IAudioInfo[] | IStandardAudio[]>;
 
     public abstract getLyric(): Promise<{}>;
 

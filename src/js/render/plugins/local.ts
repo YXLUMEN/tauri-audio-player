@@ -6,14 +6,16 @@ import {IAudioInfo, IMusicMetadata, IStandardAudio} from "../../type/audio";
 import {convertFileSrc, invoke} from '@tauri-apps/api/core';
 
 export class Local extends AbsAudioModel implements CacheAble {
-    private static urlCache = new Map<string, string>();
-    private static fileCache = new Map<string, IStandardAudio>();
+    public static readonly CACHE_SIZE: number = 64;
+
+    private static pending = new Map<string, Promise<IStandardAudio | null>>();
+    private static cache = new Map<string, IStandardAudio>();
 
     constructor() {
         super();
     }
 
-    public getAudioList(): Promise<Promise<IAudioInfo[]> | Promise<IStandardAudio[]>> {
+    public getAudioList(): Promise<null> {
         throw new Error("Method not implemented.");
     }
 
@@ -22,73 +24,93 @@ export class Local extends AbsAudioModel implements CacheAble {
     }
 
     public getCache() {
-        return Local.urlCache;
+        return Local.cache;
     }
 
-    public clear() {
-        // @ts-ignore
-        for (const url of Local.urlCache.values()) {
-            URL.revokeObjectURL(url);
+    public clear(): void {
+        for (const entry of Local.cache.values()) {
+            URL.revokeObjectURL(entry.cover);
         }
 
-        Local.urlCache.clear();
-        Local.fileCache.clear();
+        Local.cache.clear();
+        Local.pending.clear();
     }
 
-    public getCover(blob: Blob, id: string): string {
-        if (!blob) {
-            const vsm = getPlugin('vsm');
-            if (vsm instanceof VSM) {
-                return vsm.getCover();
+    public clearUnused(inUseIds: Set<string>): void {
+        const cache = Local.cache;
+        const toDelete: string[] = [];
+
+        for (const [id, std] of cache) {
+            if (!inUseIds.has(id)) {
+                URL.revokeObjectURL(std.cover);
+                toDelete.push(id);
             }
         }
 
-        if (Local.urlCache.has(id)) {
-            return Local.urlCache.get(id);
-        }
-
-        const url: string = URL.createObjectURL(blob);
-        Local.urlCache.set(id, url);
-
-        return url;
+        toDelete.forEach(id => cache.delete(id));
     }
 
     public async parse(audioInfo: IAudioInfo): Promise<IStandardAudio | null> {
-        try {
-            if (Local.fileCache.has(audioInfo.id)) {
-                return Local.fileCache.get(audioInfo.id);
-            }
+        const id = audioInfo.id.trim();
+        if (!id) return null;
 
-            // @ts-ignore
-            let extension: string = audioInfo.url.split('.').at(-1);
-            if (!(extension in ['flac', 'mp3', 'ogg'])) extension = '';
-
-            const metadata: IMusicMetadata = await invoke('get_audio_metadata', {path: audioInfo.url, extension});
-            if (!metadata) return;
-
-            const {title, artist, album} = metadata;
-            const url: string = convertFileSrc(audioInfo.url);
-
-            let blob: Blob | null = null;
-            const picture = metadata.cover;
-            if (picture) {
-                const byteArray = new Uint8Array(picture);
-                blob = new Blob([byteArray], {type: metadata.cover_mime_type});
-            }
-            const cover: string = this.getCover(blob, audioInfo.id.trim());
-
-            const standard = {plugin: 'local', id: audioInfo.id, title, artist, album, url, cover}
-            Local.fileCache.set(audioInfo.id, standard);
-
-            if (Local.fileCache.size > 32) {
-                const first: string = Local.fileCache.keys().next().value;
-                if (!first) return;
-                Local.fileCache.delete(first);
-            }
-
-            return standard
-        } catch (err) {
-            console.error(err);
+        if (Local.cache.has(id)) {
+            const hit = Local.cache.get(id)!;
+            // LRU: 移动到尾部
+            Local.cache.delete(id);
+            Local.cache.set(id, hit);
+            return hit;
         }
+
+        if (Local.pending.has(id)) {
+            return await Local.pending.get(id)!;
+        }
+
+        const job = (async (): Promise<IStandardAudio | null> => {
+            try {
+                const metadata: IMusicMetadata = await invoke('fetch_meta', {
+                    path: audioInfo.url,
+                });
+                if (!metadata) return null;
+
+                let coverUrl: string;
+                if (metadata.cover) {
+                    const blob = new Blob([new Uint8Array(metadata.cover)], {type: metadata.cover_mime_type});
+                    coverUrl = URL.createObjectURL(blob);
+                } else {
+                    const vsm = getPlugin('vsm');
+                    coverUrl = vsm instanceof VSM ? vsm.getCover() : '';
+                }
+
+                const standard: IStandardAudio = {
+                    plugin: 'local',
+                    id,
+                    title: metadata.title,
+                    artist: metadata.artist,
+                    album: metadata.album,
+                    url: convertFileSrc(audioInfo.url),
+                    cover: coverUrl,
+                }
+
+                Local.cache.set(id, standard);
+
+                if (Local.cache.size > Local.CACHE_SIZE) {
+                    const oldestKey = Local.cache.keys().next().value;
+                    const oldest = Local.cache.get(oldestKey);
+                    if (oldest) URL.revokeObjectURL(oldest.cover);
+                    Local.cache.delete(oldestKey);
+                }
+
+                return standard
+            } catch (err) {
+                console.error(err);
+                return null;
+            } finally {
+                Local.pending.delete(id);
+            }
+        })();
+
+        Local.pending.set(id, job);
+        return job;
     }
 }

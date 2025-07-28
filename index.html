@@ -166,8 +166,8 @@
     <div class="setting-context">
         <div class="subtitle">清理缓存</div>
         <div class="setting-details table" id="clean-cache">
-            <div class="title-like">清理封面缓存</div>
-            <input class="base-button" action="clean-cover" type="button" value="确认">
+            <div class="title-like">清理解析缓存</div>
+            <input class="base-button" action="clean-parse-cache" type="button" value="确认">
             <div class="title-like">清除播放历史</div>
             <input class="base-button" action="clean-history" type="button" value="确认">
             <div class="title-like">清除VSM缓存</div>
@@ -310,7 +310,7 @@
         <div class="folder-info">
             <img class="cover" id="folder-info-cover" src="/img/audio/webp/audio-0.webp" alt="">
             <div class="title">
-                <div class="text" id="folder-info-title">QwQ</div>
+                <div class="text" id="folder-info-title">开始</div>
                 <div class="base-button add-all" id="add-all">添加全部</div>
             </div>
         </div>
@@ -485,7 +485,7 @@
     </div>
 </div>
 
-<audio id="audio-loader" preload="metadata" style="display:none"></audio>
+<audio id="audio-loader" crossorigin="anonymous" preload="metadata" style="display:none"></audio>
 <img id="pre-load" src="" alt="" decoding="async" style="display:none;">
 </body>
 </html>

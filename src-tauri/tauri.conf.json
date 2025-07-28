@@ -1,13 +1,14 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "audio-player",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "identifier": "com.lumen.audio-player",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "beforeBuildCommand": "npm run build",
+    "removeUnusedCommands": true
   },
   "app": {
     "windows": [
@@ -15,22 +16,27 @@
         "title": "audio-player",
         "width": 1400,
         "height": 840,
+        "minWidth": 771,
+        "minHeight": 464,
         "decorations": false,
         "resizable": true,
         "fullscreen": false,
-        "center": true
+        "center": true,
+        "zoomHotkeysEnabled": false
       }
     ],
     "security": {
       "csp": {
-        "default-src": "'self' asset: http://asset.localhost ipc: http://ipc.localhost https://www.yangandxu.asia",
+        "default-src": "'self' asset: http://asset.localhost ipc: http://ipc.localhost",
         "script-src": "'self'",
         "img-src": "'self' blob: data:",
         "style-src": "'unsafe-inline' 'self'"
       },
       "assetProtocol": {
         "enable": true,
-        "scope": ["**/*"]
+        "scope": [
+          "**/*"
+        ]
       },
       "freezePrototype": true
     }

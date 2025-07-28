@@ -1,4 +1,5 @@
 import SpectrumDiagram from "./tools/spectrum_diagram";
+import createAlert from "./tools/base_page";
 
 const indexContextmenu = document.getElementById('index-contextmenu');
 
@@ -124,6 +125,7 @@ function pauseToggle(pause = false) {
         .catch(err => {
             if (err.name === 'AbortError') return;
             console.error('Error playing audio:', err);
+            createAlert(`无法加载音频: ${err.message}`, 'warning');
         });
     else {
         audioEle.pause();
@@ -146,12 +148,12 @@ function setMuted() {
         if (lastVolume === '0') lastVolume = '70';
         volumeToggle.value = lastVolume;
         audioEle.muted = false;
-        volume.style.backgroundImage = "url('../asset/img/audio/ico/volume.svg')";
+        volume.classList.remove('muted');
     } else {
         lastVolume = volumeToggle.value;
         volumeToggle.value = '0';
         audioEle.muted = true;
-        volume.style.backgroundImage = "url('../asset/img/audio/ico/mute.svg')";
+        volume.classList.add('muted');
     }
 }
 
@@ -231,7 +233,6 @@ export {
     progressPlayed,
     playMode,
     pauseEle,
-    volume,
     volumeToggle,
     closeBoard,
     playingBoard,

@@ -10,17 +10,12 @@
     "tauri": "tauri"
   },
   "devDependencies": {
-    "ts-loader": "^9.5.2",
-    "tslint": "^5.20.1",
-    "tslint-config-standard": "^9.0.0",
-    "tslint-loader": "^3.5.4",
     "typescript": "5.8",
     "vite": "^7.0.4"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.7.0",
     "@tauri-apps/plugin-dialog": "^2.3.1",
-    "@tauri-apps/plugin-http": "^2.5.1",
-    "music-metadata": "^11.7.3"
+    "@tauri-apps/plugin-http": "^2.5.1"
   }
 }

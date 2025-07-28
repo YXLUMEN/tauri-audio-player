@@ -13,7 +13,7 @@ import {open} from '@tauri-apps/plugin-dialog';
 
 
 // 播放模式设置
-let playMode = 0;
+let playMode: number = 0;
 
 let randPlayedList: number[] = null;
 
@@ -25,7 +25,7 @@ const shortcuts: Map<string, Function> = new Map();
 
 function modeToggle() {
     playMode = (playMode + 1) % 3;
-    v.playMode.src = `../asset/img/audio/ico/play_mode_${playMode}.svg`;
+    v.playMode.src = `/img/audio/ico/play_mode_${playMode}.svg`;
 }
 
 function playingMode(delta = 1) {
@@ -174,11 +174,6 @@ async function reMapKeys() {
     }
 }
 
-async function onAudioError(event: ErrorEvent) {
-    console.log(event);
-    createAlert(`未能加载音频: ${event.message}`);
-}
-
 // 关闭 player 页面
 document.getElementById('close-player').addEventListener('click', togglePlayer);
 
@@ -205,7 +200,7 @@ v.audioEle.addEventListener('seeked', () => {
 v.audioEle.addEventListener('ended', () => d.switchAudio(playingMode(1)));
 
 // 音频出错监听
-v.audioEle.addEventListener('error', onAudioError);
+// v.audioEle.addEventListener('error', onAudioError);
 
 // 修改音量
 v.volumeToggle.addEventListener('input', () => {
@@ -276,14 +271,14 @@ document.getElementById('setting').addEventListener('click', toggleSettings);
 // 本地文件播放
 document.getElementById('select-local-audio').addEventListener('click', async () => {
     try {
-        const filePath = await open({
+        const filePath: string[] = await open({
             title: '选则音频',
             multiple: true,
             directory: false,
             filters: [{name: 'Audios', extensions: ['mp3', 'flac', 'wav', 'ogg']}]
         });
         if (!filePath) return;
-        console.log(filePath);
+        if (filePath.length > 3) createAlert('解析多个文件中', 'info', {autoRemoveDelay: 4000});
 
         const list: Array<IAudioInfo> = [];
         for (const path of filePath) {
@@ -340,15 +335,15 @@ document.getElementById('toggle-fft').addEventListener('change', async () => {
 }, {once: true});
 
 // 存储匿名操作函数,使CONTROL_MAP清晰
-const anonymous_fun = Object.freeze(Object.assign(Object.create(null), {
+const anonymous_fun: { [key: string]: CallableFunction } = Object.freeze(Object.assign(Object.create(null), {
     skipForward: () => d.switchAudio(playingMode(-1)),
     skipBackward: () => d.switchAudio(playingMode(1)),
     arrowUp: () => wheelRollingLyrics(-4),
     arrowDown: () => wheelRollingLyrics(4),
 }));
 
-// 所有操作
-const playerActionMap = new Map([
+// 基本操作映射
+const playerActionMap = new Map<string, Function>([
     ['lyric', lyricDisplayFn],
     ['play-mode', modeToggle],
     ['skip-forward', anonymous_fun.skipForward],
@@ -374,7 +369,7 @@ document.getElementById('cb-container').addEventListener('click', (event) => {
 });
 
 // 键盘操作
-let ableShortcuts = true;
+let ableShortcuts: boolean = true;
 
 function enableShortcut(bl: boolean) {
     ableShortcuts = bl;

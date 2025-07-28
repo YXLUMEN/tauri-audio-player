@@ -2,7 +2,7 @@ import * as v from "./env";
 import {debounce, isEmpty} from "./tools/base_utilities";
 import createAlert, {appendChildren} from "./tools/base_page";
 import {IndexedDBHelper} from "./tools/db";
-import {AbsAudioModel, Local, VSM} from "./plugins/exports";
+import {AbsAudioModel, isCacheAble, Local, VSM} from "./plugins/exports";
 import {createCleanObj, defaultLyrics, IFolderInfo} from "./default";
 import {IAudioInfo, ILyric, IStandardAudio} from "../type/audio";
 
@@ -81,20 +81,31 @@ function getPlugin(type: string): AbsAudioModel | null {
     return newPlugin;
 }
 
-async function clearPluginsCache() {
+function clearPluginsCache(): void {
+    // 播放队列中的 ID
+    const inQueueIds = new Set<string>(
+        playingQueue.map(item => item.id)
+    );
+
+    // 当前在 DOM(folder-content) 中的 ID
+    const inDomIds = new Set<string>(
+        Array.from(v.folderContent.querySelectorAll('[id]'))
+            .map(el => el.id)
+    );
+
+    // 合并两者：只要出现在队列或 DOM，就不清理
+    const inUseIds = new Set<string>([...inQueueIds, ...inDomIds]);
+
+    // 委托每个插件自己清理
     for (const plugin of Object.values(loadedPlugins)) {
-        if (!(plugin instanceof Local)) continue;
-        const cache = plugin.getCache();
+        if (!isCacheAble(plugin)) continue;
+        plugin.clearUnused(inUseIds);
+    }
+}
 
-        // @ts-ignore
-        for (const [id, url] of cache) {
-            const inDom = document.getElementById(id);
-            const inQueue = playingQueue.some(item => item.id === id);
-            if (inDom || inQueue) continue;
-
-            URL.revokeObjectURL(url);
-            cache.delete(id);
-        }
+function forceClearPluginsCache(): void {
+    for (const plugin of Object.values(loadedPlugins)) {
+        if (plugin instanceof Local) plugin.clear();
     }
 }
 
@@ -267,7 +278,7 @@ function loadAudio(standard: IStandardAudio) {
 
 async function switchAudio(
     newIndex: number = 0,
-    scroll: boolean = true,
+    scroll: boolean = false,
     play: boolean = true,
     force: boolean = false
 ): Promise<boolean> {
@@ -301,7 +312,9 @@ function highlightCurrentPlaying(scroll: boolean = true) {
         v.playingBoard.querySelector('.queue-row.current')?.classList.remove('current');
         currentPlaying.classList.add('current');
 
-        if (scroll) v.playingQueue.scrollTo({top: currentPlaying.offsetTop - 150, behavior: 'smooth'});
+        if (scroll) {
+            v.playingQueue.scrollTo({top: currentPlaying.offsetTop - 150, behavior: 'smooth'});
+        }
     }
 
     const currentRow = document.getElementById(getCurrentPlaying()?.id);
@@ -630,7 +643,7 @@ async function removeAudio(index: number) {
     if (index < audioIndex) {
         setAudioIndex(audioIndex - 1);
     } else if (playingQueue.length === 1) {
-        await clearPlayingQueue();
+        clearPlayingQueue();
         return;
     } else if (index === audioIndex) {
         await switchAudio(audioIndex + 1, false);
@@ -641,7 +654,7 @@ async function removeAudio(index: number) {
     await renderPlayingQueue(playingQueue);
 }
 
-async function clearPlayingQueue() {
+function clearPlayingQueue() {
     if (playingQueue.length === 0) return;
     v.pauseToggle(true);
     v.audioEle.removeAttribute('src');
@@ -650,7 +663,7 @@ async function clearPlayingQueue() {
     setAudioIndexUnclamp(-1);
 
     v.playingQueue.textContent = '';
-    await clearPluginsCache();
+    clearPluginsCache();
 }
 
 // 设置选中的音乐并高亮
@@ -677,6 +690,7 @@ export {
     getFavorByFolder,
     getPlugin,
     clearPluginsCache,
+    forceClearPluginsCache,
     getAudioIndex,
     setAudioIndex,
     setAudioIndexUnclamp,
