@@ -15,7 +15,7 @@ let wasMerge: boolean = false;
 let chosenQueueRowId: string = null;
 
 // 创建歌单元素
-function createFolderItem(folder: IFolderInfo) {
+function createFolderItem(folder: IFolderInfo): HTMLDivElement {
     const div = document.createElement("div");
     div.setAttribute('_id', folder.id.toString());
     div.classList.add('audio-folder');
@@ -31,9 +31,8 @@ function createFolderItem(folder: IFolderInfo) {
     return div;
 }
 
-
 // 创建歌单内容元素
-function createFolderContentItem(index: number, standard: IStandardAudio) {
+function createFolderContentItem(index: number, standard: IStandardAudio): HTMLDivElement {
     const row = document.createElement('div');
     row.id = standard.id;
     // noinspection JSCheckFunctionSignatures
@@ -114,7 +113,7 @@ async function setDisplayFolder(array: IAudioInfo[] | null, reRender: boolean = 
 }
 
 // 显示歌单信息界面并获取输入的值
-async function getNewFolderInfo(create = false): Promise<IFolderInfo> {
+async function getNewFolderInfo(create: boolean = false): Promise<IFolderInfo | null> {
     const name = <HTMLInputElement>document.getElementById('modify-folder-name');
     const desc = <HTMLInputElement>document.getElementById('modify-folder-desc');
     const cover = <HTMLInputElement>document.getElementById('modify-folder-cover');
@@ -122,12 +121,12 @@ async function getNewFolderInfo(create = false): Promise<IFolderInfo> {
 
     if (!name || !desc || !cover || !buttonsContainer) {
         console.error('Cannot find DOMElements!');
-        return;
+        return null;
     }
 
     let originId: number;
     if (!create) {
-        if (!d.chosenFolder) return;
+        if (!d.chosenFolder) return null;
         const folder: IFolderInfo = await d.dbHelper.get('folder', Number(d.chosenFolder.getAttribute('_id')));
         if (!folder) return;
         originId = folder.id;
@@ -163,15 +162,15 @@ async function getNewFolderInfo(create = false): Promise<IFolderInfo> {
         if (!action) return;
 
         if (action === 'submit' && name.value.trim() !== '') {
-            const result = {name: name.value, desc: desc.value, cover: cover.src};
             if (create) {
-                resolve(result);
+                resolve({name: name.value, desc: desc.value, cover: cover.src});
                 return;
             }
-
-            // @ts-ignore
-            result.id = originId
-            resolve(result);
+            resolve({id: originId, name: name.value, desc: desc.value, cover: cover.src});
+            return;
+        }
+        if (action === 'cancel') {
+            resolve(null);
         }
     }, {signal: abort.signal});
 
@@ -323,7 +322,7 @@ const selectFolder = throttleTimeOut(async (event: Event) => {
         audios = await d.getFavorByFolder(id);
     }
 
-    v.folderInfoCover.src = folder.getElementsByTagName('img')?.[0].src || '../asset/img/audio/webp/audio-11.webp';
+    v.folderInfoCover.src = folder.getElementsByTagName('img')?.[0].src || '/img/audio/webp/audio-11.webp';
     v.folderInfoTitle.textContent = folder.getElementsByTagName('span')?.[0]?.textContent || '歌单';
 
     await setDisplayFolder(audios);

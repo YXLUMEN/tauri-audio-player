@@ -4,12 +4,13 @@ import {defaultShortcuts} from "./default";
 import {debounce, throttleTimeOut} from "./tools/base_utilities";
 import {generateUniqueRandomNumbers} from "./tools/GenerateRandomNums";
 import {displayedContent, renderCustomFolder, setDisplayFolder} from "./index";
-import createAlert, {ECategories} from "./tools/base_page";
+import createAlert, {ECategories, playSound} from "./tools/base_page";
 import {VSM} from "./plugins/vsm";
 import {IAudioInfo} from "../type/audio";
 
 import {invoke} from '@tauri-apps/api/core';
 import {open} from '@tauri-apps/plugin-dialog';
+import {appWindow} from "../../main";
 
 
 // 播放模式设置
@@ -174,6 +175,21 @@ async function reMapKeys() {
     }
 }
 
+async function savePlayingQueue() {
+    try {
+        if (d.getCurrentPlaying()) localStorage.setItem('playing', JSON.stringify({
+            index: d.getAudioIndex(),
+            currentTime: v.audioEle.currentTime
+        }));
+
+        localStorage.setItem('_random_list', JSON.stringify(randPlayedList));
+
+        await d.storgePlayingQueue();
+    } catch (err) {
+        console.error(err);
+    }
+}
+
 // 关闭 player 页面
 document.getElementById('close-player').addEventListener('click', togglePlayer);
 
@@ -289,6 +305,8 @@ document.getElementById('select-local-audio').addEventListener('click', async ()
         }
 
         await d.insertAudio(d.getAudioIndex() + 1, list);
+        await playSound('audio/successful_hit.wav');
+
         await d.switchAudio(d.getAudioIndex() + 1);
     } catch (err) {
         console.error(err);
@@ -395,20 +413,13 @@ document.addEventListener('keydown', (event) => {
 });
 
 // 关闭窗口并保存播放进度
-window.addEventListener('beforeunload', async () => {
-    try {
-        if (d.getCurrentPlaying()) localStorage.setItem('playing', JSON.stringify({
-            index: d.getAudioIndex(),
-            currentTime: v.audioEle.currentTime
-        }));
-
-        localStorage.setItem('_random_list', JSON.stringify(randPlayedList));
-
-        await d.storgePlayingQueue();
-    } catch (err) {
-        console.error(err);
-    }
+document.getElementById('title-bar-close')?.addEventListener('click', async () => {
+    await savePlayingQueue();
+    await appWindow.close()
 });
+
+window.addEventListener('beforeunload', savePlayingQueue);
+
 
 function initApp() {
     console.log('App initialized');
@@ -428,6 +439,7 @@ function initApp() {
 
         const canPlay = await d.switchAudio(Number(index), true, false);
         if (!canPlay) return;
+        await playSound('audio/successful_hit.wav');
 
         document.getElementById('index-audio-control').classList.remove('hide');
         v.audioEle.addEventListener('loadeddata', () => {

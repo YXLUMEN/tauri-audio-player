@@ -63,7 +63,7 @@ export class Local extends AbsAudioModel implements CacheAble {
         }
 
         if (Local.pending.has(id)) {
-            return await Local.pending.get(id)!;
+            return Local.pending.get(id)!;
         }
 
         const job = (async (): Promise<IStandardAudio | null> => {

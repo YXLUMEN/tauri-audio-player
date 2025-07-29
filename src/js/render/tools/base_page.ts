@@ -28,21 +28,23 @@ export function batchGetElementsById(...ids: string[]) {
     return ids.map(id => document.getElementById(id));
 }
 
-export function playSound(url: string) {
-    const audioContext = new AudioContext();
-    fetch(url)
-        .then(res => res.arrayBuffer())
-        .then(buffer => audioContext.decodeAudioData(buffer))
-        .then(audioBuffer => {
-            const source = audioContext.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(audioContext.destination);
-            source.start();
-            source.addEventListener('ended', () => audioContext.close(), {once: true});
-        })
-        .catch(error => console.error(error));
-}
+export async function playSound(url: string) {
+    try {
+        const audioContext = new AudioContext();
 
+        const res = await fetch(url);
+        const buffer = await res.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(buffer);
+
+        const source = audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(audioContext.destination);
+        source.start();
+        source.addEventListener('ended', () => audioContext.close(), {once: true});
+    } catch (err) {
+        console.error(err);
+    }
+}
 
 // 用于移除 base-alert-box 中的通知
 function removeNote(element: HTMLElement, animation: boolean) {
@@ -141,7 +143,6 @@ export function createConfirm(message: string = '是否确认操作?', opts: ICo
     confirm.id = id;
     confirm.className = `note ${category} confirm${animation ? ' show' : ''}`;
     if (animation) {
-        // @ts-ignore
         confirm.style.viewTransitionName = id;
     }
 
@@ -174,7 +175,6 @@ export function createConfirm(message: string = '是否确认操作?', opts: ICo
     if (baseAlertBox.firstChild) baseAlertBox.insertBefore(confirm, baseAlertBox.firstChild);
     else baseAlertBox.appendChild(confirm);
 
-    // @ts-ignore
     const {promise, resolve, reject} = Promise.withResolvers();
 
     let timeoutId: number = null;

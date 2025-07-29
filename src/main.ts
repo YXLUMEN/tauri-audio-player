@@ -1,9 +1,9 @@
 import {Window} from '@tauri-apps/api/window';
 
-const appWindow: Window = new Window('main');
+export const appWindow: Window = new Window('main');
 
 document.getElementById('title-bar-minimize')?.addEventListener('click', () => appWindow.minimize());
-document.getElementById('title-bar-close')?.addEventListener('click', () => appWindow.close());
+
 document.getElementById('title-bar-maximize')?.addEventListener('click', async function () {
     await appWindow.toggleMaximize();
     if (await appWindow.isMaximized()) {
