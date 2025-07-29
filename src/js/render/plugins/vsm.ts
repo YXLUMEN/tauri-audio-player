@@ -90,7 +90,7 @@ export class VSM extends AbsAudioModel {
 
     public getCover() {
         this.imgIndex = (this.imgIndex + 1) % 30;
-        return `/img/audio/webp/audio-${this.imgIndex}.webp`;
+        return `/img/audio/cover/audio-${this.imgIndex}.webp`;
     }
 
     private transform(raw: Array<string>) {

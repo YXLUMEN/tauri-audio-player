@@ -681,6 +681,7 @@ function setChosenRow(row: HTMLElement): void {
     chosenRow = row;
 }
 
+// 设置选中的歌单
 function setChosenFolder(folder: HTMLElement): void {
     chosenFolder = folder;
 }

@@ -31,7 +31,7 @@ const defaultFolder: IFolderInfo = Object.freeze({
     id: 1,
     name: '默认歌单',
     desc: '',
-    cover: '/img/audio/webp/audio-0.webp'
+    cover: '/img/audio/cover/audio-0.webp'
 });
 
 export interface IShortCuts {

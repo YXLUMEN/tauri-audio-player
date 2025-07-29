@@ -418,9 +418,6 @@ document.getElementById('title-bar-close')?.addEventListener('click', async () =
     await appWindow.close()
 });
 
-// window.addEventListener('beforeunload', savePlayingQueue);
-
-
 function initApp() {
     console.log('App initialized');
 

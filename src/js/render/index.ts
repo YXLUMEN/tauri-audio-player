@@ -136,7 +136,7 @@ async function getNewFolderInfo(create: boolean = false): Promise<IFolderInfo | 
     } else {
         name.value = '';
         desc.value = '';
-        cover.src = `/img/audio/webp/audio-${Math.round(Math.random() * 30)}.webp`;
+        cover.src = `/img/audio/cover/audio-${Math.round(Math.random() * 30)}.webp`;
     }
 
     enableShortcut(false);
@@ -151,7 +151,7 @@ async function getNewFolderInfo(create: boolean = false): Promise<IFolderInfo | 
             title: '选择图片',
             directory: false,
             multiple: false,
-            filters: [{name: 'Images', extensions: ['png', 'jpg', 'webp', 'ico']}]
+            filters: [{name: 'Images', extensions: ['png', 'jpg', 'cover', 'ico']}]
         }).catch(console.error);
 
         if (result) cover.src = result[0];
@@ -175,8 +175,7 @@ async function getNewFolderInfo(create: boolean = false): Promise<IFolderInfo | 
     }, {signal: abort.signal});
 
     try {
-        // @ts-ignore
-        return await promise;
+        return await <Promise<IFolderInfo | null>>promise;
     } finally {
         abort.abort();
         v.folderContent.parentElement.classList.remove('hide');
@@ -211,8 +210,7 @@ async function choseFolderToCollect(): Promise<number | null> {
     v.choseFolderContent.parentElement.classList.add('show');
 
     try {
-        // @ts-ignore
-        return await promise;
+        return await <Promise<number | null>>promise;
     } finally {
         abort.abort();
         v.choseFolderContent.parentElement.classList.remove('show');
@@ -322,7 +320,7 @@ const selectFolder = throttleTimeOut(async (event: Event) => {
         audios = await d.getFavorByFolder(id);
     }
 
-    v.folderInfoCover.src = folder.getElementsByTagName('img')?.[0].src || '/img/audio/webp/audio-11.webp';
+    v.folderInfoCover.src = folder.getElementsByTagName('img')?.[0].src || '/img/audio/cover/audio-11.cover';
     v.folderInfoTitle.textContent = folder.getElementsByTagName('span')?.[0]?.textContent || '歌单';
 
     await setDisplayFolder(audios);

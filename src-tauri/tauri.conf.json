@@ -44,6 +44,7 @@
   "bundle": {
     "active": true,
     "targets": "msi",
+    "createUpdaterArtifacts": true,
     "windows": {
       "wix": {
         "language": "zh-CN"

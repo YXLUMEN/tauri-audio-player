@@ -13,6 +13,4 @@ document.getElementById('title-bar-maximize')?.addEventListener('click', async f
     }
 });
 
-
-import('./js/render/player')
-    .then((mod) => mod.initApp());
+import('./js/render/player').then((mod) => mod.initApp());
