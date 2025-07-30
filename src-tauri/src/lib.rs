@@ -1,4 +1,5 @@
 mod audio;
+mod update;
 
 use crate::audio::fetch_meta;
 use sha2::{Digest, Sha256};

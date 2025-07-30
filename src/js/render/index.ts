@@ -112,31 +112,39 @@ async function setDisplayFolder(array: IAudioInfo[] | null, reRender: boolean = 
     }
 }
 
+// 终止输入
+let pendingInput: (reason?: any) => void = null;
+
 // 显示歌单信息界面并获取输入的值
 async function getNewFolderInfo(create: boolean = false): Promise<IFolderInfo | null> {
-    const name = <HTMLInputElement>document.getElementById('modify-folder-name');
-    const desc = <HTMLInputElement>document.getElementById('modify-folder-desc');
-    const cover = <HTMLInputElement>document.getElementById('modify-folder-cover');
-    const buttonsContainer = document.getElementById('folder-modify-buttons');
+    if (pendingInput) pendingInput('Interrupted');
 
-    if (!name || !desc || !cover || !buttonsContainer) {
+    const nameInput = <HTMLInputElement>document.getElementById('modify-folder-name');
+    const descInput = <HTMLInputElement>document.getElementById('modify-folder-desc');
+    const coverImg = <HTMLInputElement>document.getElementById('modify-folder-cover');
+    const confirmButtons = document.getElementById('folder-modify-buttons');
+
+    if (!nameInput || !descInput || !coverImg || !confirmButtons) {
         console.error('Cannot find DOMElements!');
         return null;
     }
 
-    let originId: number;
-    if (!create) {
-        if (!d.chosenFolder) return null;
-        const folder: IFolderInfo = await d.dbHelper.get('folder', Number(d.chosenFolder.getAttribute('_id')));
-        if (!folder) return;
-        originId = folder.id;
-        name.value = folder.name;
-        desc.value = folder.desc;
-        cover.src = folder.cover;
+    let originId: number | undefined;
+    if (create) {
+        nameInput.value = '';
+        descInput.value = '';
+        coverImg.src = `/img/audio/cover/audio-${Math.round(Math.random() * 30)}.webp`;
     } else {
-        name.value = '';
-        desc.value = '';
-        cover.src = `/img/audio/cover/audio-${Math.round(Math.random() * 30)}.webp`;
+        if (!d.chosenFolder) return null;
+
+        const id = Number(d.chosenFolder.getAttribute('_id'));
+        const folder: IFolderInfo = await d.dbHelper.get('folder', id);
+        if (!folder) return null;
+
+        originId = folder.id;
+        nameInput.value = folder.name;
+        descInput.value = folder.desc;
+        coverImg.src = folder.cover;
     }
 
     enableShortcut(false);
@@ -144,44 +152,49 @@ async function getNewFolderInfo(create: boolean = false): Promise<IFolderInfo | 
     v.modifyFolder.classList.add('show');
 
     const abort = new AbortController();
-    const {promise, resolve} = Promise.withResolvers();
+    const {promise, resolve, reject} = Promise.withResolvers();
 
-    cover.addEventListener('click', async () => {
-        const result = await open({
-            title: '选择图片',
-            directory: false,
-            multiple: false,
-            filters: [{name: 'Images', extensions: ['png', 'jpg', 'cover', 'ico']}]
-        }).catch(console.error);
+    coverImg.addEventListener('click', async () => {
+        try {
+            const files = await open({
+                title: '选择图片',
+                directory: false,
+                multiple: false,
+                filters: [{name: 'Images', extensions: ['png', 'jpg', 'cover', 'ico']}]
+            });
 
-        if (result) cover.src = result[0];
+            if (files) coverImg.src = files[0];
+        } catch (err) {
+            console.warn('选择图片被取消或出错', err);
+        }
     }, {signal: abort.signal});
 
-    buttonsContainer.addEventListener('click', async (event) => {
+    confirmButtons.addEventListener('click', event => {
         const action = (<HTMLElement>event.target).closest('.base-button')?.getAttribute('action');
         if (!action) return;
 
-        if (action === 'submit' && name.value.trim() !== '') {
-            if (create) {
-                resolve({name: name.value, desc: desc.value, cover: cover.src});
-                return;
-            }
-            resolve({id: originId, name: name.value, desc: desc.value, cover: cover.src});
-            return;
-        }
-        if (action === 'cancel') {
+        if (action === 'submit' && nameInput.value.trim() !== '') {
+            resolve({
+                id: originId,
+                name: nameInput.value,
+                desc: descInput.value,
+                cover: coverImg.src
+            });
+        } else if (action === 'cancel') {
             resolve(null);
         }
     }, {signal: abort.signal});
 
-    try {
-        return await <Promise<IFolderInfo | null>>promise;
-    } finally {
+    promise.finally(() => {
+        pendingInput = null;
         abort.abort();
         v.folderContent.parentElement.classList.remove('hide');
         v.modifyFolder.classList.remove('show');
         enableShortcut(true);
-    }
+    });
+
+    pendingInput = reject;
+    return await <Promise<IFolderInfo | null>>promise;
 }
 
 // 显示歌单选择框并返回选中的歌单
@@ -285,10 +298,6 @@ async function contextmenuHandleFolder(action: string) {
         if (!folder) return;
         await d.modifyFolder(folder);
     } else if (action === 'delete-folder') {
-        if (v.customFolderList.classList.length <= 1) {
-            createAlert('您无法删除最后一个歌单', 'info');
-            return;
-        }
         await d.deleteFolder(id);
     }
 
@@ -434,6 +443,7 @@ v.preLoadCover.addEventListener('load', () => {
 v.audioEle.addEventListener('play', () =>
     document.getElementById('index-audio-control').classList.remove('hide'), {once: true});
 
+// 选择歌单
 v.indexLeftPanel.addEventListener('click', selectFolder);
 
 // 将歌单推入播放列表
@@ -446,6 +456,8 @@ document.getElementById('add-all').addEventListener('click', () => {
 document.getElementById('create-folder').addEventListener('click', async () => {
     const info = await getNewFolderInfo(true);
     if (!info) return;
+    delete info.id;
+
     await d.createFolder(info);
     await renderCustomFolder();
 });
