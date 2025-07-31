@@ -1,4 +1,4 @@
-import {IAudioInfo, IStandardAudio} from "../../type/audio";
+import {IAudioInfo, IStandardAudio} from "../../interfaces/audio";
 
 export abstract class AbsAudioModel {
     public abstract getAudioList(opt?: any): Promise<IAudioInfo[] | IStandardAudio[]>;

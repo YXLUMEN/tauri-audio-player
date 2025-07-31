@@ -1,5 +1,5 @@
 import {check} from '@tauri-apps/plugin-updater';
-import createAlert, {createConfirm} from "./tools/base_page";
+import createAlert, {createConfirm, playSound} from "./tools/base_page";
 import {relaunch} from '@tauri-apps/plugin-process';
 
 export async function updateApp(): Promise<void> {
@@ -12,6 +12,8 @@ export async function updateApp(): Promise<void> {
     console.log(
         `found update ${update.version} from ${update.date} with notes ${update.body}`
     );
+
+    await playSound('audio/successful_hit.wav');
     const shouldUpdate = await createConfirm(`发现新版本: ${update.version}`);
     if (!shouldUpdate) return;
     createAlert('开始更新');

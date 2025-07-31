@@ -6,12 +6,14 @@ import {generateUniqueRandomNumbers} from "./tools/GenerateRandomNums";
 import {displayedContent, renderCustomFolder, setDisplayFolder} from "./index";
 import createAlert, {playSound} from "./tools/base_page";
 import {VSM} from "./plugins/vsm";
-import {IAudioInfo} from "../type/audio";
+import {IAudioInfo} from "../interfaces/audio";
+import {updateApp} from "./update";
+
+import {appWindow} from "../../main";
 
 import {invoke} from '@tauri-apps/api/core';
 import {open} from '@tauri-apps/plugin-dialog';
-import {appWindow} from "../../main";
-import {updateApp} from "./update";
+import {isAuthAble} from "./plugins/exports";
 
 
 // 播放模式设置
@@ -70,6 +72,16 @@ function progressLeap(event: Event) {
     const value = (<HTMLInputElement>event.target).value;
     v.audioEle.currentTime = (Number(value) / 100) * v.audioEle.duration;
     isSeeking = false;
+}
+
+async function onAudioError() {
+    // console.log('Error', event);
+    const currentPlay = d.getCurrentPlaying();
+    const plugin = d.getPlugin(currentPlay.plugin);
+
+    if (isAuthAble(plugin)) {
+        await plugin.refresh();
+    }
 }
 
 // 点击关闭面板关闭音乐列表
@@ -176,6 +188,7 @@ async function reMapKeys() {
     }
 }
 
+// 保存播放队列以及播放进度
 async function savePlayingQueue() {
     try {
         if (d.getCurrentPlaying()) localStorage.setItem('playing', JSON.stringify({
@@ -217,7 +230,7 @@ v.audioEle.addEventListener('seeked', () => {
 v.audioEle.addEventListener('ended', () => d.switchAudio(playingMode(1)));
 
 // 音频出错监听
-// v.audioEle.addEventListener('error', onAudioError);
+v.audioEle.addEventListener('error', onAudioError);
 
 // 修改音量
 v.volumeToggle.addEventListener('input', () => {
@@ -394,7 +407,11 @@ function enableShortcut(bl: boolean) {
     ableShortcuts = bl;
 }
 
-const keyControlFn = throttleTimeOut((code: string) => shortcuts.get(code)?.(), 100);
+// 快捷键
+const keyControlFn = throttleTimeOut((code: string) => {
+    return shortcuts.get(code)?.();
+}, 100);
+
 document.addEventListener('keydown', (event) => {
     if (
         event.key === 'F5' ||
@@ -416,14 +433,40 @@ document.addEventListener('keydown', (event) => {
 // 关闭窗口并保存播放进度
 document.getElementById('title-bar-close')?.addEventListener('click', async () => {
     await savePlayingQueue();
-    await appWindow.close()
+    await appWindow.close();
 });
 
-function initApp() {
+async function initApp(): Promise<void> {
     console.log('App initialized');
 
     renderCustomFolder().catch(console.error);
     reMapKeys().catch(console.error);
+
+    // 加载API密钥
+    try {
+        const apiSettings = document.getElementById('apis-settings');
+        const allLabel = apiSettings.querySelectorAll('label');
+        for (const label of allLabel) {
+            const pluginName = label.getAttribute('action');
+            const result = await d.dbHelper.get('auth', pluginName);
+            if (!result) continue;
+
+            const keyEle: HTMLInputElement = <HTMLInputElement>label.querySelector('[name="api-key"]');
+            const psdEle: HTMLInputElement = <HTMLInputElement>label.querySelector('[name="api-psd"]');
+            if (keyEle && psdEle) {
+                keyEle.value = result.key;
+                psdEle.value = result.psd;
+            }
+
+            const plugin = d.getPlugin(pluginName);
+            if (isAuthAble(plugin)) {
+                await plugin.initToken();
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        createAlert('自动加载密钥失败', 'warning');
+    }
 
     // 加载播放历史
     (async () => {
@@ -438,7 +481,6 @@ function initApp() {
 
         const canPlay = await d.switchAudio(Number(index), true, false);
         if (!canPlay) return;
-        await playSound('audio/successful_hit.wav');
 
         document.getElementById('index-audio-control').classList.remove('hide');
         v.audioEle.addEventListener('loadeddata', () => {

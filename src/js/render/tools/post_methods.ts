@@ -1,6 +1,7 @@
 import createAlert from "./base_page";
-import {IBaseFetch} from "../../type/post";
-import {ECategories} from "../../type/pages";
+import {IBaseFetch} from "../../interfaces/post";
+import {ECategories} from "../../interfaces/pages";
+import {fetch} from '@tauri-apps/plugin-http';
 
 
 // 封装的fetch方法
@@ -18,7 +19,6 @@ export default async function baseFetch(url: string, opts: IBaseFetch = {}) {
     };
     if (defaultOpts.method === 'GET') defaultOpts.body = null;
 
-    // @ts-ignore
     const response_promise = fetch(url, defaultOpts);
 
     const response = await response_promise;
@@ -28,7 +28,7 @@ export default async function baseFetch(url: string, opts: IBaseFetch = {}) {
     return response;
 }
 // 默认的错误处理
-const _errors = new Map([
+const errors = new Map([
     [400, ['不支持的请求', ECategories.WARNING]],
     [401, ['您还没有登录', ECategories.WARNING]],
     [404, ['访问资源不存在', ECategories.WARNING]],
@@ -38,18 +38,6 @@ const _errors = new Map([
 ]);
 
 function _statusAlert(statusCode = 404) {
-    const msg = _errors.get(statusCode) ?? [`未知错误: ${statusCode}`, ECategories.ERROR];
+    const msg = errors.get(statusCode) ?? [`未知错误: ${statusCode}`, ECategories.ERROR];
     createAlert(msg[0], msg[1]);
-}
-
-export interface ChunkSendOptions {
-    prepareUrl?: string;
-    mergeUrl?: string;
-    data: Blob | File;
-    fileHash: string;
-    chunkSize?: number;
-    fileName: string;
-    delay?: number;
-    fileSize: number;
-    callback?: CallableFunction[];
 }

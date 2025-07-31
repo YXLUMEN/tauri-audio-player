@@ -1,4 +1,4 @@
-import {StoreConfig} from "../../type/base";
+import {StoreConfig} from "../../interfaces/base";
 
 export class IndexedDBHelper {
     private db: IDBDatabase = null;

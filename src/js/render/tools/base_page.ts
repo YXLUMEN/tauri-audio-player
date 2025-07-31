@@ -1,4 +1,4 @@
-import {ECategories, IAlert, IConfirm} from "../../type/pages";
+import {ECategories, IAlert, IConfirm} from "../../interfaces/pages";
 
 
 /**

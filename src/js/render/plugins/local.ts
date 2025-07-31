@@ -1,11 +1,11 @@
 import {getPlugin} from "../data";
 import {VSM} from "./vsm.js";
-import {CacheAble} from "./cache_able";
+import {ICacheAble} from "./apis";
 import {AbsAudioModel} from "./exports";
-import {IAudioInfo, IMusicMetadata, IStandardAudio} from "../../type/audio";
+import {IAudioInfo, IMusicMetadata, IStandardAudio} from "../../interfaces/audio";
 import {convertFileSrc, invoke} from '@tauri-apps/api/core';
 
-export class Local extends AbsAudioModel implements CacheAble {
+export class Local extends AbsAudioModel implements ICacheAble {
     public static readonly CACHE_SIZE: number = 64;
 
     private static pending = new Map<string, Promise<IStandardAudio | null>>();

@@ -6,8 +6,9 @@ import {VSM} from "./plugins/vsm";
 import {defaultFolder, defaultShortcuts, IFolderInfo} from "./default";
 import {throttleTimeOut} from "./tools/base_utilities";
 import {open} from '@tauri-apps/plugin-dialog';
-import {IAudioInfo, IStandardAudio} from "../type/audio";
+import {IAudioInfo, IStandardAudio} from "../interfaces/audio";
 import {updateApp} from "./update";
+import {isAuthAble} from "./plugins/exports";
 
 
 let displayedContent: IAudioInfo[] = [];
@@ -307,7 +308,7 @@ async function contextmenuHandleFolder(action: string) {
 }
 
 // 选择歌单
-const selectFolder = throttleTimeOut(async (event: Event) => {
+const selectFolder = throttleTimeOut(async (event: MouseEvent) => {
     const folder: HTMLElement = (<HTMLElement>event.target).closest('.audio-folder');
     if (!folder) return;
 
@@ -364,7 +365,7 @@ async function searchAudios() {
 }
 
 // 展示播放器或处理操作按钮
-const handleIndexPlayController = throttleTimeOut(async (event: Event) => {
+const handleIndexPlayController = throttleTimeOut(async (event: MouseEvent) => {
     const target = (<HTMLElement>event.target).closest('.item');
     if (!target) {
         togglePlayer();
@@ -381,7 +382,7 @@ const handleIndexPlayController = throttleTimeOut(async (event: Event) => {
 }, 200);
 
 // 设置快捷键
-const setShortcut = throttleTimeOut((event: Event) => {
+const setShortcut = throttleTimeOut((event: MouseEvent) => {
     const target = (<HTMLElement>event.target).closest('.key');
     if (!target) return;
 
@@ -409,7 +410,7 @@ const setShortcut = throttleTimeOut((event: Event) => {
 }, 2000);
 
 // 清理缓存
-const clearCache = throttleTimeOut(async (event: Event) => {
+const clearCache = throttleTimeOut(async (event: MouseEvent) => {
     const action = (<HTMLElement>event.target).closest('input')?.getAttribute('action');
     if (!action) return;
 
@@ -586,6 +587,32 @@ document.addEventListener('click', (event) => {
         v.choseFolderContent.parentElement.classList.remove('show');
     }
 }, true);
+
+// 设置Api并重新登录
+document.getElementById('apis-settings').addEventListener('click', async (event) => {
+    try {
+        const label = (<HTMLElement>event.target).closest('.base-button')?.parentElement;
+        if (!label) return;
+        const keyEle: HTMLInputElement = <HTMLInputElement>label.querySelector('[name="api-key"]');
+        const psdEle: HTMLInputElement = <HTMLInputElement>label.querySelector('[name="api-psd"]');
+        const key = keyEle.value;
+        const psd = psdEle.value;
+        if (!key || !psd) return;
+
+        const pluginName = label.getAttribute('action');
+        await d.dbHelper.update('auth', {plugin: pluginName, key, psd});
+
+        const plugin = d.getPlugin(pluginName);
+        if (isAuthAble(plugin)) {
+            await plugin.login({key, psd});
+        }
+
+        createAlert(`以设置 ${pluginName} API`, 'success');
+    } catch (error) {
+        console.error(error);
+        createAlert(`设置失败: ${error.message}`);
+    }
+});
 
 export {
     displayedContent,

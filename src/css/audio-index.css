@@ -580,12 +580,21 @@ body {
     grid-template-columns: 6fr auto;
 }
 
+.setting-details.long {
+    width: 50%;
+}
+
 .custom-input-label {
     display: flex;
 }
 
 .custom-input-label > * {
     margin: 0;
+}
+
+.custom-input-label.vertical {
+    flex-direction: column;
+    gap: 4px;
 }
 
 .chose-folder {

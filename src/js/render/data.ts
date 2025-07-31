@@ -4,7 +4,7 @@ import createAlert, {appendChildren} from "./tools/base_page";
 import {IndexedDBHelper} from "./tools/db";
 import {AbsAudioModel, isCacheAble, Local, VSM} from "./plugins/exports";
 import {createCleanObj, defaultLyrics, IFolderInfo} from "./default";
-import {IAudioInfo, ILyric, IStandardAudio} from "../type/audio";
+import {IAudioInfo, ILyric, IStandardAudio} from "../interfaces/audio";
 
 
 let audioIndex: number = -1;
@@ -16,7 +16,7 @@ let chosenFolder: HTMLElement | null = null;
 
 const loadedPlugins: { [key: string]: AbsAudioModel } = Object.create(null);
 
-const dbHelper = new IndexedDBHelper('audio_player', 1, [
+const dbHelper = new IndexedDBHelper('audio_player', 2, [
     {
         name: 'folder',
         keyPath: 'id',
@@ -45,6 +45,10 @@ const dbHelper = new IndexedDBHelper('audio_player', 1, [
         indexes: [
             {name: 'code', keyPath: 'code', unique: true},
         ]
+    },
+    {
+        name: 'auth',
+        keyPath: 'plugin'
     }
 ]);
 

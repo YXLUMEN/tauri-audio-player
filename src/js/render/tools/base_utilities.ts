@@ -1,7 +1,7 @@
 // 节流函数,使用日期计时
-export function throttleDateTime(func: Function, wait: number = 200) {
+export function throttleDateTime<T extends (...args: any[]) => any>(func: T, wait: number = 200) {
     let lastExecutionTime = 0;
-    return function (...args: any[]) {
+    return function (...args: Parameters<T>) {
         const now = Date.now();
         if (now - lastExecutionTime > wait) {
             func.apply(this, args);
@@ -11,9 +11,9 @@ export function throttleDateTime(func: Function, wait: number = 200) {
 }
 
 // 节流函数
-export function throttleTimeOut(func: Function, wait: number = 200) {
+export function throttleTimeOut<T extends (...args: any[]) => any>(func: T, wait: number = 200) {
     let timer: number = null;
-    return function (...args: any[]) {
+    return function (...args: Parameters<T>) {
         if (timer) return;
         func.apply(this, args);
         timer = setTimeout((): any => timer = null, wait);
@@ -26,9 +26,9 @@ export function throttleTimeOut(func: Function, wait: number = 200) {
  * @param wait default: 50ms
  * @param immediate
  * */
-export function debounce(func: Function, wait: number = 50, immediate: boolean = false) {
+export function debounce<T extends (...args: any[]) => any>(func: T, wait: number = 50, immediate: boolean = false) {
     let timer: number;
-    return function (...args: any[]) {
+    return function (...args: Parameters<T>) {
         if (immediate) wait = 0;
         if (timer) clearTimeout(timer);
         timer = setTimeout(() => func.apply(this, args), wait);

@@ -1,28 +1,8 @@
 mod audio;
+mod file;
 
 use crate::audio::fetch_meta;
-use sha2::{Digest, Sha256};
-use std::fs::File;
-use std::io::{BufReader, Read};
-
-#[tauri::command]
-fn calculate_hash(file_path: String) -> Result<String, String> {
-    let file = File::open(file_path).map_err(|e| e.to_string())?;
-    let mut reader = BufReader::new(file);
-    let mut hasher = Sha256::new();
-    let mut buffer = [0u8; 1024];
-
-    loop {
-        let bytes_read = reader.read(&mut buffer).map_err(|e| e.to_string())?;
-        if bytes_read == 0 {
-            break;
-        }
-        hasher.update(&buffer[..bytes_read]);
-    }
-
-    let result = hasher.finalize();
-    Ok(format!("{:x}", result))
-}
+use crate::file::calculate_hash;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

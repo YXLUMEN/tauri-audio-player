@@ -53,7 +53,7 @@ const defaultShortcuts: IShortCuts[] = deepFreeze([
     {action: 'toggle-settings', code: 'KeyS'},
     {action: 'toggle-player', code: 'KeyP'},
     {action: 'update-vsm', code: 'NumpadAdd'},
-    {action: 'close-page', code: 'Escape'}
+    {action: 'close-page', code: 'Escape'},
 ]);
 
 const defaultLyrics = deepFreeze(createCleanObj({
