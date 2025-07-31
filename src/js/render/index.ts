@@ -572,6 +572,18 @@ document.getElementById('shortcuts-settings').addEventListener('auxclick', async
 // 清理缓存
 document.getElementById('clean-cache').addEventListener('click', clearCache);
 
+document.getElementById('check-update').addEventListener('click', async () => {
+    try {
+        const mod = await import('../http/update');
+        const result = await mod.updateApp();
+        if (result) createAlert('更新完成, 请重启应用', 'success');
+        else createAlert('无可用更新', 'info');
+    } catch (err) {
+        console.error(err);
+        createAlert('无法更新', 'error');
+    }
+});
+
 export {
     displayedContent,
     renderFolderContent,

@@ -3,7 +3,7 @@
   "description": "Audio player by tauri",
   "author": "YXLumen",
   "private": true,
-  "version": "0.1.4",
+  "version": "0.1.5",
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -19,6 +19,7 @@
   "dependencies": {
     "@tauri-apps/api": "^2.7.0",
     "@tauri-apps/plugin-dialog": "^2.3.1",
-    "@tauri-apps/plugin-http": "^2.5.1"
+    "@tauri-apps/plugin-http": "^2.5.1",
+    "@tauri-apps/plugin-updater": "^2.9.0"
   }
 }
