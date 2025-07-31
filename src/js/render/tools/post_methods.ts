@@ -1,5 +1,6 @@
-import createAlert, {ECategories} from "./base_page";
+import createAlert from "./base_page";
 import {IBaseFetch} from "../../type/post";
+import {ECategories} from "../../type/pages";
 
 
 // 封装的fetch方法

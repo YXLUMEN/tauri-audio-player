@@ -1,5 +1,5 @@
 import {getCurrentPlaying} from "../data";
-import createAlert, {ECategories} from "../tools/base_page";
+import createAlert from "../tools/base_page";
 import {AbsAudioModel} from "./audio_model";
 import {IAudioInfo, IStandardAudio, IVSMOptions} from "../../type/audio";
 import {fetch} from '@tauri-apps/plugin-http';
@@ -45,7 +45,7 @@ export class VSM extends AbsAudioModel {
 
         const json = await res.json();
         if (!json) {
-            createAlert('未能获取播放列表', ECategories.WARNING);
+            createAlert('未能获取播放列表', 'warning');
             return [];
         }
 

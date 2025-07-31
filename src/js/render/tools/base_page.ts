@@ -1,4 +1,4 @@
-import {IAlert, IConfirm} from "../../type/pages";
+import {ECategories, IAlert, IConfirm} from "../../type/pages";
 
 
 /**
@@ -61,15 +61,8 @@ function removeNote(element: HTMLElement, animation: boolean) {
     element.remove();
 }
 
-export enum ECategories {
-    INFO = 'info',
-    SUCCESS = 'success',
-    WARNING = 'warning',
-    ERROR = 'error'
-}
-
 // 创建通用提示框
-export default function createAlert(message: string, category: ECategories | string = ECategories.INFO, opts: IAlert = {}) {
+export default function createAlert(message: string, category: ECategories | string = 'info', opts: IAlert = {}) {
     const {autoRemoveDelay = 2500, animation = true} = opts;
 
     const baseAlertBox = document.querySelector('.base-alert-box');
@@ -123,7 +116,7 @@ export default function createAlert(message: string, category: ECategories | str
 
 
 // 创建确认提示框
-export function createConfirm(message: string = '是否确认操作?', opts: IConfirm) {
+export function createConfirm(message: string = '是否确认操作?', opts: IConfirm = {}) {
     const defaultOpt = {
         timeout: 0,
         flag: 'default',

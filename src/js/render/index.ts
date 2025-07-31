@@ -7,6 +7,7 @@ import {defaultFolder, defaultShortcuts, IFolderInfo} from "./default";
 import {throttleTimeOut} from "./tools/base_utilities";
 import {open} from '@tauri-apps/plugin-dialog';
 import {IAudioInfo, IStandardAudio} from "../type/audio";
+import {updateApp} from "./update";
 
 
 let displayedContent: IAudioInfo[] = [];
@@ -74,8 +75,8 @@ async function renderCustomFolder() {
     const playList: IFolderInfo[] = await d.dbHelper.getAll('folder');
 
     if (playList.length === 0) {
+        v.customFolderList.replaceChildren(createFolderItem(defaultFolder));
         await d.dbHelper.add('folder', defaultFolder);
-        v.customFolderList.replaceChildren(createFolderItem(defaultFolder))
         return;
     }
 
@@ -454,12 +455,16 @@ document.getElementById('add-all').addEventListener('click', () => {
 
 // 新建歌单
 document.getElementById('create-folder').addEventListener('click', async () => {
-    const info = await getNewFolderInfo(true);
-    if (!info) return;
-    delete info.id;
+    try {
+        const info = await getNewFolderInfo(true);
+        if (!info) return;
+        delete info.id;
 
-    await d.createFolder(info);
-    await renderCustomFolder();
+        await d.createFolder(info);
+        await renderCustomFolder();
+    } catch (err) {
+        console.error(err);
+    }
 });
 
 // 选择歌曲
@@ -483,7 +488,37 @@ document.getElementById('clear-playing-queue').addEventListener('click', () => d
 // 展示播放器或处理操作按钮
 document.getElementById('index-audio-control').addEventListener('click', handleIndexPlayController);
 
-const chosenElement = (target: HTMLElement) => {
+// 设置快捷键
+document.getElementById('shortcuts-settings').addEventListener('click', setShortcut);
+
+// 重置快捷键
+document.getElementById('shortcuts-settings').addEventListener('auxclick', async (event) => {
+    const target = (<HTMLElement>event.target).closest('.key');
+    if (!target) return;
+    const action = target.getAttribute('action');
+    if (!action) return;
+    const defaultKey = defaultShortcuts.find(item => item.action === action);
+    if (!defaultKey) return;
+
+    target.textContent = defaultKey.code.replace('Key', '');
+    await d.dbHelper.delete('shortcuts', action);
+    await reMapKeys();
+});
+
+// 清理缓存
+document.getElementById('clean-cache').addEventListener('click', clearCache);
+
+// 检查更新
+document.getElementById('check-update').addEventListener('click', updateApp);
+
+// 启动时更新设置
+document.getElementById('auto-check').addEventListener('input', function () {
+    const inputEle = <HTMLInputElement>this;
+    const bl = inputEle.checked || false;
+    localStorage.setItem('should-check-when-start', JSON.stringify(bl));
+});
+
+function chosenElement(target: HTMLElement) {
     const row: HTMLElement = target.closest('.row');
     if (row) {
         d.setChosenRow(row);
@@ -551,38 +586,6 @@ document.addEventListener('click', (event) => {
         v.choseFolderContent.parentElement.classList.remove('show');
     }
 }, true);
-
-// 设置快捷键
-document.getElementById('shortcuts-settings').addEventListener('click', setShortcut);
-
-// 重置快捷键
-document.getElementById('shortcuts-settings').addEventListener('auxclick', async (event) => {
-    const target = (<HTMLElement>event.target).closest('.key');
-    if (!target) return;
-    const action = target.getAttribute('action');
-    if (!action) return;
-    const defaultKey = defaultShortcuts.find(item => item.action === action);
-    if (!defaultKey) return;
-
-    target.textContent = defaultKey.code.replace('Key', '');
-    await d.dbHelper.delete('shortcuts', action);
-    await reMapKeys();
-});
-
-// 清理缓存
-document.getElementById('clean-cache').addEventListener('click', clearCache);
-
-document.getElementById('check-update').addEventListener('click', async () => {
-    try {
-        const mod = await import('../http/update');
-        const result = await mod.updateApp();
-        if (result) createAlert('更新完成, 请重启应用', 'success');
-        else createAlert('无可用更新', 'info');
-    } catch (err) {
-        console.error(err);
-        createAlert('无法更新', 'error');
-    }
-});
 
 export {
     displayedContent,

@@ -4,13 +4,14 @@ import {defaultShortcuts} from "./default";
 import {debounce, throttleTimeOut} from "./tools/base_utilities";
 import {generateUniqueRandomNumbers} from "./tools/GenerateRandomNums";
 import {displayedContent, renderCustomFolder, setDisplayFolder} from "./index";
-import createAlert, {ECategories, playSound} from "./tools/base_page";
+import createAlert, {playSound} from "./tools/base_page";
 import {VSM} from "./plugins/vsm";
 import {IAudioInfo} from "../type/audio";
 
 import {invoke} from '@tauri-apps/api/core';
 import {open} from '@tauri-apps/plugin-dialog';
 import {appWindow} from "../../main";
+import {updateApp} from "./update";
 
 
 // 播放模式设置
@@ -310,7 +311,7 @@ document.getElementById('select-local-audio').addEventListener('click', async ()
         await d.switchAudio(d.getAudioIndex() + 1);
     } catch (err) {
         console.error(err);
-        createAlert('读取失败', ECategories.ERROR);
+        createAlert('读取失败', 'warning');
     }
 });
 
@@ -424,6 +425,7 @@ function initApp() {
     renderCustomFolder().catch(console.error);
     reMapKeys().catch(console.error);
 
+    // 加载播放历史
     (async () => {
         const usedPlaying = localStorage.getItem('playing');
         if (!usedPlaying) return;
@@ -442,7 +444,19 @@ function initApp() {
         v.audioEle.addEventListener('loadeddata', () => {
             v.audioEle.currentTime = Number(currentTime);
         }, {once: true});
-    })();
+    })().catch(console.error);
+
+    // 检查更新
+    (async () => {
+        const shouldUpdate = localStorage.getItem('should-check-when-start');
+        if (shouldUpdate == undefined) return;
+
+        const bl = JSON.parse(shouldUpdate);
+        (<HTMLInputElement>document.getElementById('auto-check')).checked = bl;
+        if (bl) {
+            await updateApp();
+        }
+    })().catch(console.error);
 }
 
 
