@@ -1,15 +1,10 @@
 import * as d from "./data";
 import * as v from "./env";
-import {defaultShortcuts} from "./default";
 import {debounce, throttleTimeOut} from "./tools/base_utilities";
 import {generateUniqueRandomNumbers} from "./tools/GenerateRandomNums";
-import {displayedContent, renderCustomFolder, setDisplayFolder} from "./index";
+import {renderCustomFolder} from "./index";
 import createAlert, {playSound} from "./tools/base_page";
-import {VSM} from "./plugins/vsm";
 import {IAudioInfo} from "../interfaces/audio";
-import {updateApp} from "./update";
-
-import {appWindow} from "../../main";
 
 import {invoke} from '@tauri-apps/api/core';
 import {open} from '@tauri-apps/plugin-dialog';
@@ -25,14 +20,14 @@ let isSeeking: boolean = false;
 let isPlayerDisplay: boolean = false;
 let isLyricDisplay: boolean = false;
 
-const shortcuts: Map<string, Function> = new Map();
-
+// 切换播放模式
 function modeToggle() {
     playMode = (playMode + 1) % 3;
     v.playMode.src = `/img/audio/ico/play_mode_${playMode}.svg`;
 }
 
-function playingMode(delta = 1) {
+// 获取下一曲index
+function getNextAudioIndex(delta = 1) {
     const max = d.getMaxAudioCount();
 
     // 列表循环
@@ -67,6 +62,7 @@ const progressSeeking = throttleTimeOut((event: Event) => {
     v.updatePlayingProgress(duration);
 }, 32);
 
+// 音频进度跳跃
 function progressLeap(event: Event) {
     if (!v.audioEle?.currentTime) return;
     const value = (<HTMLInputElement>event.target).value;
@@ -95,11 +91,14 @@ const onAudioError = throttleTimeOut(async () => {
         await plugin.refresh();
 
         const success = await d.switchAudio(d.getAudioIndex(), {force: true});
-        if (!success) {
-            const result = await d.dbHelper.get('auth', plugin.getPluginName());
-            if (!result) return;
-            await plugin.login({key: result.key, psd: result.psd});
-        } else retryCount = 0;
+        if (success) {
+            retryCount = 0;
+            return;
+        }
+
+        const result = await d.dbHelper.get('auth', plugin.getPluginName());
+        if (!result) return;
+        await plugin.login({key: result.key, psd: result.psd});
     } catch (err) {
         createAlert(`Fail when reload: ${err.message}`, 'warning');
         console.error(err);
@@ -169,49 +168,6 @@ function wheelRollingLyrics(direction = -2) {
     reEnableScrollLyric();
 }
 
-// vsm专用
-async function vsmAdd() {
-    if (d.chosenFolder?.getAttribute('plugin') !== 'vsm') return;
-
-    const vsm = d.getPlugin('vsm');
-    if (!(vsm instanceof VSM)) return;
-
-    vsm.setSeq(vsm.seq + 32);
-    if (vsm.seq < vsm.maxCount) {
-        await vsm.getAudioList({seq: vsm.seq});
-    }
-
-    await setDisplayFolder(VSM.vsmCache);
-    requestAnimationFrame(() => d.mergePlayingQueue(displayedContent));
-}
-
-async function reMapKeys() {
-    const customShortcuts = await d.dbHelper.getAll('shortcuts');
-    const keyMap: { [key: string]: Function } = {
-        'toggle-play': v.pauseToggle,
-        'forward': anonymous_fun.skipBackward,
-        'backward': anonymous_fun.skipForward,
-        'lyric-up': anonymous_fun.arrowUp,
-        'lyric-down': anonymous_fun.arrowDown,
-        'switch-mode': modeToggle,
-        'switch-mute': v.setMuted,
-        'scroll-current': d.highlightCurrentPlaying,
-        'toggle-lyric': lyricDisplayFn,
-        'toggle-playing-queue': togglePlayingBoard,
-        'toggle-settings': toggleSettings,
-        'toggle-player': togglePlayer,
-        'update-vsm': vsmAdd,
-        'close-page': closePage,
-    }
-
-    for (const key of defaultShortcuts) {
-        shortcuts.set(key.code, keyMap[key.action]);
-    }
-    if (customShortcuts.length > 0) for (const key of customShortcuts) {
-        shortcuts.set(key.code, keyMap[key.action]);
-    }
-}
-
 // 保存播放队列以及播放进度
 async function savePlayingQueue() {
     try {
@@ -250,7 +206,7 @@ v.audioEle.addEventListener('seeked', () => {
 }, {passive: true});
 
 // 音频结束后下一曲
-v.audioEle.addEventListener('ended', () => d.switchAudio(playingMode(1)));
+v.audioEle.addEventListener('ended', () => d.switchAudio(getNextAudioIndex(1)));
 
 // 音频出错监听
 v.audioEle.addEventListener('error', onAudioError);
@@ -391,8 +347,8 @@ document.getElementById('toggle-fft').addEventListener('change', async () => {
 
 // 存储匿名操作函数,使CONTROL_MAP清晰
 const anonymous_fun: { [key: string]: CallableFunction } = Object.freeze(Object.assign(Object.create(null), {
-    skipForward: () => d.switchAudio(playingMode(-1)),
-    skipBackward: () => d.switchAudio(playingMode(1)),
+    skipForward: () => d.switchAudio(getNextAudioIndex(-1)),
+    skipBackward: () => d.switchAudio(getNextAudioIndex(1)),
     arrowUp: () => wheelRollingLyrics(-4),
     arrowDown: () => wheelRollingLyrics(4),
 }));
@@ -423,72 +379,11 @@ document.getElementById('cb-container').addEventListener('click', (event) => {
     applyPlayerAction(id);
 });
 
-// 键盘操作
-let ableShortcuts: boolean = true;
-
-function enableShortcut(bl: boolean) {
-    ableShortcuts = bl;
-}
-
-// 快捷键
-const keyControlFn = throttleTimeOut((code: string) => {
-    return shortcuts.get(code)?.();
-}, 100);
-
-document.addEventListener('keydown', (event) => {
-    if (
-        event.key === 'F5' ||
-        (event.ctrlKey && event.key === 'r') ||
-        (event.metaKey && event.key === 'r')
-    ) {
-        event.preventDefault();
-        return;
-    }
-
-    if (!ableShortcuts || event.ctrlKey || event.metaKey || !shortcuts.has(event.code)) return;
-    if ((<HTMLElement>event.target).classList.contains('base-input')) return;
-    event.stopPropagation();
-    event.preventDefault();
-
-    keyControlFn(event.code);
-});
-
-// 关闭窗口并保存播放进度
-document.getElementById('title-bar-close')?.addEventListener('click', async () => {
-    await savePlayingQueue();
-    await appWindow.close();
-});
-
-async function initApp(): Promise<void> {
-    console.log('App initialized');
-
-    renderCustomFolder().catch(console.error);
-    reMapKeys().catch(console.error);
-
-    // 加载API密钥
+async function initPlayer(): Promise<void> {
     try {
-        const apiSettings = document.getElementById('apis-settings');
-        const allLabel = apiSettings.querySelectorAll('label');
-        for (const label of allLabel) {
-            const pluginName = label.getAttribute('action');
-            const result = await d.dbHelper.get('auth', pluginName);
-            if (!result) continue;
-
-            const keyEle: HTMLInputElement = <HTMLInputElement>label.querySelector('[name="api-key"]');
-            const psdEle: HTMLInputElement = <HTMLInputElement>label.querySelector('[name="api-psd"]');
-            if (keyEle && psdEle) {
-                keyEle.value = result.key;
-                psdEle.value = result.psd;
-            }
-
-            const plugin = d.getPlugin(pluginName);
-            if (isAuthAble(plugin)) {
-                await plugin.loadToken();
-            }
-        }
+        await renderCustomFolder();
     } catch (e) {
-        console.error(e);
-        createAlert('自动加载密钥失败', 'warning');
+        console.error(`渲染歌单失败: ${e.message}`);
     }
 
     // 加载播放历史
@@ -510,25 +405,18 @@ async function initApp(): Promise<void> {
             v.audioEle.currentTime = Number(currentTime);
         }, {once: true});
     })().catch(console.error);
-
-    // 检查更新
-    (async () => {
-        const shouldUpdate = localStorage.getItem('should-check-when-start');
-        if (shouldUpdate == undefined) return;
-
-        const bl = JSON.parse(shouldUpdate);
-        (<HTMLInputElement>document.getElementById('auto-check')).checked = bl;
-        if (bl) {
-            await updateApp();
-        }
-    })().catch(console.error);
 }
 
 
 export {
-    initApp,
-    enableShortcut,
-    reMapKeys,
+    initPlayer,
     applyPlayerAction,
-    togglePlayer
+    togglePlayer,
+    modeToggle,
+    savePlayingQueue,
+    togglePlayingBoard,
+    toggleSettings,
+    closePage,
+    lyricDisplayFn,
+    anonymous_fun,
 }

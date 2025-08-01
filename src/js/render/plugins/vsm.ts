@@ -4,14 +4,13 @@ import {AbsAudioModel} from "./audio_model";
 import {IAudioInfo, IStandardAudio, IVSMOptions} from "../../interfaces/audio";
 import baseFetch from "../tools/post_methods";
 import {IAuthAble} from "./apis";
-import {AuthToken} from "../../http/auth_token";
 
 export class VSM extends AbsAudioModel implements IAuthAble {
-    public static readonly PLUGIN_NAME: string = 'vsm';
-
-    private static readonly audioListUrl: string = 'https://www.yangandxu.asia/api/asset/audio_lists';
-    private static readonly playUrl: string = 'https://www.yangandxu.asia/api/asset/play';
-    private static readonly lyricUrl: string = 'https://www.yangandxu.asia/api/asset/lyrics';
+    private static readonly AUDIO_LISTS_URL: string = 'https://www.yangandxu.asia/api/asset/audio_lists';
+    private static readonly PLAY_URL: string = 'https://www.yangandxu.asia/api/asset/play';
+    private static readonly LYRIC_URL: string = 'https://www.yangandxu.asia/api/asset/lyrics';
+    private static readonly AUTH_URL: string = 'https://www.yangandxu.asia/api/auth';
+    private static readonly REFRESH_URL: string = 'https://www.yangandxu.asia/api/refresh';
 
     public static vsmCache: Array<IAudioInfo> = [];
 
@@ -19,7 +18,8 @@ export class VSM extends AbsAudioModel implements IAuthAble {
     public imgIndex: number;
     public maxCount: number;
 
-    private readonly tokenAuthor: AuthToken;
+    private accessToken: string;
+    private refreshToken: string;
 
     constructor() {
         super();
@@ -27,13 +27,12 @@ export class VSM extends AbsAudioModel implements IAuthAble {
         this.seq = 0;
         this.imgIndex = 0;
         this.maxCount = 0;
-        this.tokenAuthor = new AuthToken('https://www.yangandxu.asia/api/auth', 'https://www.yangandxu.asia/api/refresh');
 
         this.transform = this.transform.bind(this);
     }
 
     public getPluginName(): string {
-        return VSM.PLUGIN_NAME;
+        return 'vsm'
     }
 
     public async getAudioList(opts: IVSMOptions = {}): Promise<IAudioInfo[]> {
@@ -41,8 +40,7 @@ export class VSM extends AbsAudioModel implements IAuthAble {
             return VSM.vsmCache;
         }
 
-        const token = this.tokenAuthor.accessToken;
-        const res = await baseFetch(`${VSM.audioListUrl}?token=${token}`, {
+        const res = await baseFetch(`${VSM.AUDIO_LISTS_URL}?token=${this.accessToken}`, {
             body: JSON.stringify({
                 'audio_lists': 1,
                 'seq': 0,
@@ -73,8 +71,7 @@ export class VSM extends AbsAudioModel implements IAuthAble {
 
     public async getLyric(): Promise<any> {
         const hash = getCurrentPlaying().id;
-        const token = this.tokenAuthor.accessToken;
-        const res = await baseFetch(`${VSM.lyricUrl}?token=${token}`, {
+        const res = await baseFetch(`${VSM.LYRIC_URL}?token=${this.accessToken}`, {
             body: JSON.stringify({
                 'audio_lyrics': true,
                 'audio_hash': hash
@@ -86,10 +83,9 @@ export class VSM extends AbsAudioModel implements IAuthAble {
     }
 
     public async parse(audioInfo: IAudioInfo): Promise<IStandardAudio> {
-        const token = this.tokenAuthor.accessToken;
         // @ts-ignore
         return {
-            url: `${VSM.playUrl}/${audioInfo.id}?token=${token}`,
+            url: `${VSM.PLAY_URL}/${audioInfo.id}?token=${this.accessToken}`,
             ...audioInfo
         };
     }
@@ -113,27 +109,51 @@ export class VSM extends AbsAudioModel implements IAuthAble {
     public async loadToken(): Promise<void> {
         const access = localStorage.getItem('vsm-access-token');
         if (access) {
-            this.tokenAuthor.accessToken = access;
+            this.accessToken = access;
             return;
         }
 
         const refresh = localStorage.getItem('vsm-refresh-token');
         if (refresh) {
-            this.tokenAuthor.refreshToken = refresh;
-            await this.tokenAuthor.refresh({refresh_token: refresh});
+            this.refreshToken = refresh;
+            await this.refresh();
             return;
         }
     }
 
     public async login(payload: any): Promise<void> {
-        await this.tokenAuthor.authenticate(payload);
+        try {
+            const res = await baseFetch(VSM.AUTH_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
 
-        localStorage.setItem('vsm-access-token', this.tokenAuthor.accessToken);
-        localStorage.setItem('vsm-refresh-token', this.tokenAuthor.refreshToken);
+            const {access_token, refresh_token} = await res.json();
+            this.accessToken = access_token;
+            this.refreshToken = refresh_token;
+
+            localStorage.setItem('vsm-access-token', this.accessToken);
+            localStorage.setItem('vsm-refresh-token', this.refreshToken);
+        } catch (err) {
+            console.error(err);
+        }
     }
 
     public async refresh(): Promise<void> {
-        await this.tokenAuthor.refresh({refresh_token: this.tokenAuthor.refreshToken});
+        try {
+            const res = await baseFetch(VSM.REFRESH_URL, {
+                method: 'POST',
+                body: JSON.stringify({refresh_token: this.refreshToken}),
+            });
+
+            const {access_token} = await res.json();
+            this.accessToken = access_token;
+        } catch (err) {
+            console.error(err);
+        }
     }
 
     public setSeq(num: number): void {

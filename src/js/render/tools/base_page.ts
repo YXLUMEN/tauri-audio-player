@@ -60,7 +60,6 @@ function removeNote(element: HTMLElement, animation: boolean): void {
     element.remove();
 }
 
-for (let i = 7; i--;) createAlert(i.toString());
 // 创建通用提示框
 export default function createAlert(message: string, category: ECategories | string = 'info', opts: IAlert = {}): void {
     const {autoRemoveDelay = 2500, animation = true} = opts;

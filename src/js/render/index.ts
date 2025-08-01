@@ -1,20 +1,19 @@
 import * as v from "./env";
 import * as d from "./data";
 import createAlert, {appendChildren} from "./tools/base_page";
-import {applyPlayerAction, enableShortcut, reMapKeys, togglePlayer} from "./player";
-import {VSM} from "./plugins/vsm";
-import {defaultFolder, defaultShortcuts, IFolderInfo} from "./default";
+import {applyPlayerAction, togglePlayer} from "./player";
+import {defaultFolder, IFolderInfo} from "./default";
 import {throttleTimeOut} from "./tools/base_utilities";
 import {open} from '@tauri-apps/plugin-dialog';
 import {IAudioInfo, IStandardAudio} from "../interfaces/audio";
-import {updateApp} from "./update";
-import {isAuthAble} from "./plugins/exports";
+import {enableShortcut} from "./shortcuts";
 
 
+// 展示的音频列表
 let displayedContent: IAudioInfo[] = [];
-let wasMerge: boolean = false;
 
-let chosenQueueRowId: string = null;
+// 是否已经合并
+let wasMerge: boolean = false;
 
 // 创建歌单元素
 function createFolderItem(folder: IFolderInfo): HTMLDivElement {
@@ -232,81 +231,6 @@ async function choseFolderToCollect(): Promise<number | null> {
     }
 }
 
-// 右键菜单处理音乐元素
-async function contextmenuHandleRow(action: string) {
-    const index = Number(d.chosenRow.getAttribute('index'));
-    if (isNaN(index)) return;
-
-    switch (action) {
-        case 'play':
-            await playChosenRow(d.chosenRow);
-            createAlert('开始播放', 'success');
-            break;
-        case 'add-to-queue':
-            await d.pushAudios(displayedContent[index]);
-            createAlert('已添加至队列', 'success');
-            break;
-        case 'next-play':
-            await d.insertAudio(d.getAudioIndex() + 1, displayedContent[index]);
-            createAlert('将在下一曲播放', 'success');
-            break;
-        case 'collect':
-            await d.collectAudio(await choseFolderToCollect(), displayedContent[index]);
-            break;
-        case 'de-collect':
-            if (d.chosenFolder?.getAttribute('plugin')) return;
-            const parent: number = Number(d.chosenFolder.getAttribute('_id'));
-            const id: string = d.chosenRow.id;
-            if (!isNaN(parent) && id) {
-                await d.deCollectAudio(parent, id);
-                d.chosenFolder.click();
-            }
-    }
-
-    d.setChosenRow(null);
-}
-
-async function contextmenuHandlerQueueRow(action: string) {
-    const index = Number(chosenQueueRowId);
-    if (isNaN(index)) return;
-
-    switch (action) {
-        case 'play':
-            await d.switchAudio(index);
-            createAlert('开始播放', 'success');
-            break;
-        case 'next-play':
-            await d.moveAudio(index, d.getAudioIndex() + 1);
-            createAlert('将在下一曲播放', 'success');
-            break;
-        case 'de-play':
-            await d.removeAudio(index);
-            break;
-        case 'collect':
-            await d.collectAudio(await choseFolderToCollect(), d.getPlayingQueue()[index]);
-            break;
-    }
-
-    chosenQueueRowId = null;
-}
-
-// 右键菜单处理歌单元素
-async function contextmenuHandleFolder(action: string) {
-    const id = Number(d.chosenFolder.getAttribute('_id'));
-    if (isNaN(id)) return;
-
-    if (action === 'mod-folder') {
-        const folder = await getNewFolderInfo();
-        if (!folder) return;
-        await d.modifyFolder(folder);
-    } else if (action === 'delete-folder') {
-        await d.deleteFolder(id);
-    }
-
-    await renderCustomFolder();
-    d.setChosenFolder(null);
-}
-
 // 选择歌单
 const selectFolder = throttleTimeOut(async (event: MouseEvent) => {
     const folder: HTMLElement = (<HTMLElement>event.target).closest('.audio-folder');
@@ -337,6 +261,8 @@ const selectFolder = throttleTimeOut(async (event: MouseEvent) => {
     await setDisplayFolder(audios);
 }, 300);
 
+v.indexLeftPanel.addEventListener('click', selectFolder);
+
 // 播放歌曲
 async function playChosenRow(target: HTMLElement) {
     const index = target?.getAttribute('index');
@@ -350,6 +276,7 @@ async function playChosenRow(target: HTMLElement) {
     await d.switchAudio(Number(index));
 }
 
+// 提交搜索
 async function searchAudios() {
     const input = <HTMLInputElement>document.getElementById('search-input');
     if (!input || input.value.trim() === '') return;
@@ -363,6 +290,8 @@ async function searchAudios() {
 
     await setDisplayFolder(result);
 }
+
+document.getElementById('search-submit').addEventListener('click', searchAudios);
 
 // 展示播放器或处理操作按钮
 const handleIndexPlayController = throttleTimeOut(async (event: MouseEvent) => {
@@ -381,60 +310,8 @@ const handleIndexPlayController = throttleTimeOut(async (event: MouseEvent) => {
     applyPlayerAction(action);
 }, 200);
 
-// 设置快捷键
-const setShortcut = throttleTimeOut((event: MouseEvent) => {
-    const target = (<HTMLElement>event.target).closest('.key');
-    if (!target) return;
-
-    enableShortcut(false);
-    target.classList.add('modifying');
-
-    document.addEventListener('keydown', async (event) => {
-        event.stopPropagation();
-        event.preventDefault();
-        const action = target.getAttribute('action');
-        if (!action) return;
-
-        const code = event.code;
-        if (defaultShortcuts.some(value => value.code === code)) {
-            createAlert('按键重复', 'warning');
-        } else {
-            await d.dbHelper.update('shortcuts', {action, code});
-            await reMapKeys();
-            target.textContent = event.key.toUpperCase();
-        }
-
-        target.classList.remove('modifying');
-        enableShortcut(true);
-    }, {once: true});
-}, 2000);
-
-// 清理缓存
-const clearCache = throttleTimeOut(async (event: MouseEvent) => {
-    const action = (<HTMLElement>event.target).closest('input')?.getAttribute('action');
-    if (!action) return;
-
-    switch (action) {
-        case 'clean-parse-cache':
-            d.forceClearPluginsCache();
-            createAlert('已清理解析缓存', 'success');
-            break;
-        case 'clean-history':
-            localStorage.removeItem('playing');
-            await d.clearPlayingQueueHistory();
-            createAlert('已清除播放历史', 'success');
-            break;
-        case 'clean-vsm':
-            VSM.vsmCache.length = 0;
-            const plugin = d.getPlugin('vsm');
-            if (plugin instanceof VSM) {
-                plugin.seq = 0;
-                createAlert('已清除VSM缓存', 'success');
-            }
-
-            break;
-    }
-}, 500);
+// 展示播放器或处理操作按钮
+document.getElementById('index-audio-control').addEventListener('click', handleIndexPlayController);
 
 // 预加载避免闪烁, 同时作为音频切换触发
 v.preLoadCover.addEventListener('load', () => {
@@ -444,9 +321,6 @@ v.preLoadCover.addEventListener('load', () => {
 
 v.audioEle.addEventListener('play', () =>
     document.getElementById('index-audio-control').classList.remove('hide'), {once: true});
-
-// 选择歌单
-v.indexLeftPanel.addEventListener('click', selectFolder);
 
 // 将歌单推入播放列表
 document.getElementById('add-all').addEventListener('click', () => {
@@ -480,143 +354,16 @@ v.folderContent.addEventListener('dblclick', (event) =>
     playChosenRow((<HTMLElement>event.target).closest('.row'))
 );
 
-// 提交搜索
-document.getElementById('search-submit').addEventListener('click', searchAudios);
-
 // 清空播放列表
 document.getElementById('clear-playing-queue').addEventListener('click', () => d.clearPlayingQueue());
 
-// 展示播放器或处理操作按钮
-document.getElementById('index-audio-control').addEventListener('click', handleIndexPlayController);
-
-// 设置快捷键
-document.getElementById('shortcuts-settings').addEventListener('click', setShortcut);
-
-// 重置快捷键
-document.getElementById('shortcuts-settings').addEventListener('auxclick', async (event) => {
-    const target = (<HTMLElement>event.target).closest('.key');
-    if (!target) return;
-    const action = target.getAttribute('action');
-    if (!action) return;
-    const defaultKey = defaultShortcuts.find(item => item.action === action);
-    if (!defaultKey) return;
-
-    target.textContent = defaultKey.code.replace('Key', '');
-    await d.dbHelper.delete('shortcuts', action);
-    await reMapKeys();
-});
-
-// 清理缓存
-document.getElementById('clean-cache').addEventListener('click', clearCache);
-
-// 检查更新
-document.getElementById('check-update').addEventListener('click', updateApp);
-
-// 启动时更新设置
-document.getElementById('auto-check').addEventListener('input', function () {
-    const inputEle = <HTMLInputElement>this;
-    const bl = inputEle.checked || false;
-    localStorage.setItem('should-check-when-start', JSON.stringify(bl));
-});
-
-function chosenElement(target: HTMLElement) {
-    const row: HTMLElement = target.closest('.row');
-    if (row) {
-        d.setChosenRow(row);
-        v.indexContextmenu.querySelector('.menu.for-row').classList.add('show');
-        return true;
-    }
-
-    const queueRow = target.closest('.queue-row');
-    if (queueRow) {
-        chosenQueueRowId = queueRow.getAttribute('play-index');
-        v.indexContextmenu.querySelector('.menu.for-queue-row').classList.add('show');
-        return true;
-    }
-
-    const folder: HTMLElement = target.closest('.audio-folder');
-    if (folder) {
-        d.setChosenFolder(folder);
-        v.indexContextmenu.querySelector('.menu.for-folder').classList.add('show');
-        return true;
-    }
-    return false;
-}
-
-// 展示右键菜单
-document.addEventListener('contextmenu', (event) => {
-    event.stopPropagation();
-    event.preventDefault();
-
-    v.indexContextmenu.querySelector('.menu.show')?.classList.remove('show');
-
-    if (!chosenElement(<HTMLElement>event.target)) return;
-
-    v.indexContextmenu.style.display = 'block';
-
-    const menuWidth = v.indexContextmenu.offsetWidth;
-    const menuHeight = v.indexContextmenu.offsetHeight;
-
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-
-    let left = event.pageX;
-    let top = event.pageY;
-
-    if (left + menuWidth > windowWidth) left = left - menuWidth;
-    if (top + menuHeight > windowHeight) top = top - menuHeight;
-
-    v.indexContextmenu.style.left = `${left}px`;
-    v.indexContextmenu.style.top = `${top}px`;
-});
-
-// 右键菜单操作
-v.indexContextmenu.addEventListener('click', (event) => {
-    const action = (<HTMLElement>event.target).closest('.item')?.getAttribute('action');
-    if (!action) return;
-    if (d.chosenRow) contextmenuHandleRow(action).catch(console.error);
-    else if (chosenQueueRowId) contextmenuHandlerQueueRow(action).catch(console.error);
-    else if (d.chosenFolder) contextmenuHandleFolder(action).catch(console.error);
-});
-
-// 隐藏右键菜单
-document.addEventListener('click', (event) => {
-    v.indexContextmenu.style.display = 'none';
-
-    if (!v.choseFolderContent.parentElement.contains(<HTMLElement>event.target)) {
-        v.choseFolderContent.parentElement.classList.remove('show');
-    }
-}, true);
-
-// 设置Api并重新登录
-document.getElementById('apis-settings').addEventListener('click', async (event) => {
-    try {
-        const label = (<HTMLElement>event.target).closest('.base-button')?.parentElement;
-        if (!label) return;
-        const keyEle: HTMLInputElement = <HTMLInputElement>label.querySelector('[name="api-key"]');
-        const psdEle: HTMLInputElement = <HTMLInputElement>label.querySelector('[name="api-psd"]');
-        const key = keyEle.value;
-        const psd = psdEle.value;
-        if (!key || !psd) return;
-
-        const pluginName = label.getAttribute('action');
-        await d.dbHelper.update('auth', {plugin: pluginName, key, psd});
-
-        const plugin = d.getPlugin(pluginName);
-        if (isAuthAble(plugin)) {
-            await plugin.login({key, psd});
-        }
-
-        createAlert(`以设置 ${pluginName} API`, 'success');
-    } catch (error) {
-        console.error(error);
-        createAlert(`设置失败: ${error.message}`, 'error', {autoRemoveDelay: 0});
-    }
-});
 
 export {
     displayedContent,
     renderFolderContent,
     renderCustomFolder,
-    setDisplayFolder
+    setDisplayFolder,
+    playChosenRow,
+    choseFolderToCollect,
+    getNewFolderInfo
 }
