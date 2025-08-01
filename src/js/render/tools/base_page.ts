@@ -28,7 +28,7 @@ export function batchGetElementsById(...ids: string[]) {
     return ids.map(id => document.getElementById(id));
 }
 
-export async function playSound(url: string) {
+export async function playSound(url: string): Promise<void> {
     try {
         const audioContext = new AudioContext();
 
@@ -47,12 +47,11 @@ export async function playSound(url: string) {
 }
 
 // 用于移除 base-alert-box 中的通知
-function removeNote(element: HTMLElement, animation: boolean) {
+function removeNote(element: HTMLElement, animation: boolean): void {
     element.classList.remove('show');
 
     if (animation) {
         element.classList.add('close');
-        // @ts-ignore
         if (document.startViewTransition) document.startViewTransition(() => element.remove());
         else element.addEventListener('animationend', () => element.remove(), {once: true});
         return;
@@ -61,19 +60,22 @@ function removeNote(element: HTMLElement, animation: boolean) {
     element.remove();
 }
 
+for (let i = 7; i--;) createAlert(i.toString());
 // 创建通用提示框
-export default function createAlert(message: string, category: ECategories | string = 'info', opts: IAlert = {}) {
+export default function createAlert(message: string, category: ECategories | string = 'info', opts: IAlert = {}): void {
     const {autoRemoveDelay = 2500, animation = true} = opts;
 
     const baseAlertBox = document.querySelector('.base-alert-box');
     const boxChildren = baseAlertBox.getElementsByClassName('alert');
 
     // 清除较旧的警示框
-    if (boxChildren.length > 6) for (let i = boxChildren.length - 6; i--;) removeNote(<HTMLElement>boxChildren[i], false);
+    if (boxChildren.length > 6) for (let i = boxChildren.length - 6; i--;) {
+        removeNote(<HTMLElement>boxChildren[i], false);
+    }
 
     const alert = document.createElement('div');
     alert.className = `note ${category || 'info'} alert${animation ? ' show' : ''}`;
-    if (animation) { // @ts-ignore
+    if (animation) {
         alert.style.viewTransitionName = `note-animate-${Math.random().toString(36).substring(2, 9)}`;
     }
 
@@ -98,8 +100,7 @@ export default function createAlert(message: string, category: ECategories | str
         removeNote(this, animation);
     });
 
-    // add to DOM
-    baseAlertBox.appendChild(alert);
+    baseAlertBox.append(alert);
 
     // 自动移除
     if (!alert || !autoRemoveDelay) return;
@@ -116,8 +117,8 @@ export default function createAlert(message: string, category: ECategories | str
 
 
 // 创建确认提示框
-export function createConfirm(message: string = '是否确认操作?', opts: IConfirm = {}) {
-    const defaultOpt = {
+export function createConfirm(message: string = '是否确认操作?', opts: IConfirm = {}): Promise<any> {
+    const defaultOpt: IConfirm = {
         timeout: 0,
         flag: 'default',
         category: 'info',

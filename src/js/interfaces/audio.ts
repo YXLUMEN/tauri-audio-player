@@ -32,3 +32,9 @@ export interface ILyric {
     text: string,
     ex?: string
 }
+
+export interface ISwitchAudio {
+    scroll?: boolean,
+    play?: boolean,
+    force?: boolean,
+}

@@ -610,7 +610,7 @@ document.getElementById('apis-settings').addEventListener('click', async (event)
         createAlert(`以设置 ${pluginName} API`, 'success');
     } catch (error) {
         console.error(error);
-        createAlert(`设置失败: ${error.message}`);
+        createAlert(`设置失败: ${error.message}`, 'error', {autoRemoveDelay: 0});
     }
 });
 

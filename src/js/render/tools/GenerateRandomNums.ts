@@ -13,10 +13,10 @@ export class LCGRandomNum {
         this.decimals = _options.decimals;
     }
 
-    next(max: number) {
+    next(max: number): number {
         const rnd = (this.seed * 9301 + 49297) % 233280;
         const result = Math.floor(rnd / 233280.0 * max);
-        return this.decimals ? result.toFixed(this.decimals) : result;
+        return this.decimals ? Number(result.toFixed(this.decimals)) : result;
     }
 }
 
@@ -44,7 +44,7 @@ export class MersenneTwister {
         }
     }
 
-    extractNumber() {
+    extractNumber(): number {
         if (this.index >= this.N) this.twist();
         let y = this.mt[this.index];
         y ^= (y >>> 11);
@@ -55,7 +55,7 @@ export class MersenneTwister {
         return y >>> 0;
     }
 
-    twist() {
+    twist(): void {
         for (let i = 0; i < this.N; i++) {
             const y = (this.mt[i] & this.UPPER_MASK) + (this.mt[(i + 1) % this.N] & this.LOWER_MASK);
             this.mt[i] = this.mt[(i + this.M) % this.N] ^ (y >>> 1);
@@ -72,7 +72,7 @@ export class xorShiftRandom {
         this.seed = seed;
     }
 
-    next() {
+    next(): number {
         this.seed ^= this.seed << 13;
         this.seed ^= this.seed >> 17;
         this.seed ^= this.seed << 5;
@@ -81,7 +81,7 @@ export class xorShiftRandom {
     }
 }
 
-export function inRange(randomNum: number, min: number, max: number) {
+export function inRange(randomNum: number, min: number, max: number): number {
     return min + (randomNum % (max - min + 1));
 }
 

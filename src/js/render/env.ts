@@ -109,34 +109,44 @@ function updatePlayingProgress(currentTime: number) {
     playedTime.textContent = time;
 }
 
+function setUiPlay() {
+    pauseEle.classList.remove('icon-play');
+    pauseEle.classList.add('icon-pause');
+    iPlay.classList.remove('icon-play');
+    iPlay.classList.add('icon-pause');
+
+    indexAudioCover.classList.remove('paused');
+}
+
+function setUiPause() {
+    pauseEle.classList.remove('icon-pause');
+    pauseEle.classList.add('icon-play');
+    iPlay.classList.remove('icon-pause');
+    iPlay.classList.add('icon-play');
+
+    indexAudioCover.classList.add('paused');
+}
+
 // 切换播放状态
-function pauseToggle(pause = false) {
+async function pauseToggle(pause = false): Promise<boolean> {
     if (!audioEle.src) return;
-    if (audioEle.paused && !pause) audioEle.play()
-        .then(() => {
-            DSD.audioContext?.resume().catch();
-            pauseEle.classList.remove('icon-play');
-            pauseEle.classList.add('icon-pause');
-            iPlay.classList.remove('icon-play');
-            iPlay.classList.add('icon-pause');
-
-            indexAudioCover.classList.remove('paused');
-        })
-        .catch(err => {
-            if (err.name === 'AbortError') return;
-            console.error('Error playing audio:', err);
-            createAlert(`无法加载音频: ${err.message}`, 'warning');
-        });
-    else {
-        audioEle.pause();
-        DSD.audioContext?.suspend().catch();
-
-        pauseEle.classList.remove('icon-pause');
-        pauseEle.classList.add('icon-play');
-
-        iPlay.classList.remove('icon-pause');
-        iPlay.classList.add('icon-play');
-        indexAudioCover.classList.add('paused');
+    try {
+        if (audioEle.paused && !pause) {
+            await audioEle.play();
+            DSD.audioContext?.resume().catch(console.error);
+            setUiPlay();
+        } else {
+            audioEle.pause();
+            DSD.audioContext?.suspend().catch(console.error);
+            setUiPause();
+        }
+        return true;
+    } catch (err) {
+        if (err.name === 'AbortError') return true;
+        console.error('Error playing audio:', err);
+        createAlert(`无法加载音频: ${err.message}`, 'warning');
+        setUiPause();
+        return false;
     }
 }
 

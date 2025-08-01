@@ -4,7 +4,7 @@ import createAlert, {appendChildren} from "./tools/base_page";
 import {IndexedDBHelper} from "./tools/db";
 import {AbsAudioModel, isCacheAble, Local, VSM} from "./plugins/exports";
 import {createCleanObj, defaultLyrics, IFolderInfo} from "./default";
-import {IAudioInfo, ILyric, IStandardAudio} from "../interfaces/audio";
+import {IAudioInfo, ILyric, IStandardAudio, ISwitchAudio} from "../interfaces/audio";
 
 
 let audioIndex: number = -1;
@@ -18,6 +18,7 @@ const loadedPlugins: { [key: string]: AbsAudioModel } = Object.create(null);
 
 const dbHelper = new IndexedDBHelper('audio_player', 2, [
     {
+        // 歌单
         name: 'folder',
         keyPath: 'id',
         autoIncrement: true,
@@ -26,6 +27,7 @@ const dbHelper = new IndexedDBHelper('audio_player', 2, [
         ]
     },
     {
+        // 收藏
         name: 'favor',
         keyPath: 'index',
         autoIncrement: true,
@@ -36,10 +38,12 @@ const dbHelper = new IndexedDBHelper('audio_player', 2, [
         ]
     },
     {
+        // 播放历史
         name: 'playing_history',
         keyPath: 'index',
     },
     {
+        // 自定义快捷键
         name: 'shortcuts',
         keyPath: 'action',
         indexes: [
@@ -47,6 +51,7 @@ const dbHelper = new IndexedDBHelper('audio_player', 2, [
         ]
     },
     {
+        // auth 密钥
         name: 'auth',
         keyPath: 'plugin'
     }
@@ -64,6 +69,7 @@ const LYRIC_ACTIONS: { [key: string]: any } = Object.preventExtensions(createCle
 }));
 
 function getPlugin(type: string): AbsAudioModel | null {
+    type = type.toLowerCase();
     const plugin = loadedPlugins[type];
     if (plugin) {
         return plugin;
@@ -288,20 +294,15 @@ function loadAudio(standard: IStandardAudio): void {
     v.preLoadCover.src = cover;
 }
 
-
-async function switchAudio(
-    newIndex: number = 0,
-    scroll: boolean = false,
-    play: boolean = true,
-    force: boolean = false
-): Promise<boolean> {
+async function switchAudio(newIndex: number, opt: ISwitchAudio = {}): Promise<boolean> {
     if (newIndex < 0 || newIndex >= playingQueue.length) {
         return false;
     }
+    const {force = false, play = true, scroll = false} = opt;
 
     if (newIndex === audioIndex && !force) {
         v.audioEle.currentTime = 0;
-        v.pauseToggle();
+        await v.pauseToggle();
         return false;
     }
 
@@ -312,11 +313,13 @@ async function switchAudio(
     const standard = await getPlugin(audio.plugin).parse(audio);
     if (!standard) return false;
 
+    let success = true;
+
     loadAudio(standard);
-    if (play) v.pauseToggle();
+    if (play) success = await v.pauseToggle();
     highlightCurrentPlaying(scroll);
 
-    return true;
+    return success;
 }
 
 function highlightCurrentPlaying(scroll: boolean = true): void {
@@ -655,10 +658,10 @@ async function removeAudio(index: number): Promise<void> {
     if (index < audioIndex) {
         setAudioIndex(audioIndex - 1);
     } else if (playingQueue.length === 1) {
-        clearPlayingQueue();
+        await clearPlayingQueue();
         return;
     } else if (index === audioIndex) {
-        await switchAudio(audioIndex + 1, false);
+        await switchAudio(audioIndex + 1);
         setAudioIndex(index);
     }
     playingQueue.splice(index, 1);
@@ -666,9 +669,9 @@ async function removeAudio(index: number): Promise<void> {
     await renderPlayingQueue(playingQueue);
 }
 
-function clearPlayingQueue(): void {
+async function clearPlayingQueue(): Promise<void> {
     if (playingQueue.length === 0) return;
-    v.pauseToggle(true);
+    await v.pauseToggle(true);
     v.audioEle.removeAttribute('src');
 
     playingQueue = [];

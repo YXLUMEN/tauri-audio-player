@@ -4,9 +4,11 @@ import {AbsAudioModel} from "./audio_model";
 import {IAudioInfo, IStandardAudio, IVSMOptions} from "../../interfaces/audio";
 import baseFetch from "../tools/post_methods";
 import {IAuthAble} from "./apis";
-import {Token} from "../../http/token";
+import {AuthToken} from "../../http/auth_token";
 
 export class VSM extends AbsAudioModel implements IAuthAble {
+    public static readonly PLUGIN_NAME: string = 'vsm';
+
     private static readonly audioListUrl: string = 'https://www.yangandxu.asia/api/asset/audio_lists';
     private static readonly playUrl: string = 'https://www.yangandxu.asia/api/asset/play';
     private static readonly lyricUrl: string = 'https://www.yangandxu.asia/api/asset/lyrics';
@@ -17,7 +19,7 @@ export class VSM extends AbsAudioModel implements IAuthAble {
     public imgIndex: number;
     public maxCount: number;
 
-    private readonly tokenAuthor: Token;
+    private readonly tokenAuthor: AuthToken;
 
     constructor() {
         super();
@@ -25,9 +27,13 @@ export class VSM extends AbsAudioModel implements IAuthAble {
         this.seq = 0;
         this.imgIndex = 0;
         this.maxCount = 0;
-        this.tokenAuthor = new Token('https://www.yangandxu.asia/api/auth', 'https://www.yangandxu.asia/api/refresh');
+        this.tokenAuthor = new AuthToken('https://www.yangandxu.asia/api/auth', 'https://www.yangandxu.asia/api/refresh');
 
         this.transform = this.transform.bind(this);
+    }
+
+    public getPluginName(): string {
+        return VSM.PLUGIN_NAME;
     }
 
     public async getAudioList(opts: IVSMOptions = {}): Promise<IAudioInfo[]> {
@@ -104,7 +110,7 @@ export class VSM extends AbsAudioModel implements IAuthAble {
         };
     }
 
-    public async initToken(): Promise<void> {
+    public async loadToken(): Promise<void> {
         const access = localStorage.getItem('vsm-access-token');
         if (access) {
             this.tokenAuthor.accessToken = access;
@@ -124,8 +130,6 @@ export class VSM extends AbsAudioModel implements IAuthAble {
 
         localStorage.setItem('vsm-access-token', this.tokenAuthor.accessToken);
         localStorage.setItem('vsm-refresh-token', this.tokenAuthor.refreshToken);
-
-        await this.initToken();
     }
 
     public async refresh(): Promise<void> {

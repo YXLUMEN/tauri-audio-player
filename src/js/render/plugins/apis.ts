@@ -7,9 +7,10 @@ export interface ICacheAble {
 }
 
 export interface IAuthAble {
-    initToken(): Promise<void>;
-
+    // 使用密钥获取token
     login(payload: any): Promise<void>;
-
+    // 加载保存的token
+    loadToken(): Promise<void>;
+    // 获取新的access token
     refresh(): Promise<void>;
 }

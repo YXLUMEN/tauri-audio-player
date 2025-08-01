@@ -12,7 +12,7 @@ function isCacheAble(plugin: unknown): plugin is ICacheAble {
 function isAuthAble(plugin: unknown): plugin is IAuthAble {
     return typeof plugin === 'object'
         && plugin !== null
-        && typeof (plugin as IAuthAble).initToken === 'function';
+        && typeof (plugin as IAuthAble).loadToken === 'function';
 }
 
 export {

@@ -62,23 +62,23 @@ export function isDeeperThan(arr: Array<any>, level = 0): any {
  *      [] will return -Infinity
  * 也就是只会计算含有元素的最深层
  * */
-export function getMaxDeep(arr: Array<any>): any {
+export function getMaxDeep(arr: Array<any>): number {
     // 不是数组，深度为 0
     if (!Array.isArray(arr)) return 0;
     // 是数组，深度 + 1，具体是多深，还要递归判断元素中的数组
     return 1 + Math.max(...arr.map(el => getMaxDeep(el)));
 }
 
-export function sleep(time: number) {
+export function sleep(time: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, time));
 }
 
-export function isMobile() {
+export function isMobile(): boolean {
     return /Mobile|Android|iPhone/.test(navigator.userAgent);
 }
 
 
 // 复制内容到剪贴板
-export function copyText(content: string) {
+export function copyText(content: string): Promise<void> {
     return navigator.clipboard.writeText(content);
 }

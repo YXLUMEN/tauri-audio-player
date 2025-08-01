@@ -1,6 +1,6 @@
 import {fetch} from "@tauri-apps/plugin-http";
 
-export class Token {
+export class AuthToken {
     public readonly authUrl: string;
     public readonly refreshUrl: string;
     public accessToken: string;
@@ -21,6 +21,9 @@ export class Token {
                 'Content-Type': 'application/json',
             },
         });
+        if (!res.ok) {
+            throw new Error(`Can not authenticate: ${res.status}`);
+        }
 
         const {access_token, refresh_token} = await res.json();
         this.accessToken = access_token;
@@ -35,6 +38,10 @@ export class Token {
                 'Content-Type': 'application/json',
             },
         });
+        if (!res.ok) {
+            throw new Error(`Fail to fetch access: ${res.status}`);
+        }
+
         const {access_token} = await res.json();
         this.accessToken = access_token;
     }

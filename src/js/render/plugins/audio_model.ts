@@ -1,6 +1,8 @@
 import {IAudioInfo, IStandardAudio} from "../../interfaces/audio";
 
 export abstract class AbsAudioModel {
+    public abstract getPluginName(): string;
+
     public abstract getAudioList(opt?: any): Promise<IAudioInfo[] | IStandardAudio[]>;
 
     public abstract getLyric(): Promise<{}>;

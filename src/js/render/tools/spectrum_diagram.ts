@@ -47,14 +47,14 @@ export default class SpectrumDiagram {
         this.drawLineGraph = this.drawLineGraph.bind(this);
     }
 
-    private setupStyles() {
+    private setupStyles(): void {
         // Cache styles
         this.canvasContext.fillStyle = this._color;
         this.canvasContext.strokeStyle = this._color;
         this.canvasContext.lineWidth = 6;
     }
 
-    public resizeCanvas() {
+    public resizeCanvas(): void {
         this._canvas.width = this._width;
         this._canvas.height = this._height;
         this.setupStyles();
@@ -65,7 +65,7 @@ export default class SpectrumDiagram {
         }
     }
 
-    public async initAudioSource(audioElement: HTMLAudioElement) {
+    public async initAudioSource(audioElement: HTMLAudioElement): Promise<void> {
         if (this.source) this.source.disconnect();
 
         this.audioContext = new AudioContext();
@@ -76,7 +76,7 @@ export default class SpectrumDiagram {
         this.analyser.connect(this.audioContext.destination);
     }
 
-    public setAnalyser(analyserOpts = {}) {
+    public setAnalyser(analyserOpts: AnalyserOptions = {}): void {
         if (!this.source) throw new Error('source is required');
 
         Object.assign(this.analyser, {
@@ -96,7 +96,7 @@ export default class SpectrumDiagram {
         this.resizeCanvas();
     }
 
-    public async startDraw(mode = this.currentMode) {
+    public async startDraw(mode = this.currentMode): Promise<void> {
         this.isDrawing = true;
         this.currentMode = mode;
 
@@ -104,11 +104,11 @@ export default class SpectrumDiagram {
         requestAnimationFrame(drawFunction);
     }
 
-    public stopDraw() {
+    public stopDraw(): void {
         this.isDrawing = false;
     }
 
-    private async drawBars() {
+    private async drawBars(): Promise<void> {
         if (!this.isDrawing) return;
         requestAnimationFrame(this.drawBars);
 
@@ -131,7 +131,7 @@ export default class SpectrumDiagram {
         this.lastDrawTime = now;
     }
 
-    private async drawLineGraph() {
+    private async drawLineGraph(): Promise<void> {
         if (!this.isDrawing) return;
         requestAnimationFrame(this.drawLineGraph);
 
@@ -157,7 +157,7 @@ export default class SpectrumDiagram {
         this.lastDrawTime = now;
     }
 
-    public dispose() {
+    public dispose(): void {
         this.isDrawing = false;
 
         this.source?.disconnect();

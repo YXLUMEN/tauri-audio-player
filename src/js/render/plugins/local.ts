@@ -6,6 +6,7 @@ import {IAudioInfo, IMusicMetadata, IStandardAudio} from "../../interfaces/audio
 import {convertFileSrc, invoke} from '@tauri-apps/api/core';
 
 export class Local extends AbsAudioModel implements ICacheAble {
+    public static readonly PLUGIN_NAME: string = 'local';
     public static readonly CACHE_SIZE: number = 64;
 
     private static pending = new Map<string, Promise<IStandardAudio | null>>();
@@ -13,6 +14,10 @@ export class Local extends AbsAudioModel implements ICacheAble {
 
     constructor() {
         super();
+    }
+
+    public getPluginName(): string {
+        return Local.PLUGIN_NAME;
     }
 
     public getAudioList(): Promise<null> {

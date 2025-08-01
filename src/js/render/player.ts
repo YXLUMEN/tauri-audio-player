@@ -74,15 +74,39 @@ function progressLeap(event: Event) {
     isSeeking = false;
 }
 
-async function onAudioError() {
-    // console.log('Error', event);
+// 自动重载token
+const MAX_RETRY: number = 3;
+let retryCount: number = 0;
+let pendingRetry = false;
+const onAudioError = throttleTimeOut(async () => {
+    if (pendingRetry) return;
+    if (retryCount >= MAX_RETRY) {
+        createAlert('超过最大重试次数, 请检查Api密钥是否有效或尝试重启软件', 'error', {autoRemoveDelay: 0});
+        return;
+    }
     const currentPlay = d.getCurrentPlaying();
     const plugin = d.getPlugin(currentPlay.plugin);
 
-    if (isAuthAble(plugin)) {
+    if (!isAuthAble(plugin)) return;
+    pendingRetry = true;
+    retryCount++;
+
+    try {
         await plugin.refresh();
+
+        const success = await d.switchAudio(d.getAudioIndex(), {force: true});
+        if (!success) {
+            const result = await d.dbHelper.get('auth', plugin.getPluginName());
+            if (!result) return;
+            await plugin.login({key: result.key, psd: result.psd});
+        } else retryCount = 0;
+    } catch (err) {
+        createAlert(`Fail when reload: ${err.message}`, 'warning');
+        console.error(err);
+    } finally {
+        pendingRetry = false;
     }
-}
+}, 1000);
 
 // 点击关闭面板关闭音乐列表
 function closePlayingBoard() {
@@ -209,8 +233,7 @@ document.getElementById('close-player').addEventListener('click', togglePlayer);
 
 // 监听暂停已切换图标
 v.audioEle.addEventListener('pause', () => {
-    if (!v.audioEle.paused) return;
-    v.pauseToggle(true);
+    if (v.audioEle.paused) return v.pauseToggle(true);
 });
 
 // 音频更新同步显示
@@ -460,7 +483,7 @@ async function initApp(): Promise<void> {
 
             const plugin = d.getPlugin(pluginName);
             if (isAuthAble(plugin)) {
-                await plugin.initToken();
+                await plugin.loadToken();
             }
         }
     } catch (e) {
@@ -479,7 +502,7 @@ async function initApp(): Promise<void> {
         const {index, currentTime} = JSON.parse(usedPlaying);
         await d.setPlayingQueue(result);
 
-        const canPlay = await d.switchAudio(Number(index), true, false);
+        const canPlay = await d.switchAudio(Number(index), {scroll: true, play: false});
         if (!canPlay) return;
 
         document.getElementById('index-audio-control').classList.remove('hide');
