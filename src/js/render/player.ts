@@ -2,7 +2,7 @@ import * as d from "./data";
 import * as v from "./env";
 import {debounce, throttleTimeOut} from "./tools/base_utilities";
 import {generateUniqueRandomNumbers} from "./tools/GenerateRandomNums";
-import {renderCustomFolder} from "./index";
+import {initIndex} from "./index";
 import createAlert, {playSound} from "./tools/base_page";
 import {IAudioInfo} from "../interfaces/audio";
 
@@ -19,6 +19,43 @@ let randPlayedList: number[] = null;
 let isSeeking: boolean = false;
 let isPlayerDisplay: boolean = false;
 let isLyricDisplay: boolean = false;
+
+// 自动重载token
+const MAX_RETRY: number = 3;
+let retryCount: number = 0;
+let pendingRetry = false;
+const onAudioError = throttleTimeOut(async () => {
+    if (pendingRetry) return;
+    if (retryCount >= MAX_RETRY) {
+        createAlert('超过最大重试次数, 请检查Api密钥是否有效或尝试重启软件', 'error', {autoRemoveDelay: 0});
+        return;
+    }
+    const currentPlay = d.getCurrentPlaying();
+    const plugin = d.getPlugin(currentPlay.plugin);
+
+    if (!isAuthAble(plugin)) return;
+    pendingRetry = true;
+    retryCount++;
+
+    try {
+        await plugin.refresh();
+
+        const success = await d.switchAudio(d.getAudioIndex(), {play: false, force: true});
+        if (success) {
+            retryCount = 0;
+            return;
+        }
+
+        const result = await d.dbHelper.get('auth', plugin.getPluginName());
+        if (!result) return;
+        await plugin.login({key: result.key, psd: result.psd});
+    } catch (err) {
+        createAlert(`Fail when reload: ${err.message}`, 'warning');
+        console.error(err);
+    } finally {
+        pendingRetry = false;
+    }
+}, 1000);
 
 // 切换播放模式
 function modeToggle() {
@@ -69,43 +106,6 @@ function progressLeap(event: Event) {
     v.audioEle.currentTime = (Number(value) / 100) * v.audioEle.duration;
     isSeeking = false;
 }
-
-// 自动重载token
-const MAX_RETRY: number = 3;
-let retryCount: number = 0;
-let pendingRetry = false;
-const onAudioError = throttleTimeOut(async () => {
-    if (pendingRetry) return;
-    if (retryCount >= MAX_RETRY) {
-        createAlert('超过最大重试次数, 请检查Api密钥是否有效或尝试重启软件', 'error', {autoRemoveDelay: 0});
-        return;
-    }
-    const currentPlay = d.getCurrentPlaying();
-    const plugin = d.getPlugin(currentPlay.plugin);
-
-    if (!isAuthAble(plugin)) return;
-    pendingRetry = true;
-    retryCount++;
-
-    try {
-        await plugin.refresh();
-
-        const success = await d.switchAudio(d.getAudioIndex(), {force: true});
-        if (success) {
-            retryCount = 0;
-            return;
-        }
-
-        const result = await d.dbHelper.get('auth', plugin.getPluginName());
-        if (!result) return;
-        await plugin.login({key: result.key, psd: result.psd});
-    } catch (err) {
-        createAlert(`Fail when reload: ${err.message}`, 'warning');
-        console.error(err);
-    } finally {
-        pendingRetry = false;
-    }
-}, 1000);
 
 // 点击关闭面板关闭音乐列表
 function closePlayingBoard() {
@@ -407,7 +407,7 @@ async function loadHistory() {
 }
 
 function initPlayer(): Promise<void> {
-    return renderCustomFolder();
+    return initIndex();
 }
 
 

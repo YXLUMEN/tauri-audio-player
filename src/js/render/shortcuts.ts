@@ -22,7 +22,7 @@ const keyControlFn = throttleTimeOut((code: string) => {
 
 async function mapKeys() {
     const customShortcuts = await d.dbHelper.getAll('shortcuts');
-    const keyMap: { [key: string]: Function } = {
+    const mapFunc: { [key: string]: Function } = {
         'toggle-play': v.pauseToggle,
         'forward': p.anonymous_fun.skipBackward,
         'backward': p.anonymous_fun.skipForward,
@@ -40,10 +40,10 @@ async function mapKeys() {
     }
 
     for (const key of defaultShortcuts) {
-        shortcuts.set(key.code, keyMap[key.action]);
+        shortcuts.set(key.code, mapFunc[key.action]);
     }
     if (customShortcuts.length > 0) for (const key of customShortcuts) {
-        shortcuts.set(key.code, keyMap[key.action]);
+        shortcuts.set(key.code, mapFunc[key.action]);
     }
 }
 

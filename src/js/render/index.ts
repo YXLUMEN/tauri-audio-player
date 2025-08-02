@@ -357,13 +357,17 @@ v.folderContent.addEventListener('dblclick', (event) =>
 // 清空播放列表
 document.getElementById('clear-playing-queue').addEventListener('click', () => d.clearPlayingQueue());
 
+function initIndex(): Promise<void> {
+    return renderCustomFolder();
+}
 
 export {
-    displayedContent,
+    initIndex,
     renderFolderContent,
     renderCustomFolder,
     setDisplayFolder,
     playChosenRow,
     choseFolderToCollect,
-    getNewFolderInfo
+    getNewFolderInfo,
+    displayedContent,
 }

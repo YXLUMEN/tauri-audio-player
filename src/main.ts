@@ -41,11 +41,27 @@ async function checkUpdate() {
         const bl = Boolean(JSON.parse(shouldUpdate));
         (<HTMLInputElement>document.getElementById('auto-check')).checked = bl;
         if (bl) {
-            await (await import('./js/render/update')).updateApp();
+            const mod = await import('./js/render/update');
+            await mod.updateApp();
         }
     } catch (e) {
         console.error(e);
     }
 }
 
-await initialize();
+initialize()
+    .catch(async (err) => {
+        const mod = await import('@tauri-apps/plugin-notification');
+
+        let permissionGranted = await mod.isPermissionGranted();
+
+        if (!permissionGranted) {
+            const permission = await mod.requestPermission();
+            permissionGranted = permission === 'granted';
+        }
+
+        if (permissionGranted) {
+            mod.sendNotification({title: '初始化失败', body: err.message});
+        }
+    })
+    .catch(() => appWindow.close());
