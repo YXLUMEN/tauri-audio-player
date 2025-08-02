@@ -11,7 +11,7 @@
     box-sizing: border-box;
 
     transform: translateY(100%);
-    transition: transform 300ms ease-in-out;
+    transition: transform 300ms ease-in-out, background-image 300ms ease;
 
     background-size: cover;
     background-repeat: no-repeat;

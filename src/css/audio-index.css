@@ -44,12 +44,18 @@ body {
 }
 
 .window-controls .control {
-    -webkit-user-select: none;
-    display: inline-flex;
-    padding: 5px;
-    margin: 0 0 0 6px;
-    border-radius: 6px;
-    cursor: pointer;
+    & {
+        -webkit-user-select: none;
+        display: inline-flex;
+        padding: 5px;
+        margin: 0 0 0 6px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    &.hide {
+        display: none;
+    }
 }
 
 .index-box {

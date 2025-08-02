@@ -110,15 +110,14 @@ export class VSM extends AbsAudioModel implements IAuthAble {
         const access = localStorage.getItem('vsm-access-token');
         if (access) {
             this.accessToken = access;
-            return;
         }
 
         const refresh = localStorage.getItem('vsm-refresh-token');
         if (refresh) {
             this.refreshToken = refresh;
-            await this.refresh();
             return;
         }
+        await this.refresh();
     }
 
     public async login(payload: any): Promise<void> {
@@ -135,8 +134,8 @@ export class VSM extends AbsAudioModel implements IAuthAble {
             this.accessToken = access_token;
             this.refreshToken = refresh_token;
 
-            localStorage.setItem('vsm-access-token', this.accessToken);
-            localStorage.setItem('vsm-refresh-token', this.refreshToken);
+            localStorage.setItem('vsm-access-token', access_token);
+            localStorage.setItem('vsm-refresh-token', refresh_token);
         } catch (err) {
             console.error(err);
         }
@@ -149,8 +148,12 @@ export class VSM extends AbsAudioModel implements IAuthAble {
                 body: JSON.stringify({refresh_token: this.refreshToken}),
             });
 
-            const {access_token} = await res.json();
+            const result = await res.json();
+            if (!result || result['status'] !== 1016) return createAlert('无法连接认证服务器', 'warning');
+
+            const access_token = result['access_token'];
             this.accessToken = access_token;
+            localStorage.setItem('vsm-access-token', access_token);
         } catch (err) {
             console.error(err);
         }

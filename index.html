@@ -17,6 +17,15 @@
 <!-- 标题栏 -->
 <div data-tauri-drag-region class="title-bar">
     <div class="window-controls">
+        <div class="control hide" id="update">
+            <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"
+                 width="16" height="16">
+                <path d="M512.736 992a483.648 483.648 0 0 1-164.672-28.8 36.88 36.88 0 1 1 25.104-69.36 407.456 407.456 0 1 0-184.608-136.512A36.912 36.912 0 0 1 129.488 801.6a473.424 473.424 0 0 1-97.472-290A480 480 0 1 1 512.736 992z"
+                      fill="#8a8a8a"></path>
+                <path d="M685.6 638.592a32 32 0 0 1-14.032-2.96l-178.048-73.888a36.8 36.8 0 0 1-22.912-34.016V236.672a36.944 36.944 0 1 1 73.888 0v266.72l155.2 64.272a36.336 36.336 0 0 1 19.952 48 37.616 37.616 0 0 1-34.048 22.928z"
+                      fill="#8a8a8a"></path>
+            </svg>
+        </div>
         <div class="control" id="setting">
             <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="16" height="16">
                 <path d="M512.7 664.3c-82.9 0-150.4-67.4-150.4-150.4 0-82.9 67.4-150.4 150.4-150.4 82.9 0 150.4 67.4 150.4 150.4-0.1 83-67.5 150.4-150.4 150.4z m0-244.7c-52 0-94.4 42.3-94.4 94.4 0 52 42.3 94.4 94.4 94.4S607 566 607 514c0-52-42.3-94.4-94.3-94.4z"
@@ -129,10 +138,10 @@
             <div class="title-like">下一首</div>
             <div class="key" action="forward">右方向键</div>
 
-            <div class="title-like">歌词向上滚动</div>
+            <div class="title-like">提高音量</div>
             <div class="key" action="lyric-up">上方向键</div>
 
-            <div class="title-like">歌词向下滚动</div>
+            <div class="title-like">降低音量</div>
             <div class="key" action="lyric-down">下方向键</div>
 
             <div class="title-like">播放模式切换</div>

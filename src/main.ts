@@ -1,5 +1,4 @@
 import {Window} from '@tauri-apps/api/window';
-import {updateApp} from "./js/render/update";
 
 const appWindow: Window = new Window('main');
 
@@ -8,7 +7,7 @@ async function initialize(): Promise<void> {
     await settings.initSettings();
 
     const player = await import('./js/render/player');
-    await player.initPlayer();
+    player.initPlayer().catch(e => console.error(`渲染歌单失败: ${e.message}`));
 
     document.getElementById('title-bar-minimize')?.addEventListener('click', () => appWindow.minimize());
     document.getElementById('title-bar-maximize')?.addEventListener('click', async function () {
@@ -24,12 +23,13 @@ async function initialize(): Promise<void> {
         await appWindow.close();
     });
 
-    const menu = await import('./js/render/context_menu');
-    menu.initContextMenu();
+    const contextMenu = await import('./js/render/context_menu');
+    contextMenu.initContextMenu();
 
     const shortcuts = await import('./js/render/shortcuts');
     await shortcuts.initShortcuts();
 
+    await player.loadHistory();
     await checkUpdate();
 }
 
@@ -38,10 +38,10 @@ async function checkUpdate() {
         const shouldUpdate = localStorage.getItem('should-check-when-start');
         if (shouldUpdate == undefined) return;
 
-        const bl = JSON.parse(shouldUpdate);
+        const bl = Boolean(JSON.parse(shouldUpdate));
         (<HTMLInputElement>document.getElementById('auto-check')).checked = bl;
         if (bl) {
-            await updateApp();
+            await (await import('./js/render/update')).updateApp();
         }
     } catch (e) {
         console.error(e);

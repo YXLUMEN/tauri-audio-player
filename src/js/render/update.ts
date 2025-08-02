@@ -9,14 +9,17 @@ export async function updateApp(): Promise<void> {
         return;
     }
 
-    console.log(
-        `found update ${update.version} from ${update.date} with notes ${update.body}`
-    );
+    console.log(`found update ${update.version} from ${update.date} with notes ${update.body}`);
+
+    const updateIco = document.getElementById('update');
+    updateIco.classList.remove('hide');
+    updateIco.title = `可用更新: ${update.version}`
 
     await playSound('audio/successful_hit.wav');
     const shouldUpdate = await createConfirm(`发现新版本: ${update.version}`);
     if (!shouldUpdate) return;
-    createAlert('开始更新');
+
+    createAlert('开始更新', 'info', {autoRemoveDelay: 0});
 
     let downloaded = 0;
     let contentLength = 0;
@@ -39,7 +42,10 @@ export async function updateApp(): Promise<void> {
 
     console.log('update installed');
     const restart = await createConfirm('更新完成, 是否立即重启软件', {flag: 'update', category: 'success'});
-    if (!restart) return;
+    if (!restart) {
+        updateIco.classList.add('hide');
+        return;
+    }
 
     await relaunch();
 }

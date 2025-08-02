@@ -141,6 +141,14 @@ function closePage() {
     isPlayerDisplay = false;
 }
 
+function modifyVolume(volume: number, sync: boolean = false) {
+    const volumeNum = Math.max(0, Math.min(100, volume)) / 100;
+
+    if (v.audioEle.muted || v.audioEle.volume === volumeNum) return;
+    if (sync) v.volumeToggle.value = volume.toString();
+    v.audioEle.volume = volumeNum;
+}
+
 //显示歌词
 const lyricDisplayFn = throttleTimeOut(() => {
     v.textContainer.classList.toggle('hide');
@@ -212,11 +220,7 @@ v.audioEle.addEventListener('ended', () => d.switchAudio(getNextAudioIndex(1)));
 v.audioEle.addEventListener('error', onAudioError);
 
 // 修改音量
-v.volumeToggle.addEventListener('input', () => {
-    const volume = Number(v.volumeToggle.value) / 100;
-    if (v.audioEle.muted || v.audioEle.volume === volume) return;
-    v.audioEle.volume = volume;
-});
+v.volumeToggle.addEventListener('input', () => modifyVolume(Number(v.volumeToggle.value)));
 
 // 在切换模式时加载本地随机列表
 v.playMode.addEventListener('load', () => {
@@ -263,7 +267,7 @@ v.lyricBox.addEventListener('wheel', (event) => {
 }, {passive: true});
 
 // 歌词微调
-document.getElementById('set-lyric-offset').addEventListener('click', (event) => {
+document.getElementById('set-lyric-offset')?.addEventListener('click', (event) => {
     const target = (<HTMLElement>event.target).closest('img');
     if (!target) return;
 
@@ -275,10 +279,10 @@ document.getElementById('set-lyric-offset').addEventListener('click', (event) =>
 });
 
 // 展示设置选项框
-document.getElementById('setting').addEventListener('click', toggleSettings);
+document.getElementById('setting')?.addEventListener('click', toggleSettings);
 
 // 本地文件播放
-document.getElementById('select-local-audio').addEventListener('click', async () => {
+document.getElementById('select-local-audio')?.addEventListener('click', async () => {
     try {
         const filePath: string[] = await open({
             title: '选则音频',
@@ -349,8 +353,8 @@ document.getElementById('toggle-fft').addEventListener('change', async () => {
 const anonymous_fun: { [key: string]: CallableFunction } = Object.freeze(Object.assign(Object.create(null), {
     skipForward: () => d.switchAudio(getNextAudioIndex(-1)),
     skipBackward: () => d.switchAudio(getNextAudioIndex(1)),
-    arrowUp: () => wheelRollingLyrics(-4),
-    arrowDown: () => wheelRollingLyrics(4),
+    arrowUp: () => modifyVolume(Number(v.volumeToggle.value) + 2, true),
+    arrowDown: () => modifyVolume(Number(v.volumeToggle.value) - 2, true),
 }));
 
 // 基本操作映射
@@ -379,15 +383,8 @@ document.getElementById('cb-container').addEventListener('click', (event) => {
     applyPlayerAction(id);
 });
 
-async function initPlayer(): Promise<void> {
+async function loadHistory() {
     try {
-        await renderCustomFolder();
-    } catch (e) {
-        console.error(`渲染歌单失败: ${e.message}`);
-    }
-
-    // 加载播放历史
-    (async () => {
         const usedPlaying = localStorage.getItem('playing');
         if (!usedPlaying) return;
 
@@ -404,12 +401,19 @@ async function initPlayer(): Promise<void> {
         v.audioEle.addEventListener('loadeddata', () => {
             v.audioEle.currentTime = Number(currentTime);
         }, {once: true});
-    })().catch(console.error);
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+function initPlayer(): Promise<void> {
+    return renderCustomFolder();
 }
 
 
 export {
     initPlayer,
+    loadHistory,
     applyPlayerAction,
     togglePlayer,
     modeToggle,
