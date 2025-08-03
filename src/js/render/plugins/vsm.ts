@@ -1,7 +1,7 @@
 import {getCurrentPlaying} from "../data";
 import createAlert from "../tools/base_page";
 import {AbsAudioModel} from "./audio_model";
-import {IAudioInfo, IStandardAudio, IVSMOptions} from "../../interfaces/audio";
+import {IAudioInfo, IFormatLyric, IStandardAudio, IVSMOptions} from "../../interfaces/audio";
 import baseFetch from "../tools/post_methods";
 import {IAuthAble} from "./apis";
 
@@ -69,7 +69,7 @@ export class VSM extends AbsAudioModel implements IAuthAble {
         return VSM.vsmCache;
     }
 
-    public async getLyric(): Promise<any> {
+    public async getLyric(): Promise<IFormatLyric | null> {
         const hash = getCurrentPlaying().id;
         const res = await baseFetch(`${VSM.LYRIC_URL}?token=${this.accessToken}`, {
             body: JSON.stringify({

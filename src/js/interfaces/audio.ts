@@ -38,3 +38,18 @@ export interface ISwitchAudio {
     play?: boolean,
     force?: boolean,
 }
+
+export interface ILyricAction {
+    currentLine: number,
+    centralPos: number,
+    lineOffset: number,
+    lyricOffset: number,
+    maxScrollHeight: number,
+    lyrArray: ILyric[],
+    syncLyricEnable: boolean
+}
+
+export interface IFormatLyric {
+    lyric: ILyric[]
+    offset?: number;
+}

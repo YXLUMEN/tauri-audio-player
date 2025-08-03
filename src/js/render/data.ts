@@ -4,7 +4,7 @@ import createAlert, {appendChildren} from "./tools/base_page";
 import {IndexedDBHelper} from "./tools/db";
 import {AbsAudioModel, isCacheAble, Local, VSM} from "./plugins/exports";
 import {createCleanObj, defaultLyrics, IFolderInfo} from "./default";
-import {IAudioInfo, ILyric, IStandardAudio, ISwitchAudio} from "../interfaces/audio";
+import {IAudioInfo, IFormatLyric, ILyric, ILyricAction, IStandardAudio, ISwitchAudio} from "../interfaces/audio";
 
 
 let audioIndex: number = -1;
@@ -58,7 +58,7 @@ const dbHelper = new IndexedDBHelper('audio_player', 2, [
 ]);
 
 // 歌词同步
-const LYRIC_ACTIONS: { [key: string]: any } = Object.preventExtensions(createCleanObj({
+const LYRIC_ACTIONS: ILyricAction = Object.preventExtensions(createCleanObj({
     currentLine: 0,
     centralPos: 0,
     lineOffset: -50,
@@ -115,7 +115,7 @@ function clearPluginsCache(): void {
 
 function forceClearPluginsCache(): void {
     for (const plugin of Object.values(loadedPlugins)) {
-        if (plugin instanceof Local) plugin.clear();
+        if (isCacheAble(plugin)) plugin.clear();
     }
 }
 
@@ -287,7 +287,6 @@ function loadAudio(standard: IStandardAudio): void {
 
     v.lyricTitle.textContent = title;
 
-    // 设置音乐, 并在加载后播放
     v.audioEle.src = url;
     v.audioEle.load();
 
@@ -313,13 +312,13 @@ async function switchAudio(newIndex: number, opt: ISwitchAudio = {}): Promise<bo
     const standard = await getPlugin(audio.plugin).parse(audio);
     if (!standard) return false;
 
-    let success = true;
-
     loadAudio(standard);
-    if (play) success = await v.pauseToggle();
     highlightCurrentPlaying(scroll);
 
-    return success;
+    if (play) {
+        return await v.pauseToggle();
+    }
+    return true;
 }
 
 function highlightCurrentPlaying(scroll: boolean = true): void {
@@ -430,7 +429,7 @@ function createLyricRow(value: ILyric, offset: number): HTMLDivElement {
     return item;
 }
 
-function formatLyrics(lyrics: {}): void {
+function formatLyrics(lyrics: IFormatLyric): void {
     const {lyric, offset = 0} = lyrics || defaultLyrics;
     if (!lyric) throw new Error('no lyrics found');
 
@@ -536,7 +535,7 @@ function syncLyric(currentTime: number): void {
     if (currentLine >= lyrArray.length || lyrArray.length <= 1) return;
 
     const adjustedCurrentTime = currentTime + lyricOffset;
-    const lyrTime = Number(lyrArray[currentLine].time);
+    const lyrTime = lyrArray[currentLine].time;
 
     if (lyrTime * 3 <= adjustedCurrentTime) {
         significantLeapFn();
@@ -574,7 +573,6 @@ function getCurrentPlaying(): IAudioInfo {
 function getMaxAudioCount(): number {
     return playingQueue.length;
 }
-
 
 // 去除重复歌曲
 function removeDuplicate(array: IAudioInfo[]): IAudioInfo[] | null {

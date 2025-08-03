@@ -23,8 +23,8 @@ export class Local extends AbsAudioModel implements ICacheAble {
         throw new Error("Method not implemented.");
     }
 
-    public async getLyric() {
-        return {};
+    public async getLyric(): Promise<null> {
+        return null;
     }
 
     public getCache() {

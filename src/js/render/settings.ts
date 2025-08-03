@@ -1,10 +1,23 @@
 import {defaultShortcuts} from "./default";
+import {IAudioInfo} from "../interfaces/audio";
 import {throttleTimeOut} from "./tools/base_utilities";
-import createAlert from "./tools/base_page";
+import createAlert, {playSound} from "./tools/base_page";
 import {updateApp} from "./update";
-import {clearPlayingQueueHistory, dbHelper, forceClearPluginsCache, getPlugin} from "./data";
+
 import {isAuthAble, VSM} from "./plugins/exports";
 import {enableShortcut, mapKeys} from "./shortcuts";
+
+import {invoke} from '@tauri-apps/api/core';
+import {open} from '@tauri-apps/plugin-dialog';
+
+import {
+    dbHelper,
+    clearPlayingQueueHistory,
+    forceClearPluginsCache,
+    getAudioIndex,
+    getPlugin, insertAudio,
+    switchAudio
+} from "./data";
 
 // 设置快捷键
 const setShortcut = throttleTimeOut((event: MouseEvent) => {
@@ -112,6 +125,36 @@ document.getElementById('apis-settings').addEventListener('click', async (event)
     } catch (error) {
         console.error(error);
         createAlert(`设置失败: ${error.message}`, 'error', {autoRemoveDelay: 0});
+    }
+});
+
+// 本地文件播放
+document.getElementById('select-local-audio')?.addEventListener('click', async () => {
+    try {
+        const filePath: string[] = await open({
+            title: '选则音频',
+            multiple: true,
+            directory: false,
+            filters: [{name: 'Audios', extensions: ['mp3', 'flac', 'wav', 'ogg', 'aac']}]
+        });
+        if (!filePath) return;
+        if (filePath.length > 3) createAlert('解析多个文件中', 'info', {autoRemoveDelay: 4000});
+
+        const list: Array<IAudioInfo> = [];
+        for (const path of filePath) {
+            const hash: string = await invoke('calculate_hash', {filePath: path});
+            if (hash) {
+                list.push({plugin: 'local', id: hash, url: path});
+            }
+        }
+
+        await insertAudio(getAudioIndex() + 1, list);
+        await playSound('audio/successful_hit.wav');
+
+        await switchAudio(getAudioIndex() + 1);
+    } catch (err) {
+        console.error(err);
+        createAlert('读取失败', 'warning');
     }
 });
 

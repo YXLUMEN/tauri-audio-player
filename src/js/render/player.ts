@@ -3,11 +3,8 @@ import * as v from "./env";
 import {debounce, throttleTimeOut} from "./tools/base_utilities";
 import {generateUniqueRandomNumbers} from "./tools/GenerateRandomNums";
 import {initIndex} from "./index";
-import createAlert, {playSound} from "./tools/base_page";
-import {IAudioInfo} from "../interfaces/audio";
+import createAlert from "./tools/base_page";
 
-import {invoke} from '@tauri-apps/api/core';
-import {open} from '@tauri-apps/plugin-dialog';
 import {isAuthAble} from "./plugins/exports";
 
 
@@ -24,7 +21,7 @@ let isLyricDisplay: boolean = false;
 const MAX_RETRY: number = 3;
 let retryCount: number = 0;
 let pendingRetry = false;
-const onAudioError = throttleTimeOut(async () => {
+const onAudioError = throttleTimeOut(async (_: any, play: boolean = true) => {
     if (pendingRetry) return;
     if (retryCount >= MAX_RETRY) {
         createAlert('超过最大重试次数, 请检查Api密钥是否有效或尝试重启软件', 'error', {autoRemoveDelay: 0});
@@ -40,7 +37,7 @@ const onAudioError = throttleTimeOut(async () => {
     try {
         await plugin.refresh();
 
-        const success = await d.switchAudio(d.getAudioIndex(), {play: false, force: true});
+        const success = await d.switchAudio(d.getAudioIndex(), {play, force: true});
         if (success) {
             retryCount = 0;
             return;
@@ -216,8 +213,12 @@ v.audioEle.addEventListener('seeked', () => {
 // 音频结束后下一曲
 v.audioEle.addEventListener('ended', () => d.switchAudio(getNextAudioIndex(1)));
 
-// 音频出错监听
-v.audioEle.addEventListener('error', onAudioError);
+// 第一次错误不开始播放
+v.audioEle.addEventListener('error', () => {
+    onAudioError(null, false);
+    // 音频出错监听
+    v.audioEle.addEventListener('error', onAudioError);
+}, {once: true});
 
 // 修改音量
 v.volumeToggle.addEventListener('input', () => modifyVolume(Number(v.volumeToggle.value)));
@@ -280,36 +281,6 @@ document.getElementById('set-lyric-offset')?.addEventListener('click', (event) =
 
 // 展示设置选项框
 document.getElementById('setting')?.addEventListener('click', toggleSettings);
-
-// 本地文件播放
-document.getElementById('select-local-audio')?.addEventListener('click', async () => {
-    try {
-        const filePath: string[] = await open({
-            title: '选则音频',
-            multiple: true,
-            directory: false,
-            filters: [{name: 'Audios', extensions: ['mp3', 'flac', 'wav', 'ogg']}]
-        });
-        if (!filePath) return;
-        if (filePath.length > 3) createAlert('解析多个文件中', 'info', {autoRemoveDelay: 4000});
-
-        const list: Array<IAudioInfo> = [];
-        for (const path of filePath) {
-            const hash: string = await invoke('calculate_hash', {filePath: path});
-            if (hash) {
-                list.push({plugin: 'local', id: hash, url: path});
-            }
-        }
-
-        await d.insertAudio(d.getAudioIndex() + 1, list);
-        await playSound('audio/successful_hit.wav');
-
-        await d.switchAudio(d.getAudioIndex() + 1);
-    } catch (err) {
-        console.error(err);
-        createAlert('读取失败', 'warning');
-    }
-});
 
 // 频谱操作
 // @ts-ignore

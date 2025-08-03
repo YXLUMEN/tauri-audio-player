@@ -1,3 +1,5 @@
+import {IFormatLyric} from "../interfaces/audio";
+
 function deepFreeze(obj: any): any {
     if (obj === null || typeof obj !== 'object') return obj;
 
@@ -56,7 +58,7 @@ const defaultShortcuts: IShortCuts[] = deepFreeze([
     {action: 'close-page', code: 'Escape'},
 ]);
 
-const defaultLyrics = deepFreeze(createCleanObj({
+const defaultLyrics: IFormatLyric = deepFreeze(createCleanObj({
     lyric: Object.freeze([Object.freeze({text: "暂无歌词", time: 0.0})])
 }));
 
