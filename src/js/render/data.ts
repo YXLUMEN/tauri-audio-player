@@ -5,6 +5,7 @@ import {IndexedDBHelper} from "./tools/db";
 import {AbsAudioModel, isCacheAble, Local, VSM} from "./plugins/exports";
 import {createCleanObj, defaultLyrics, IFolderInfo} from "./default";
 import {IAudioInfo, IFormatLyric, ILyric, ILyricAction, IStandardAudio, ISwitchAudio} from "../interfaces/audio";
+import {hideLoading, showLoading} from "./env";
 
 
 let audioIndex: number = -1;
@@ -189,7 +190,7 @@ async function collectAudio(parent: number, audioInfo: IAudioInfo): Promise<void
         await dbHelper.add('favor', audioInfo);
         createAlert('已收藏', 'success');
 
-        const chosenFolderId: string | undefined = chosenFolder?.getAttribute('_id');
+        const chosenFolderId: string | undefined = chosenFolder?.getAttribute('folder_id');
         if (chosenFolderId && Number(chosenFolderId) === parent) {
             chosenFolder?.click();
         }
@@ -294,31 +295,38 @@ function loadAudio(standard: IStandardAudio): void {
 }
 
 async function switchAudio(newIndex: number, opt: ISwitchAudio = {}): Promise<boolean> {
-    if (newIndex < 0 || newIndex >= playingQueue.length) {
-        return false;
+    try {
+        if (newIndex < 0 || newIndex >= playingQueue.length) {
+            return false;
+        }
+        const {force = false, play = true, scroll = false} = opt;
+
+        if (newIndex === audioIndex && !force) {
+            v.audioEle.currentTime = 0;
+            await v.pauseToggle();
+            return false;
+        }
+
+        showLoading();
+        setAudioIndex(newIndex);
+        const audio = playingQueue[audioIndex];
+        if (!audio) return false;
+
+        const standard = await getPlugin(audio.plugin).parse(audio);
+        if (!standard) return false;
+
+        loadAudio(standard);
+        highlightCurrentPlaying(scroll);
+
+        if (play) {
+            return await v.pauseToggle();
+        }
+        return true;
+    } catch (err) {
+        throw err;
+    } finally {
+        hideLoading();
     }
-    const {force = false, play = true, scroll = false} = opt;
-
-    if (newIndex === audioIndex && !force) {
-        v.audioEle.currentTime = 0;
-        await v.pauseToggle();
-        return false;
-    }
-
-    setAudioIndex(newIndex);
-    const audio = playingQueue[audioIndex];
-    if (!audio) return false;
-
-    const standard = await getPlugin(audio.plugin).parse(audio);
-    if (!standard) return false;
-
-    loadAudio(standard);
-    highlightCurrentPlaying(scroll);
-
-    if (play) {
-        return await v.pauseToggle();
-    }
-    return true;
 }
 
 function highlightCurrentPlaying(scroll: boolean = true): void {
@@ -711,6 +719,7 @@ export {
     getMaxAudioCount,
     setChosenRow,
     setChosenFolder,
+    removeDuplicate,
     setPlayingQueue,
     mergePlayingQueue,
     pushAudios,

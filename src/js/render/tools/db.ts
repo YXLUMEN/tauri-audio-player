@@ -12,7 +12,7 @@ export class IndexedDBHelper {
         this.stores = stores;
     }
 
-    init(): Promise<IDBDatabase | any> {
+    init(): Promise<IDBDatabase> {
         if (this.db) return Promise.resolve(this.db);
 
         const {promise, resolve, reject} = Promise.withResolvers();
@@ -41,7 +41,7 @@ export class IndexedDBHelper {
 
         request.onerror = () => reject(request.error);
 
-        return promise;
+        return <Promise<IDBDatabase>>promise;
     }
 
     async add(storeName: string, data: object): Promise<IDBValidKey> {

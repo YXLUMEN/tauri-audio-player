@@ -167,6 +167,14 @@ function setMuted() {
     }
 }
 
+function showLoading() {
+    document.getElementById('index-loading').classList.add('show');
+}
+
+function hideLoading() {
+    document.getElementById('index-loading').classList.remove('show');
+}
+
 async function toggleDraw(e: Event) {
     if ((<HTMLInputElement>e.target).checked) {
         await DSD.startDraw();
@@ -259,4 +267,6 @@ export {
     changeFFTSize,
     changeDrawInterval,
     changeDecibels,
+    showLoading,
+    hideLoading,
 }

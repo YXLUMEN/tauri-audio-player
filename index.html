@@ -66,8 +66,12 @@
 
     <div class="setting-context">
         <div class="subtitle">播放本地音乐</div>
-        <div class="setting-details">
-            <label class="base-file-input-label" id="select-local-audio">选择文件</label>
+        <div class="setting-details table" id="select-local-audio">
+            <div class="title-like">添加到队列</div>
+            <button class="base-button" action="local-queue">选择文件</button>
+
+            <div class="title-like">添加到队列并收藏至歌单</div>
+            <button class="base-button" action="local-collect">选择文件</button>
         </div>
     </div>
 
@@ -316,7 +320,7 @@
 
             <div class="audio-folders" id="recommend">
                 <div class="audio-folder" plugin="vsm">
-                    <img class="small-icon" src="/img/audio/cover/audio-11.webp" alt="">
+                    <img class="small-icon" src="/img/audio/cover/audio-4.webp" alt="">
                     <span>Vsm</span>
                 </div>
             </div>
@@ -349,7 +353,7 @@
         </div>
 
         <div class="folder-info">
-            <img class="cover" id="folder-info-cover" src="/img/audio/cover/audio-0.webp" alt="">
+            <img class="cover" id="folder-info-cover" src="/img/audio/cover/audio-4.webp" alt="">
             <div class="title">
                 <div class="text" id="folder-info-title">开始</div>
                 <div class="base-button add-all" id="add-all">添加全部</div>
@@ -388,6 +392,7 @@
     </div>
 
     <!-- 主页控制菜单 -->
+    <div class="loading" id="index-loading"></div>
     <div class="index-audio-control hide" id="index-audio-control">
         <div class="audio-icon paused" id="index-audio-cover">
             <img src="/img/audio/cover/audio-0.webp" alt="">
@@ -526,7 +531,7 @@
     </div>
 </div>
 
-<audio id="audio-loader" crossorigin="anonymous" preload="metadata" style="display:none"></audio>
-<img id="pre-load" src="" alt="" decoding="async" style="display:none;">
+<audio id="audio-loader" crossorigin="anonymous" preload="metadata"></audio>
+<img id="pre-load" src="" alt="" decoding="async">
 </body>
 </html>

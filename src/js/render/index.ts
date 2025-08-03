@@ -1,12 +1,14 @@
 import * as v from "./env";
 import * as d from "./data";
-import createAlert, {appendChildren} from "./tools/base_page";
+import {appendChildren} from "./tools/base_page";
 import {applyPlayerAction, togglePlayer} from "./player";
 import {defaultFolder, IFolderInfo} from "./default";
 import {throttleTimeOut} from "./tools/base_utilities";
 import {open} from '@tauri-apps/plugin-dialog';
 import {IAudioInfo, IStandardAudio} from "../interfaces/audio";
 import {enableShortcut} from "./shortcuts";
+import {randomCover} from "./tools/generate_random_nums";
+import {searchAudios} from "./search";
 
 
 // 展示的音频列表
@@ -18,7 +20,7 @@ let wasMerge: boolean = false;
 // 创建歌单元素
 function createFolderItem(folder: IFolderInfo): HTMLDivElement {
     const div = document.createElement("div");
-    div.setAttribute('_id', folder.id.toString());
+    div.setAttribute('folder_id', folder.id.toString());
     div.classList.add('audio-folder');
 
     const img = document.createElement("img");
@@ -134,11 +136,11 @@ async function getNewFolderInfo(create: boolean = false): Promise<IFolderInfo | 
     if (create) {
         nameInput.value = '';
         descInput.value = '';
-        coverImg.src = `/img/audio/cover/audio-${Math.round(Math.random() * 30)}.webp`;
+        coverImg.src = randomCover();
     } else {
         if (!d.chosenFolder) return null;
 
-        const id = Number(d.chosenFolder.getAttribute('_id'));
+        const id = Number(d.chosenFolder.getAttribute('folder_id'));
         const folder: IFolderInfo = await d.dbHelper.get('folder', id);
         if (!folder) return null;
 
@@ -216,7 +218,7 @@ async function choseFolderToCollect(): Promise<number | null> {
     const {promise, resolve} = Promise.withResolvers();
 
     v.choseFolderContent.addEventListener('click', (event) => {
-        const id = (<HTMLElement>event.target).closest('.audio-folder')?.getAttribute('_id');
+        const id = (<HTMLElement>event.target).closest('.audio-folder')?.getAttribute('folder_id');
         if (!id) return;
         resolve(Number(id));
     }, {signal: abort.signal});
@@ -249,13 +251,13 @@ const selectFolder = throttleTimeOut(async (event: MouseEvent) => {
         audios = await d.getPlugin(plugin).getAudioList();
     } else {
         // 加载本地歌单
-        const id = Number(folder.getAttribute('_id'));
+        const id = Number(folder.getAttribute('folder_id'));
         if (isNaN(id)) return;
 
         audios = await d.getFavorByFolder(id);
     }
 
-    v.folderInfoCover.src = folder.getElementsByTagName('img')?.[0].src || '/img/audio/cover/audio-11.cover';
+    v.folderInfoCover.src = folder.getElementsByTagName('img')?.[0].src || randomCover();
     v.folderInfoTitle.textContent = folder.getElementsByTagName('span')?.[0]?.textContent || '歌单';
 
     await setDisplayFolder(audios);
@@ -274,21 +276,6 @@ async function playChosenRow(target: HTMLElement) {
     d.setAudioIndexUnclamp(-1);
 
     await d.switchAudio(Number(index));
-}
-
-// 提交搜索
-async function searchAudios() {
-    const input = <HTMLInputElement>document.getElementById('search-input');
-    if (!input || input.value.trim() === '') return;
-    createAlert('目前只支持VSM搜索, 且处于beta版', 'info');
-
-    const result = await d.getPlugin('vsm').getAudioList({search: input.value.trim()});
-    if (!result) {
-        createAlert('无结果', 'info');
-        return;
-    }
-
-    await setDisplayFolder(result);
 }
 
 document.getElementById('search-submit').addEventListener('click', searchAudios);

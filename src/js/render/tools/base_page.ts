@@ -68,7 +68,7 @@ export default function createAlert(message: string, category: ECategories | str
     const boxChildren = baseAlertBox.getElementsByClassName('alert');
 
     // 清除较旧的警示框
-    if (boxChildren.length > 6) for (let i = boxChildren.length - 6; i--;) {
+    if (boxChildren.length > 4) for (let i = boxChildren.length - 4; i--;) {
         removeNote(<HTMLElement>boxChildren[i], false);
     }
 

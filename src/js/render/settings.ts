@@ -1,23 +1,16 @@
 import {defaultShortcuts} from "./default";
 import {IAudioInfo} from "../interfaces/audio";
 import {throttleTimeOut} from "./tools/base_utilities";
-import createAlert, {playSound} from "./tools/base_page";
+import createAlert from "./tools/base_page";
 import {updateApp} from "./update";
-
 import {isAuthAble, VSM} from "./plugins/exports";
 import {enableShortcut, mapKeys} from "./shortcuts";
+import * as d from './data';
+import {choseFolderToCollect} from "./index";
 
 import {invoke} from '@tauri-apps/api/core';
 import {open} from '@tauri-apps/plugin-dialog';
-
-import {
-    dbHelper,
-    clearPlayingQueueHistory,
-    forceClearPluginsCache,
-    getAudioIndex,
-    getPlugin, insertAudio,
-    switchAudio
-} from "./data";
+import {hideLoading, showLoading} from "./env";
 
 // 设置快捷键
 const setShortcut = throttleTimeOut((event: MouseEvent) => {
@@ -37,7 +30,7 @@ const setShortcut = throttleTimeOut((event: MouseEvent) => {
         if (defaultShortcuts.some(value => value.code === code)) {
             createAlert('按键重复', 'warning');
         } else {
-            await dbHelper.update('shortcuts', {action, code});
+            await d.dbHelper.update('shortcuts', {action, code});
             await mapKeys();
             target.textContent = event.key.toUpperCase();
         }
@@ -56,17 +49,17 @@ const clearCache = throttleTimeOut(async (event: MouseEvent) => {
 
     switch (action) {
         case 'clean-parse-cache':
-            forceClearPluginsCache();
+            d.forceClearPluginsCache();
             createAlert('已清理解析缓存', 'success');
             break;
         case 'clean-history':
             localStorage.removeItem('playing');
-            await clearPlayingQueueHistory();
+            await d.clearPlayingQueueHistory();
             createAlert('已清除播放历史', 'success');
             break;
         case 'clean-vsm':
             VSM.vsmCache.length = 0;
-            const plugin = getPlugin('vsm');
+            const plugin = d.getPlugin('vsm');
             if (plugin instanceof VSM) {
                 plugin.seq = 0;
                 createAlert('已清除VSM缓存', 'success');
@@ -88,7 +81,7 @@ document.getElementById('shortcuts-settings').addEventListener('auxclick', async
     if (!defaultKey) return;
 
     target.textContent = defaultKey.code.replace('Key', '');
-    await dbHelper.delete('shortcuts', action);
+    await d.dbHelper.delete('shortcuts', action);
     await mapKeys();
 });
 
@@ -114,9 +107,9 @@ document.getElementById('apis-settings').addEventListener('click', async (event)
         if (!key || !psd) return;
 
         const pluginName = label.getAttribute('action');
-        await dbHelper.update('auth', {plugin: pluginName, key, psd});
+        await d.dbHelper.update('auth', {plugin: pluginName, key, psd});
 
-        const plugin = getPlugin(pluginName);
+        const plugin = d.getPlugin(pluginName);
         if (isAuthAble(plugin)) {
             await plugin.login({key, psd});
         }
@@ -129,7 +122,10 @@ document.getElementById('apis-settings').addEventListener('click', async (event)
 });
 
 // 本地文件播放
-document.getElementById('select-local-audio')?.addEventListener('click', async () => {
+document.getElementById('select-local-audio')?.addEventListener('click', async (event) => {
+    const target = (<HTMLElement>event.target).closest('.base-button');
+    if (!target) return;
+
     try {
         const filePath: string[] = await open({
             title: '选则音频',
@@ -138,23 +134,29 @@ document.getElementById('select-local-audio')?.addEventListener('click', async (
             filters: [{name: 'Audios', extensions: ['mp3', 'flac', 'wav', 'ogg', 'aac']}]
         });
         if (!filePath) return;
-        if (filePath.length > 3) createAlert('解析多个文件中', 'info', {autoRemoveDelay: 4000});
+        showLoading();
 
-        const list: Array<IAudioInfo> = [];
+        const list: IAudioInfo[] = [];
         for (const path of filePath) {
             const hash: string = await invoke('calculate_hash', {filePath: path});
-            if (hash) {
-                list.push({plugin: 'local', id: hash, url: path});
-            }
+            if (hash) list.push({plugin: 'local', id: hash, url: path});
         }
 
-        await insertAudio(getAudioIndex() + 1, list);
-        await playSound('audio/successful_hit.wav');
+        await d.insertAudio(d.getAudioIndex() + 1, list);
+        await d.switchAudio(d.getAudioIndex() + 1);
 
-        await switchAudio(getAudioIndex() + 1);
+        if (target.getAttribute('action') !== 'local-collect') return;
+        const folderId = await choseFolderToCollect();
+        if (!folderId) return;
+
+        for (const audio of list) {
+            await d.collectAudio(folderId, audio);
+        }
     } catch (err) {
         console.error(err);
         createAlert('读取失败', 'warning');
+    } finally {
+        hideLoading();
     }
 });
 
@@ -165,7 +167,7 @@ async function initSettings(): Promise<void> {
         const allLabel = apiSettings.querySelectorAll('label');
         for (const label of allLabel) {
             const pluginName = label.getAttribute('action');
-            const result = await dbHelper.get('auth', pluginName);
+            const result = await d.dbHelper.get('auth', pluginName);
             if (!result) continue;
 
             const keyEle: HTMLInputElement = <HTMLInputElement>label.querySelector('[name="api-key"]');
@@ -175,7 +177,7 @@ async function initSettings(): Promise<void> {
                 psdEle.value = result.psd;
             }
 
-            const plugin = getPlugin(pluginName);
+            const plugin = d.getPlugin(pluginName);
             if (isAuthAble(plugin)) {
                 await plugin.loadToken();
             }

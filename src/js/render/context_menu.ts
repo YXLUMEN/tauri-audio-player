@@ -53,7 +53,7 @@ async function contextmenuHandleRow(action: string) {
             break;
         case 'de-collect':
             if (d.chosenFolder?.getAttribute('plugin')) return;
-            const parent: number = Number(d.chosenFolder.getAttribute('_id'));
+            const parent: number = Number(d.chosenFolder.getAttribute('folder_id'));
             const id: string = d.chosenRow.id;
             if (!isNaN(parent) && id) {
                 await d.deCollectAudio(parent, id);
@@ -91,7 +91,7 @@ async function contextmenuHandlerQueueRow(action: string) {
 
 // 右键菜单处理歌单
 async function contextmenuHandleFolder(action: string) {
-    const id = Number(d.chosenFolder.getAttribute('_id'));
+    const id = Number(d.chosenFolder.getAttribute('folder_id'));
     if (isNaN(id)) return;
 
     if (action === 'mod-folder') {

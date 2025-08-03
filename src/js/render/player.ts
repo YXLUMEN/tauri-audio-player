@@ -1,7 +1,7 @@
 import * as d from "./data";
 import * as v from "./env";
 import {debounce, throttleTimeOut} from "./tools/base_utilities";
-import {generateUniqueRandomNumbers} from "./tools/GenerateRandomNums";
+import {generateUniqueRandomNumbers} from "./tools/generate_random_nums";
 import {initIndex} from "./index";
 import createAlert from "./tools/base_page";
 

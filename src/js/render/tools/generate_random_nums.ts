@@ -117,3 +117,7 @@ export function generateUniqueRandomNumbers(max: number, count: number = max): n
     const allNumbers = Array.from({length: max}, (_, i) => i);
     return shuffleArray(allNumbers).slice(0, count);
 }
+
+export function randomCover(): string {
+    return `/img/audio/cover/audio-${Math.round(Math.random() * 30)}.webp`;
+}

@@ -432,25 +432,6 @@
     }
 }
 
-@keyframes rotate {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-@keyframes loadingProgressBar {
-    0% {
-        opacity: 0;
-    }
-    100% {
-        opacity: 1;
-    }
-}
-
 /*横条样式*/
 #volume-toggle {
     width: 150px;
@@ -475,13 +456,11 @@
     box-shadow: -407px 0 0 400px #42b680;
 }
 
-#loading {
+#audio-loader {
     display: none;
-    margin: 10px 50% 0 50%;
-    animation: rotate 1s infinite;
 }
 
-#audio-player {
+#pre-load {
     display: none;
 }
 
