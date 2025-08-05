@@ -24,7 +24,7 @@ function createFolderItem(folder: IFolderInfo): HTMLDivElement {
     div.classList.add('audio-folder');
 
     const img = document.createElement("img");
-    img.classList.add('small-icon');
+    img.classList.add('small-cover');
     img.src = folder.cover;
 
     const span = document.createElement("span");
@@ -50,7 +50,7 @@ function createFolderContentItem(index: number, standard: IStandardAudio): HTMLD
     // noinspection DuplicatedCode
     const cover = document.createElement('img');
     cover.src = standard.cover;
-    cover.classList.add('small-icon');
+    cover.classList.add('small-cover');
 
     const title = document.createElement('div');
     const titleSpan = document.createElement('span');
@@ -122,10 +122,10 @@ let pendingInput: (reason?: any) => void = null;
 async function getNewFolderInfo(create: boolean = false): Promise<IFolderInfo | null> {
     if (pendingInput) pendingInput('Interrupted');
 
-    const nameInput = <HTMLInputElement>document.getElementById('modify-folder-name');
-    const descInput = <HTMLInputElement>document.getElementById('modify-folder-desc');
-    const coverImg = <HTMLInputElement>document.getElementById('modify-folder-cover');
-    const confirmButtons = document.getElementById('folder-modify-buttons');
+    const nameInput = <HTMLInputElement>document.getElementById('folder-editor-name');
+    const descInput = <HTMLInputElement>document.getElementById('folder-editor-desc');
+    const coverImg = <HTMLInputElement>document.getElementById('folder-editor-cover');
+    const confirmButtons = document.getElementById('folder-editor-buttons');
 
     if (!nameInput || !descInput || !coverImg || !confirmButtons) {
         console.error('Cannot find DOMElements!');
@@ -151,8 +151,9 @@ async function getNewFolderInfo(create: boolean = false): Promise<IFolderInfo | 
     }
 
     enableShortcut(false);
+    let editor = document.getElementById('folder-editor');
+    editor.classList.add('show');
     v.folderContent.parentElement.classList.add('hide');
-    v.modifyFolder.classList.add('show');
 
     const abort = new AbortController();
     const {promise, resolve, reject} = Promise.withResolvers();
@@ -191,8 +192,10 @@ async function getNewFolderInfo(create: boolean = false): Promise<IFolderInfo | 
     promise.finally(() => {
         pendingInput = null;
         abort.abort();
+
         v.folderContent.parentElement.classList.remove('hide');
-        v.modifyFolder.classList.remove('show');
+        editor.classList.remove('show');
+        editor = null;
         enableShortcut(true);
     });
 
@@ -250,15 +253,18 @@ const selectFolder = throttleTimeOut(async (event: MouseEvent) => {
         // 加载特殊歌单
         audios = await d.getPlugin(plugin).getAudioList();
     } else {
-        // 加载本地歌单
+        // 加载用户歌单
         const id = Number(folder.getAttribute('folder_id'));
         if (isNaN(id)) return;
 
         audios = await d.getFavorByFolder(id);
     }
 
-    v.folderInfoCover.src = folder.getElementsByTagName('img')?.[0].src || randomCover();
-    v.folderInfoTitle.textContent = folder.getElementsByTagName('span')?.[0]?.textContent || '歌单';
+    const folderTitle = document.getElementById('folder-info-title');
+    const folderCover = <HTMLImageElement>document.getElementById('folder-info-cover');
+
+    folderCover.src = folder.getElementsByTagName('img')?.[0].src || randomCover();
+    folderTitle.textContent = folder.getElementsByTagName('span')?.[0]?.textContent || '歌单';
 
     await setDisplayFolder(audios);
 }, 300);
@@ -278,17 +284,17 @@ async function playChosenRow(target: HTMLElement) {
     await d.switchAudio(Number(index));
 }
 
+// 触发搜索
 document.getElementById('search-submit').addEventListener('click', searchAudios);
 
 // 展示播放器或处理操作按钮
 const handleIndexPlayController = throttleTimeOut(async (event: MouseEvent) => {
-    const target = (<HTMLElement>event.target).closest('.item');
-    if (!target) {
+    const action = (<HTMLElement>event.target).getAttribute('action');
+    if (!action) {
         togglePlayer();
         return;
     }
 
-    const action = target.getAttribute('action');
     if (action === 'collect') {
         await d.collectAudio(await choseFolderToCollect(), d.getCurrentPlaying());
         return;

@@ -140,6 +140,7 @@ async function createFolder(folder: IFolderInfo): Promise<void> {
         await dbHelper.add('folder', folder);
         createAlert('创建成功', 'success');
     } catch (err) {
+        if (err.name === 'ConstraintError') return createAlert('歌单名称重复', 'warning');
         console.error(`创建歌单时出错: ${err.message}`);
         createAlert('创建失败', 'error');
     }
@@ -286,7 +287,7 @@ function loadAudio(standard: IStandardAudio): void {
     document.getElementById('music-title').textContent = title;
     document.getElementById('album-name').textContent = album;
 
-    v.lyricTitle.textContent = title;
+    document.getElementById('lyric-title').textContent = title;
 
     v.audioEle.src = url;
     v.audioEle.load();
@@ -356,7 +357,7 @@ function createPlayingQueueItem(index: number, standardInfo: IStandardAudio): HT
     // noinspection DuplicatedCode
     const cover = document.createElement('img');
     cover.src = standardInfo.cover;
-    cover.classList.add('small-icon');
+    cover.classList.add('small-cover');
 
     const title = document.createElement('div');
     const titleSpan = document.createElement('span');

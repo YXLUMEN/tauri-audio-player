@@ -6,8 +6,10 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <link rel="stylesheet" href="src/css/base/base-alert.css"/>
     <link rel="stylesheet" href="src/css/base/base-style.css"/>
-    <link rel="stylesheet" href="src/css/audio-index.css"/>
-    <link rel="stylesheet" href="src/css/audio-player.css"/>
+
+    <link rel="stylesheet" href="src/css/index.css"/>
+    <link rel="stylesheet" href="src/css/settings.css">
+    <link rel="stylesheet" href="src/css/player.css"/>
 
     <script type="module" src="src/main.ts" defer></script>
     <title>Audio Player</title>
@@ -275,7 +277,11 @@
             <span>下一曲播放</span>
         </div>
         <div class="item" action="de-play">
-            <span>移除列表</span>
+            <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+                <path d="M841.143 73.143c60.593 0 109.714 49.12 109.714 109.714v658.286c0 60.593-49.12 109.714-109.714 109.714H182.857c-60.593 0-109.714-49.12-109.714-109.714V182.857c0-60.593 49.12-109.714 109.714-109.714h658.286z m0 91.428H182.857c-9.377 0-17.106 7.06-18.163 16.154l-0.123 2.132v658.286c0 9.377 7.06 17.106 16.154 18.163l2.132 0.123h658.286c9.377 0 17.106-7.06 18.163-16.154l0.123-2.132V182.857c0-9.377-7.06-17.106-16.154-18.163l-2.132-0.123z m-91.429 301.715v91.428H274.286v-91.428h475.428z"
+                      fill="#bfbfbf"></path>
+            </svg>
+            <span>移出列表</span>
         </div>
         <div class="item" action="collect">
             <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="16" height="16">
@@ -305,7 +311,7 @@
     </div>
 </div>
 
-<div class="index-box" id="index-box">
+<div class="index-container" id="index-container">
     <!-- 选择收藏歌单 -->
     <div class="chose-folder" id="chose-folder">
         <div class="title">收藏到歌单</div>
@@ -315,12 +321,12 @@
     <!-- 歌单列表 -->
     <div class="left-panel" id="index-left-panel">
         <div class="app-name">Audio Player</div>
-        <div class="audio-folder-list">
+        <div class="folder-container">
             <div class="header">推荐</div>
 
             <div class="audio-folders" id="recommend">
                 <div class="audio-folder" plugin="vsm">
-                    <img class="small-icon" src="/img/audio/cover/audio-4.webp" alt="">
+                    <img class="small-cover" src="/img/audio/cover/audio-4.webp" alt="">
                     <span>Vsm</span>
                 </div>
             </div>
@@ -328,7 +334,7 @@
 
         <div class="base-line"></div>
 
-        <div class="audio-folder-list">
+        <div class="folder-container">
             <div class="header">
                 <span>歌单</span>
                 <svg id="create-folder" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="16"
@@ -351,7 +357,7 @@
             <input class="base-input search-input" id="search-input" type="text">
             <div class="search-submit" id="search-submit"></div>
         </div>
-
+        <!-- 歌单名称 -->
         <div class="folder-info">
             <img class="cover" id="folder-info-cover" src="/img/audio/cover/audio-4.webp" alt="">
             <div class="title">
@@ -370,64 +376,87 @@
     </div>
 
     <!-- 编辑歌单 -->
-    <div class="modify-folder" id="modify-folder">
+    <div class="folder-editor" id="folder-editor">
         <div class="title">编辑歌单信息</div>
         <div class="input-box">
             <div class="texts">
                 <label>
                     <span>名称</span>
-                    <input class="base-input" id="modify-folder-name">
+                    <input class="base-input" id="folder-editor-name">
                 </label>
                 <label>
                     <span>简介</span>
-                    <textarea class="base-input" id="modify-folder-desc"></textarea>
+                    <textarea class="base-input" id="folder-editor-desc"></textarea>
                 </label>
-                <div class="buttons" id="folder-modify-buttons">
+                <div class="buttons" id="folder-editor-buttons">
                     <button class="base-button" action="submit">确认</button>
                     <button class="base-button cancel" action="cancel">取消</button>
                 </div>
             </div>
-            <img src="/img/audio/cover/audio-1.webp" alt="" id="modify-folder-cover">
+            <img src="/img/audio/cover/audio-1.webp" alt="" id="folder-editor-cover">
         </div>
     </div>
 
     <!-- 主页控制菜单 -->
     <div class="loading" id="index-loading"></div>
     <div class="index-audio-control hide" id="index-audio-control">
+        <!-- 旋转唱片 -->
         <div class="audio-icon paused" id="index-audio-cover">
             <img src="/img/audio/cover/audio-0.webp" alt="">
         </div>
+
         <div class="index-audio-info">
+            <!-- 基础信息 -->
             <div class="info" id="index-audio-title">
                 <span></span>
                 <span class="less"></span>
             </div>
-            <div class="action">
-                <div class="item" action="collect">
-                    <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
-                        <path d="M780.190476 97.52381a73.142857 73.142857 0 0 1 73.142857 73.142857v755.809523l-341.333333-152.380952L170.666667 926.47619V170.666667a73.142857 73.142857 0 0 1 73.142857-73.142857h536.380952z m0 73.142857H243.809524v643.047619l268.190476-119.710476 268.190476 119.710476V170.666667z"
-                              fill="#8a8a8a"></path>
-                    </svg>
-                </div>
+            <!-- 歌曲操作 -->
+            <div class="actions">
+                <svg class="control-icon" action="collect" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"
+                     width="20" height="20">
+                    <path d="M780.190476 97.52381a73.142857 73.142857 0 0 1 73.142857 73.142857v755.809523l-341.333333-152.380952L170.666667 926.47619V170.666667a73.142857 73.142857 0 0 1 73.142857-73.142857h536.380952z m0 73.142857H243.809524v643.047619l268.190476-119.710476 268.190476 119.710476V170.666667z"
+                          fill="#8a8a8a"></path>
+                </svg>
             </div>
         </div>
 
         <!-- 下排控制按钮 -->
-        <div class="index-control-tool">
-            <!-- 中间按钮 -->
-            <div class="center-button-container">
-                <div class="item center-icon s-right" id="i-left" action="right"></div>
-                <div class="item center-icon icon-play" id="i-play" action="play"></div>
-                <div class="item center-icon s-left" id="i-right" action="left"></div>
-                <div class="item center-icon list" action="show-playing-board"></div>
-            </div>
+        <div class="index-controls-bar">
+            <div class="index-control-tool">
+                <!-- 中间按钮 -->
+                <div class="center-button-container">
+                    <!-- 播放模式 -->
+                    <img class="control-icon" src="/img/audio/ico/play_mode_0.svg" alt="" action="play-mode">
+                    <!-- 上一首 -->
+                    <img class="control-icon" src="/img/audio/ico/forward.svg" alt="" action="forward">
+                    <!-- 暂停按钮 -->
+                    <img class="control-icon play-pause" src="/img/audio/ico/play.svg" alt="" action="play-pause">
+                    <!-- 下一首 -->
+                    <img class="control-icon" src="/img/audio/ico/backward.svg" alt="" action="backward">
+                    <!-- 音量调节 -->
+                    <div class="volume-container">
+                        <img class="control-icon" src="/img/audio/ico/volume.svg" alt="" action="volume">
+                        <!-- 音量悬浮窗 -->
+                        <label class="volume-popup">
+                            <input class="volume-toggle" id="i-volume-toggle" type="range" value="70" min="0" max="100"
+                                   step="1" action="volume-toggle">
+                        </label>
+                    </div>
+                </div>
 
-            <!-- 进度条 -->
-            <div class="index-progress-bar item">
-                <span class="time-text less" id="i-played-time">00:00</span>
-                <input class="progress-bar" id="i-progress-played" type="range" min="0" max="100" step="0.1" value="0"
-                       aria-label="播放进度">
-                <span class="time-text less" id="i-total-time">00:00</span>
+                <!-- 进度条 -->
+                <div class="index-progress-bar">
+                    <span class="time-text less" id="i-played-time">00:00</span>
+                    <input class="progress-bar" id="i-progress-played" type="range" min="0" max="100" step="0.1"
+                           value="0"
+                           aria-label="播放进度" action="leap-audio">
+                    <span class="time-text less" id="i-total-time">00:00</span>
+                </div>
+            </div>
+            <div class="right-button-container">
+                <!-- 音频列表 -->
+                <img class="control-icon" src="/img/audio/ico/list.svg" alt="" action="show-playing-board">
             </div>
         </div>
     </div>
@@ -453,6 +482,7 @@
     </div>
 </div>
 
+<!-- 播放器 -->
 <div class="player-background" id="player-background"
      style="background-image: url('/img/audio/cover/audio-1.webp');">
     <div class="player-box" id="player-box">
@@ -477,11 +507,10 @@
             </div>
         </div>
 
-        <!-- 音乐播放器主要内容 -->
-        <div class="audio-box" id="audio-box">
-            <canvas id="audio-canvas"></canvas>
-            <h3 id="lyric-title" class="lyric-title hide"></h3>
-            <div id="lyric-box" class="lyric-box hide">
+        <!-- 歌词 -->
+        <div class="lyric-container hide" id="lyric-container">
+            <h3 class="lyric-title" id="lyric-title"></h3>
+            <div class="lyric-box" id="lyric-box">
                 <div class="lyric-calibration" id="set-lyric-offset">
                     <img src="/img/audio/ico/up.svg" alt="-0.1" width="20">
                     <img src="/img/audio/ico/deletion.svg" alt="" width="20">
@@ -492,38 +521,49 @@
                     <div class="lyric-item">加载歌词中 . . .</div>
                 </div>
             </div>
+        </div>
 
+        <!-- 控制和 -->
+        <div class="audio-box" id="audio-box">
+            <canvas id="audio-canvas"></canvas>
             <div class="audio-container">
                 <!-- 进度条 -->
                 <input class="progress-bar player-progress-bar" id="progress-played" type="range" min="0" max="100"
                        step="0.1" value="0" aria-label="播放进度">
                 <!-- 下排控制按钮 -->
-                <div class="a-controls">
+                <div class="player-controls">
                     <!-- 播放时长 -->
                     <div class="time-container">
                         <span class="time-text" id="played-time">00:00</span>&nbsp;/&nbsp;
                         <span class="time-text" id="audio-time">00:00</span>
                     </div>
                     <!-- 中间按钮 -->
-                    <div id="cb-container" class="center-button-container">
-                        <!-- 显示歌词 -->
-                        <div id="lyric" class="center-icon lyric"></div>
+                    <div class="center-button-container">
                         <!-- 播放模式 -->
-                        <img id="play-mode" class="center-icon mode" src="/img/audio/ico/play_mode_0.svg" alt=""
-                             width="30">
+                        <img class="control-icon" src="/img/audio/ico/play_mode_0.svg" alt="" action="play-mode">
                         <!-- 上一首 -->
-                        <div id="skip-forward" class="center-icon s-right"></div>
+                        <img class="control-icon" src="/img/audio/ico/forward.svg" alt="" action="forward">
                         <!-- 暂停按钮 -->
-                        <div id="play-pause" class="center-icon icon-play"></div>
+                        <img class="control-icon play-pause" src="/img/audio/ico/play.svg" alt="" action="play-pause">
                         <!-- 下一首 -->
-                        <div id="skip-backward" class="center-icon s-left"></div>
+                        <img class="control-icon" src="/img/audio/ico/backward.svg" alt="" action="backward">
                         <!-- 音量调节 -->
-                        <div id="volume" class="center-icon volume"></div>
-                        <!-- 音量悬浮窗 -->
-                        <label for="volume-toggle"></label>
-                        <input type="range" id="volume-toggle" name="change" value="50" min="0" max="100" step="1">
+                        <div class="volume-container">
+                            <img class="control-icon" src="/img/audio/ico/volume.svg" alt="" action="volume">
+                            <!-- 音量悬浮窗 -->
+                            <label class="volume-popup">
+                                <input class="volume-toggle" id="volume-toggle" type="range" value="70" min="0"
+                                       max="100"
+                                       step="1">
+                            </label>
+                        </div>
+                    </div>
+                    <div class="right-button-container">
+                        <!-- 显示歌词 -->
+                        <img id="lyric" class="control-icon" src="/img/audio/ico/lyric.svg" alt="" action="lyric">
                         <!-- 音频列表 -->
-                        <div id="show-playing-board" class="center-icon list"></div>
+                        <img id="show-playing-board" class="control-icon" src="/img/audio/ico/list.svg" alt=""
+                             action="show-playing-board">
                     </div>
                 </div>
             </div>

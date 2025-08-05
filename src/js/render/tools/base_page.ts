@@ -1,4 +1,5 @@
 import {ECategories, IAlert, IConfirm} from "../../interfaces/pages";
+import {defaultConfirm} from "../default";
 
 
 /**
@@ -68,8 +69,8 @@ export default function createAlert(message: string, category: ECategories | str
     const boxChildren = baseAlertBox.getElementsByClassName('alert');
 
     // 清除较旧的警示框
-    if (boxChildren.length > 4) for (let i = boxChildren.length - 4; i--;) {
-        removeNote(<HTMLElement>boxChildren[i], false);
+    if (boxChildren.length > 4) {
+        removeNote(<HTMLElement>boxChildren[0], false);
     }
 
     const alert = document.createElement('div');
@@ -117,17 +118,7 @@ export default function createAlert(message: string, category: ECategories | str
 
 // 创建确认提示框
 export function createConfirm(message: string = '是否确认操作?', opts: IConfirm = {}): Promise<any> {
-    const defaultOpt: IConfirm = {
-        timeout: 0,
-        flag: 'default',
-        category: 'info',
-        defaultResult: false,
-        strictTimeout: false,
-        animation: true,
-        ...opts
-    };
-
-    const {timeout, flag, category, defaultResult, strictTimeout, animation} = defaultOpt;
+    const {timeout, flag, category, defaultResult, strictTimeout, animation} = {...defaultConfirm, ...opts};
     const id = `confirm_${flag}`;
 
     if (document.getElementById(id)) return Promise.resolve(defaultResult);
@@ -148,9 +139,9 @@ export function createConfirm(message: string = '是否确认操作?', opts: ICo
         action: 'agree'
     });
 
-    const messageParagraph = document.createElement('p');
-    messageParagraph.classList.add('text');
-    messageParagraph.textContent = message;
+    const p = document.createElement('p');
+    p.classList.add('text');
+    p.textContent = message;
 
     const disagreeImg = document.createElement('img');
     setAttributes(disagreeImg, {
@@ -161,7 +152,7 @@ export function createConfirm(message: string = '是否确认操作?', opts: ICo
         action: 'disagree'
     });
 
-    appendChildren(confirm, agreeImg, messageParagraph, disagreeImg);
+    appendChildren(confirm, agreeImg, p, disagreeImg);
 
     // 默认的提示框box
     const baseAlertBox = document.getElementsByClassName('base-alert-box')[0];

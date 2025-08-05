@@ -1,5 +1,5 @@
 import * as d from "./data";
-import createAlert from "./tools/base_page";
+import createAlert, {createConfirm} from "./tools/base_page";
 import {choseFolderToCollect, getNewFolderInfo, playChosenRow, renderCustomFolder, displayedContent} from "./index";
 import {choseFolderContent, indexContextmenu} from "./env";
 
@@ -99,6 +99,7 @@ async function contextmenuHandleFolder(action: string) {
         if (!folder) return;
         await d.modifyFolder(folder);
     } else if (action === 'delete-folder') {
+        if (!await createConfirm('确定删除歌单吗?')) return;
         await d.deleteFolder(id);
     }
 

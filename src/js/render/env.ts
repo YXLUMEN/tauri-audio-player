@@ -7,10 +7,6 @@ const indexLeftPanel = document.getElementById('index-left-panel');
 
 const customFolderList = document.getElementById('custom-folder-list');
 
-const folderInfoCover = <HTMLImageElement>document.getElementById('folder-info-cover');
-
-const folderInfoTitle = document.getElementById('folder-info-title');
-
 const folderContent = document.getElementById('folder-content');
 
 const indexAudioCover = document.getElementById('index-audio-cover');
@@ -18,8 +14,6 @@ const indexAudioCover = document.getElementById('index-audio-cover');
 const indexAudioTitle = document.getElementById('index-audio-title');
 
 const choseFolderContent = document.getElementById('chose-folder-content');
-
-const iPlay = document.getElementById('i-play');
 
 const iPgsPlay: HTMLInputElement = <HTMLInputElement>document.getElementById('i-progress-played');
 
@@ -37,13 +31,7 @@ const audioEle: HTMLAudioElement = <HTMLAudioElement>document.getElementById('au
 audioEle.loop = false;
 audioEle.volume = .7;
 
-const textContainer = document.getElementById('text-container');
-
-const lyricBox = document.getElementById('lyric-box');
-
 const lyricContent = document.getElementById('lyric-ul');
-
-const lyricTitle = document.getElementById('lyric-title');
 
 const lyricOffsetEle = document.getElementById('lyric-offset');
 
@@ -53,11 +41,7 @@ const playedTime = document.getElementById('played-time');
 
 const audioTime = document.getElementById('audio-time');
 
-const playMode = <HTMLImageElement>document.getElementById('play-mode');
-
-const pauseEle = document.getElementById('play-pause');
-
-const volume = document.getElementById('volume');
+const iVolumeToggle = <HTMLInputElement>document.getElementById('i-volume-toggle');
 
 const volumeToggle = <HTMLInputElement>document.getElementById('volume-toggle');
 
@@ -110,19 +94,17 @@ function updatePlayingProgress(currentTime: number) {
 }
 
 function setUiPlay() {
-    pauseEle.classList.remove('icon-play');
-    pauseEle.classList.add('icon-pause');
-    iPlay.classList.remove('icon-play');
-    iPlay.classList.add('icon-pause');
+    document.querySelectorAll('[action="play-pause"]').forEach((img: HTMLImageElement) => {
+        img.src = '/img/audio/ico/pause.svg';
+    });
 
     indexAudioCover.classList.remove('paused');
 }
 
 function setUiPause() {
-    pauseEle.classList.remove('icon-pause');
-    pauseEle.classList.add('icon-play');
-    iPlay.classList.remove('icon-pause');
-    iPlay.classList.add('icon-play');
+    document.querySelectorAll('[action="play-pause"]').forEach((img: HTMLImageElement) => {
+        img.src = '/img/audio/ico/play.svg';
+    });
 
     indexAudioCover.classList.add('paused');
 }
@@ -152,18 +134,24 @@ async function pauseToggle(pause = false): Promise<boolean> {
 
 let lastVolume: string = '70';
 
-function setMuted() {
+function toggleMuted() {
     // 存储上一次的音量
     if (volumeToggle.value === '0') {
         if (lastVolume === '0') lastVolume = '70';
         volumeToggle.value = lastVolume;
+        iVolumeToggle.value = lastVolume;
         audioEle.muted = false;
-        volume.classList.remove('muted');
+        document.querySelectorAll('[action="volume"]').forEach((img: HTMLImageElement) => {
+            img.src = '/img/audio/ico/volume.svg';
+        });
     } else {
         lastVolume = volumeToggle.value;
         volumeToggle.value = '0';
+        iVolumeToggle.value = '0';
         audioEle.muted = true;
-        volume.classList.add('muted');
+        document.querySelectorAll('[action="volume"]').forEach((img: HTMLImageElement) => {
+            img.src = '/img/audio/ico/volume-muted.svg';
+        });
     }
 }
 
@@ -231,27 +219,20 @@ export {
     customFolderList,
     folderContent,
     indexAudioCover,
-    folderInfoCover,
-    folderInfoTitle,
     indexAudioTitle,
     choseFolderContent,
-    iPlay,
     iTotalTime,
     iPgsPlay,
     modifyFolder,
     playerBackground,
     playerBox,
     audioEle,
-    textContainer,
-    lyricBox,
     lyricContent,
-    lyricTitle,
     lyricOffsetEle,
     audioTime,
     progressPlayed,
-    playMode,
-    pauseEle,
     volumeToggle,
+    iVolumeToggle,
     closeBoard,
     playingBoard,
     playingQueue,
@@ -261,7 +242,7 @@ export {
     transTime,
     updatePlayingProgress,
     pauseToggle,
-    setMuted,
+    toggleMuted,
     toggleDraw,
     switchDrawMode,
     changeFFTSize,

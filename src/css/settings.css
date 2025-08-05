@@ -1,0 +1,137 @@
+/* 右键菜单 */
+
+.index-contextmenu {
+    & {
+        display: none;
+        position: absolute;
+        width: 200px;
+        background-color: #fff;
+        border: 1px solid #eee;
+        box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+        border-radius: 6px;
+        z-index: 50;
+    }
+
+    .menu {
+        display: none;
+        margin: 0;
+        padding: 4px;
+    }
+
+    .menu.show {
+        display: block;
+    }
+
+    .item {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .item:hover {
+        background-color: #f0f0f0;
+    }
+
+    .item svg {
+        width: 30px;
+    }
+}
+
+/* 设置 */
+
+.settings-container {
+    & {
+        pointer-events: none;
+        transform: translateY(-100%);
+
+        position: fixed;
+        flex-direction: column;
+        top: 0;
+        left: 0;
+        width: calc(100% - 128px);
+        height: calc(100% - 128px);
+        padding: 64px;
+        gap: 20px;
+        overflow-y: auto;
+
+        transition: 300ms ease-in-out;
+        background-color: #fff;
+        z-index: 9;
+    }
+
+    &.show {
+        display: flex;
+        pointer-events: auto;
+        transform: translateY(0);
+    }
+
+    .title {
+        font-size: 34px;
+        font-weight: bold;
+    }
+
+    .setting-context {
+        display: flex;
+    }
+
+    .title-like, .subtitle {
+        color: #424242;
+        font-weight: bold;
+    }
+
+    .title-like {
+        display: flex;
+        align-items: center;
+    }
+
+    .key {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 16px;
+        background-color: #e8e8e8;
+        border-radius: 16px;
+        cursor: pointer;
+    }
+
+    .key.modifying {
+        border: 1px #1abc9c solid;
+        box-shadow: 0 0 8px rgba(26, 188, 156, 0.2);
+    }
+
+    .key:hover {
+        background-color: #e3e3e3;
+    }
+
+    .subtitle {
+        flex: .2;
+        font-size: 20px;
+    }
+
+    .setting-details {
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+    }
+
+    .setting-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .base-line {
+        border-width: 2px;
+    }
+}
+
+.setting-details.table {
+    display: grid;
+    grid-template-columns: 6fr auto;
+}
+
+.setting-details.long {
+    width: 50%;
+}

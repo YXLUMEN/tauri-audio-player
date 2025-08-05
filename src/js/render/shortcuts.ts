@@ -29,7 +29,7 @@ async function mapKeys() {
         'volume-increase': p.anonymous_fun.arrowUp,
         'volume-decrease': p.anonymous_fun.arrowDown,
         'switch-mode': p.modeToggle,
-        'switch-mute': v.setMuted,
+        'switch-mute': v.toggleMuted,
         'scroll-current': d.highlightCurrentPlaying,
         'toggle-lyric': p.lyricDisplayFn,
         'toggle-playing-queue': p.togglePlayingBoard,

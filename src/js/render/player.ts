@@ -11,7 +11,7 @@ import {isAuthAble} from "./plugins/exports";
 // 播放模式设置
 let playMode: number = 0;
 
-let randPlayedList: number[] = null;
+let randPlayedList: number[] = [];
 
 let isSeeking: boolean = false;
 let isPlayerDisplay: boolean = false;
@@ -56,8 +56,10 @@ const onAudioError = throttleTimeOut(async (_: any, play: boolean = true) => {
 
 // 切换播放模式
 function modeToggle() {
-    playMode = (playMode + 1) % 3;
-    v.playMode.src = `/img/audio/ico/play_mode_${playMode}.svg`;
+    playMode = (playMode + 1) % 4;
+    document.querySelectorAll('[action="play-mode"]').forEach((img: HTMLImageElement) => {
+        img.src = `/img/audio/ico/play_mode_${playMode}.svg`;
+    });
 }
 
 // 获取下一曲index
@@ -76,15 +78,18 @@ function getNextAudioIndex(delta = 1) {
     // 随机播放
     if (playMode === 2) {
         const random = randPlayedList.pop();
-        if (randPlayedList.length % 4 === 0) localStorage.setItem('_random_list', JSON.stringify(randPlayedList));
-
         return random !== undefined ? random : (() => {
             // 如果数量极大,可以考虑百次分批生成
             randPlayedList = generateUniqueRandomNumbers(max);
             return randPlayedList.pop();
         })();
     }
-    throw new Error('未知的播放模式');
+
+    // 顺序播放
+    if (playMode === 3) {
+        return Math.min(d.getAudioIndex(), max);
+    }
+    throw new RangeError('未知的播放模式');
 }
 
 // 拖动进度条更改音乐进度
@@ -138,19 +143,40 @@ function closePage() {
     isPlayerDisplay = false;
 }
 
-function modifyVolume(volume: number, sync: boolean = false) {
+function modifyVolume(volume: number) {
     const volumeNum = Math.max(0, Math.min(100, volume)) / 100;
+    if (v.audioEle.volume === volumeNum) return;
+    if (volumeNum === 0) {
+        return v.toggleMuted();
+    }
+    if (v.audioEle.muted) v.toggleMuted();
 
-    if (v.audioEle.muted || v.audioEle.volume === volumeNum) return;
-    if (sync) v.volumeToggle.value = volume.toString();
+    const vol = volume.toString()
+    v.volumeToggle.value = vol;
+    v.iVolumeToggle.value = vol;
+
     v.audioEle.volume = volumeNum;
+
+    const volumes = document.querySelectorAll('[action="volume"]');
+    if (volume >= 70) {
+        volumes.forEach((img: HTMLImageElement) => {
+            img.src = '/img/audio/ico/volume.svg';
+        });
+    } else if (volume > 30 && volume < 70) {
+        volumes.forEach((img: HTMLImageElement) => {
+            img.src = '/img/audio/ico/volume-mid.svg';
+        });
+    } else if (volume <= 30) {
+        volumes.forEach((img: HTMLImageElement) => {
+            img.src = '/img/audio/ico/volume-low.svg';
+        });
+    }
 }
 
 //显示歌词
 const lyricDisplayFn = throttleTimeOut(() => {
-    v.textContainer.classList.toggle('hide');
-    v.lyricBox.classList.toggle('hide');
-    v.lyricTitle.classList.toggle('hide');
+    document.getElementById('text-container').classList.toggle('hide');
+    document.getElementById('lyric-container').classList.toggle('hide');
     isLyricDisplay = v.playerBox.classList.toggle('show-lyric');
 }, 600);
 
@@ -180,8 +206,6 @@ async function savePlayingQueue() {
             index: d.getAudioIndex(),
             currentTime: v.audioEle.currentTime
         }));
-
-        localStorage.setItem('_random_list', JSON.stringify(randPlayedList));
 
         await d.storgePlayingQueue();
     } catch (err) {
@@ -222,17 +246,7 @@ v.audioEle.addEventListener('error', () => {
 
 // 修改音量
 v.volumeToggle.addEventListener('input', () => modifyVolume(Number(v.volumeToggle.value)));
-
-// 在切换模式时加载本地随机列表
-v.playMode.addEventListener('load', () => {
-    if (randPlayedList) return;
-    try {
-        const tempArray = JSON.parse(localStorage.getItem('_random_list'));
-        randPlayedList = Array.isArray(tempArray) ? tempArray : [];
-    } catch (err) {
-        randPlayedList = [];
-    }
-}, {once: true});
+v.iVolumeToggle.addEventListener('input', () => modifyVolume(Number(v.iVolumeToggle.value)));
 
 // 进度条拖动
 v.iPgsPlay.addEventListener('input', progressSeeking);
@@ -263,12 +277,12 @@ v.lyricContent.addEventListener('click', (event) => {
 });
 
 // 歌词滚轮控制
-v.lyricBox.addEventListener('wheel', (event) => {
+document.getElementById('lyric-box').addEventListener('wheel', event => {
     wheelRollingLyrics(event.deltaY > 0 ? 2 : -2);
 }, {passive: true});
 
 // 歌词微调
-document.getElementById('set-lyric-offset')?.addEventListener('click', (event) => {
+document.getElementById('set-lyric-offset')?.addEventListener('click', event => {
     const target = (<HTMLElement>event.target).closest('img');
     if (!target) return;
 
@@ -324,21 +338,18 @@ document.getElementById('toggle-fft').addEventListener('change', async () => {
 const anonymous_fun: { [key: string]: CallableFunction } = Object.freeze(Object.assign(Object.create(null), {
     skipForward: () => d.switchAudio(getNextAudioIndex(-1)),
     skipBackward: () => d.switchAudio(getNextAudioIndex(1)),
-    arrowUp: () => modifyVolume(Number(v.volumeToggle.value) + 2, true),
-    arrowDown: () => modifyVolume(Number(v.volumeToggle.value) - 2, true),
+    arrowUp: () => modifyVolume(Number(v.volumeToggle.value) + 2),
+    arrowDown: () => modifyVolume(Number(v.volumeToggle.value) - 2),
 }));
 
 // 基本操作映射
 const playerActionMap = new Map<string, Function>([
     ['lyric', lyricDisplayFn],
     ['play-mode', modeToggle],
-    ['skip-forward', anonymous_fun.skipForward],
-    ['right', anonymous_fun.skipForward],
+    ['forward', anonymous_fun.skipForward],
     ['play-pause', v.pauseToggle],
-    ['play', v.pauseToggle],
-    ['skip-backward', anonymous_fun.skipBackward],
-    ['left', anonymous_fun.skipBackward],
-    ['volume', v.setMuted],
+    ['backward', anonymous_fun.skipBackward],
+    ['volume', v.toggleMuted],
     ['show-playing-board', togglePlayingBoard]
 ]);
 
@@ -347,11 +358,14 @@ function applyPlayerAction(action: string) {
 }
 
 // 音频控制按钮
-document.getElementById('cb-container').addEventListener('click', (event) => {
-    event.stopPropagation();
-    const id = (<HTMLElement>event.target).closest('.center-icon')?.getAttribute('id');
-    if (!id) return;
-    applyPlayerAction(id);
+document.getElementById('audio-box').addEventListener('click', event => {
+    const target = <HTMLElement>event.target;
+    const action = target.closest('.control-icon')?.getAttribute('action');
+    if (!action) {
+        if (!target.id || target?.id === 'player-box') return togglePlayer();
+        return;
+    }
+    applyPlayerAction(action);
 });
 
 async function loadHistory() {

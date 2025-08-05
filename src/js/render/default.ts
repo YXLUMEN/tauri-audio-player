@@ -1,4 +1,5 @@
 import {IFormatLyric} from "../interfaces/audio";
+import {IConfirm} from "../interfaces/pages";
 
 function deepFreeze(obj: any): any {
     if (obj === null || typeof obj !== 'object') return obj;
@@ -62,10 +63,20 @@ const defaultLyrics: IFormatLyric = deepFreeze(createCleanObj({
     lyric: Object.freeze([Object.freeze({text: "暂无歌词", time: 0.0})])
 }));
 
+const defaultConfirm: IConfirm = deepFreeze(createCleanObj({
+    timeout: 0,
+    flag: 'default',
+    category: 'info',
+    defaultResult: false,
+    strictTimeout: false,
+    animation: true,
+}));
+
 export {
     defaultFolder,
     defaultShortcuts,
     defaultLyrics,
+    defaultConfirm,
     deepFreeze,
     createCleanObj
 }

@@ -52,18 +52,4 @@ async function checkUpdate() {
 }
 
 initialize()
-    .catch(async (err) => {
-        const mod = await import('@tauri-apps/plugin-notification');
-
-        let permissionGranted = await mod.isPermissionGranted();
-
-        if (!permissionGranted) {
-            const permission = await mod.requestPermission();
-            permissionGranted = permission === 'granted';
-        }
-
-        if (permissionGranted) {
-            mod.sendNotification({title: '初始化失败', body: err.message});
-        }
-    })
-    .catch(() => appWindow.close());
+    .catch(console.error);

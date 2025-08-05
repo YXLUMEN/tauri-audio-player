@@ -150,7 +150,8 @@ document.getElementById('select-local-audio')?.addEventListener('click', async (
         if (!folderId) return;
 
         for (const audio of list) {
-            await d.collectAudio(folderId, audio);
+            audio.parent = folderId;
+            await d.dbHelper.add('favor', audio);
         }
     } catch (err) {
         console.error(err);

@@ -38,10 +38,10 @@ tauri-plugin-http = "2"
 
 sha2 = "0.10.9"
 
-symphonia = { version = "0.5", default-features = false, features = ["mp3", "aac", "ogg", "flac", "wav", "vorbis"] }
+symphonia = { version = "0.5", default-features = false, features = ["mpa", "aac", "ogg", "flac", "wav", "vorbis"] }
 tauri-plugin-process = "2"
 tauri-plugin-notification = "2"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-single-instance = "2.3.2"
+tauri-plugin-single-instance = "2"
 tauri-plugin-updater = "2"
