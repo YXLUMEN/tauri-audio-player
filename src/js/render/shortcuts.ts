@@ -1,7 +1,7 @@
 import * as d from "./data";
 import * as v from "./env";
 import * as p from "./player";
-import {displayedContent, setDisplayFolder} from "./index";
+import {displayedContent, showLoadMore, setDisplayFolder} from "./index";
 import {defaultShortcuts} from "./default";
 import {VSM} from "./plugins/vsm";
 import {throttleTimeOut} from "./tools/base_utilities";
@@ -35,7 +35,7 @@ async function mapKeys() {
         'toggle-playing-queue': p.togglePlayingBoard,
         'toggle-settings': p.toggleSettings,
         'toggle-player': p.togglePlayer,
-        'update-vsm': vsmAdd,
+        'update-remote': vsmAdd,
         'close-page': p.closePage,
     }
 
@@ -47,7 +47,7 @@ async function mapKeys() {
     }
 }
 
-// vsm专用
+// vsm专用 暂时
 async function vsmAdd() {
     if (d.chosenFolder?.getAttribute('plugin') !== 'vsm') return;
 
@@ -60,6 +60,7 @@ async function vsmAdd() {
     }
 
     await setDisplayFolder(VSM.vsmCache);
+    if (!vsm.isAll()) showLoadMore();
     requestAnimationFrame(() => d.mergePlayingQueue(displayedContent));
 }
 
@@ -93,5 +94,6 @@ export {
     initShortcuts,
     enableShortcut,
     mapKeys,
+    vsmAdd,
     keyControlFn,
 }

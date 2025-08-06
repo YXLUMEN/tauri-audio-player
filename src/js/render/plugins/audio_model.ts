@@ -9,4 +9,6 @@ export abstract class AbsAudioModel {
 
     // 解析为标准音频信息
     public abstract parse(audioInfo: IAudioInfo): Promise<IStandardAudio | null> ;
+
+    public abstract isAll(): boolean;
 }

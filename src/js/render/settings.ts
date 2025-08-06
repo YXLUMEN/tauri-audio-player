@@ -86,7 +86,11 @@ document.getElementById('shortcuts-settings').addEventListener('auxclick', async
 });
 
 // 检查更新
-document.getElementById('check-update').addEventListener('click', updateApp);
+document.getElementById('check-update').addEventListener('click', async () => {
+    const result = await updateApp();
+    if (result === 0) createAlert('无可用更新');
+    else if (result === 1) createAlert('开始更新', 'info', {autoRemoveDelay: 0});
+});
 
 // 启动时更新设置
 document.getElementById('auto-check').addEventListener('input', function () {
@@ -122,7 +126,7 @@ document.getElementById('apis-settings').addEventListener('click', async (event)
 });
 
 // 本地文件播放
-document.getElementById('select-local-audio')?.addEventListener('click', async (event) => {
+document.getElementById('select-local-audio').addEventListener('click', async (event) => {
     const target = (<HTMLElement>event.target).closest('.base-button');
     if (!target) return;
 

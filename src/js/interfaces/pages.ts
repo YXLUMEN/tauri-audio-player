@@ -7,7 +7,7 @@ export interface IConfirm {
     timeout?: number, // timeout: Set this to 0 to disable.
     flag?: string,
     category?: ECategories | string,
-    defaultResult?: any,
+    defaultResult?: boolean,
     defaultReturn?: boolean,
     strictTimeout?: boolean,
     animation?: boolean,

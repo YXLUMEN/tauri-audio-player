@@ -243,12 +243,14 @@ body {
 .folder-content-tags {
     & {
         display: flex;
-        padding: 8px;
+        padding: 8px 0;
         color: #7a7a7a;
     }
 
     .play {
-        padding: 5px 16px;
+        width: 40px;
+        text-align: center;
+        padding: 5px 0;
     }
 
     .modifiable {
@@ -283,8 +285,8 @@ body {
     & {
         display: flex;
         align-items: center;
-        width: calc(100% - 20px);
-        padding: 10px;
+        width: 100%;
+        padding: 10px 0;
         border-radius: 8px;
     }
 
@@ -312,6 +314,10 @@ body {
         background-size: cover;
     }
 
+    &.current.playing .play-icon {
+        background: url("/img/audio/ico/wave.svg") no-repeat center;
+    }
+
     .title {
         display: flex;
         flex-direction: column;
@@ -328,6 +334,20 @@ body {
     }
 
     span {
+        cursor: pointer;
+    }
+}
+
+.folder-content .load-more {
+    & {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 90%;
+    }
+
+    .less {
+        padding: 6px;
         cursor: pointer;
     }
 }
@@ -676,11 +696,14 @@ body {
     border-radius: 6px;
     padding: 8px 0;
     background-color: #dcdcdc;
-    display: none;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 150ms ease-in;
 }
 
 .volume-container:hover .volume-popup {
-    display: block;
+    opacity: 1;
+    pointer-events: initial;
 }
 
 .volume-toggle {

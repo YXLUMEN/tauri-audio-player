@@ -1,5 +1,6 @@
 import SpectrumDiagram from "./tools/spectrum_diagram";
 import createAlert from "./tools/base_page";
+import {getCurrentPlaying} from "./data";
 
 const indexContextmenu = document.getElementById('index-contextmenu');
 
@@ -20,8 +21,6 @@ const iPgsPlay: HTMLInputElement = <HTMLInputElement>document.getElementById('i-
 const iTotalTime = document.getElementById('i-total-time');
 
 const iPlayedTime = document.getElementById('i-played-time');
-
-const modifyFolder = document.getElementById('modify-folder');
 
 const playerBackground = document.getElementById('player-background');
 
@@ -99,6 +98,7 @@ function setUiPlay() {
     });
 
     indexAudioCover.classList.remove('paused');
+    document.getElementById(getCurrentPlaying()?.id)?.classList.add('playing');
 }
 
 function setUiPause() {
@@ -107,6 +107,7 @@ function setUiPause() {
     });
 
     indexAudioCover.classList.add('paused');
+    document.getElementById(getCurrentPlaying()?.id)?.classList.remove('playing');
 }
 
 // 切换播放状态
@@ -223,7 +224,6 @@ export {
     choseFolderContent,
     iTotalTime,
     iPgsPlay,
-    modifyFolder,
     playerBackground,
     playerBox,
     audioEle,

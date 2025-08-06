@@ -1,5 +1,6 @@
 import {IFormatLyric} from "../interfaces/audio";
 import {IConfirm} from "../interfaces/pages";
+import {IBaseFetch} from "../interfaces/post";
 
 function deepFreeze(obj: any): any {
     if (obj === null || typeof obj !== 'object') return obj;
@@ -55,7 +56,7 @@ const defaultShortcuts: IShortCuts[] = deepFreeze([
     {action: 'toggle-playing-queue', code: 'KeyL'},
     {action: 'toggle-settings', code: 'KeyS'},
     {action: 'toggle-player', code: 'KeyP'},
-    {action: 'update-vsm', code: 'NumpadAdd'},
+    {action: 'update-remote', code: 'NumpadAdd'},
     {action: 'close-page', code: 'Escape'},
 ]);
 
@@ -72,11 +73,23 @@ const defaultConfirm: IConfirm = deepFreeze(createCleanObj({
     animation: true,
 }));
 
+const defaultFetch: IBaseFetch = deepFreeze(createCleanObj({
+    method: 'POST',
+    body: '',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    referrer: "about:client",
+    cache: 'default',
+    ignore_err: [],
+}));
+
 export {
     defaultFolder,
     defaultShortcuts,
     defaultLyrics,
     defaultConfirm,
+    defaultFetch,
     deepFreeze,
     createCleanObj
 }

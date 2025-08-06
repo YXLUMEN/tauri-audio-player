@@ -117,4 +117,8 @@ export class Local extends AbsAudioModel implements ICacheAble {
         Local.pending.set(id, job);
         return job;
     }
+
+    public isAll(): boolean {
+        return true;
+    }
 }

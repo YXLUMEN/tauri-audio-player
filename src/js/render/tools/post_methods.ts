@@ -2,27 +2,22 @@ import createAlert from "./base_page";
 import {IBaseFetch} from "../../interfaces/post";
 import {ECategories} from "../../interfaces/pages";
 import {fetch} from '@tauri-apps/plugin-http';
+import {defaultFetch} from "../default";
 
 
 // 封装的fetch方法
 export default async function baseFetch(url: string, opts: IBaseFetch = {}): Promise<Response> {
-    const defaultOpts: IBaseFetch = {
-        method: 'POST',
-        body: '',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        referrer: "about:client",
-        cache: 'default',
-        ignore_err: [],
+    const options: IBaseFetch = {
+        ...defaultFetch,
         ...opts
     };
-    if (defaultOpts.method === 'GET') defaultOpts.body = null;
 
-    const response = await fetch(url, defaultOpts);
+    if (options.method === 'GET') options.body = null;
+
+    const response = await fetch(url, options);
     const status = response.status;
 
-    if (!response.ok && !defaultOpts.ignore_err.includes(status)) statusAlert(status);
+    if (!response.ok && !options.ignore_err.includes(status)) statusAlert(status);
     return response;
 }
 

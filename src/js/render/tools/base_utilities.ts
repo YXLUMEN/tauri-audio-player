@@ -24,12 +24,10 @@ export function throttleTimeOut<T extends (...args: any[]) => any>(func: T, wait
  * 防抖函数
  * @param func
  * @param wait default: 50ms
- * @param immediate
  * */
-export function debounce<T extends (...args: any[]) => any>(func: T, wait: number = 50, immediate: boolean = false) {
+export function debounce<T extends (...args: any[]) => any>(func: T, wait: number = 50) {
     let timer: number;
     return function (...args: Parameters<T>) {
-        if (immediate) wait = 0;
         if (timer) clearTimeout(timer);
         timer = setTimeout(() => func.apply(this, args), wait);
     }

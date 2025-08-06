@@ -38,8 +38,8 @@ async function initialize(): Promise<void> {
 
 async function checkUpdate() {
     try {
-        const shouldUpdate = localStorage.getItem('should-check-when-start');
-        if (shouldUpdate == undefined) return;
+        let shouldUpdate = localStorage.getItem('should-check-when-start');
+        if (shouldUpdate == undefined) shouldUpdate = 'true';
 
         const bl = Boolean(JSON.parse(shouldUpdate));
         (<HTMLInputElement>document.getElementById('auto-check')).checked = bl;

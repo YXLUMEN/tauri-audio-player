@@ -20,7 +20,7 @@ let isLyricDisplay: boolean = false;
 // 自动重载token
 const MAX_RETRY: number = 3;
 let retryCount: number = 0;
-let pendingRetry = false;
+let pendingRetry: boolean = false;
 const onAudioError = throttleTimeOut(async (_: any, play: boolean = true) => {
     if (pendingRetry) return;
     if (retryCount >= MAX_RETRY) {
@@ -30,12 +30,12 @@ const onAudioError = throttleTimeOut(async (_: any, play: boolean = true) => {
     const currentPlay = d.getCurrentPlaying();
     const plugin = d.getPlugin(currentPlay.plugin);
 
-    if (!isAuthAble(plugin)) return;
     pendingRetry = true;
     retryCount++;
+    const authAble = isAuthAble(plugin);
 
     try {
-        await plugin.refresh();
+        if (authAble) await plugin.refresh();
 
         const success = await d.switchAudio(d.getAudioIndex(), {play, force: true});
         if (success) {
@@ -43,11 +43,13 @@ const onAudioError = throttleTimeOut(async (_: any, play: boolean = true) => {
             return;
         }
 
+        if (!authAble) return;
+
         const result = await d.dbHelper.get('auth', plugin.getPluginName());
         if (!result) return;
         await plugin.login({key: result.key, psd: result.psd});
     } catch (err) {
-        createAlert(`Fail when reload: ${err.message}`, 'warning');
+        createAlert(`第 ${retryCount} 次重试失败: ${err.message}`, 'warning');
         console.error(err);
     } finally {
         pendingRetry = false;
@@ -282,7 +284,7 @@ document.getElementById('lyric-box').addEventListener('wheel', event => {
 }, {passive: true});
 
 // 歌词微调
-document.getElementById('set-lyric-offset')?.addEventListener('click', event => {
+document.getElementById('set-lyric-offset').addEventListener('click', event => {
     const target = (<HTMLElement>event.target).closest('img');
     if (!target) return;
 
@@ -294,7 +296,7 @@ document.getElementById('set-lyric-offset')?.addEventListener('click', event => 
 });
 
 // 展示设置选项框
-document.getElementById('setting')?.addEventListener('click', toggleSettings);
+document.getElementById('setting').addEventListener('click', toggleSettings);
 
 // 频谱操作
 // @ts-ignore

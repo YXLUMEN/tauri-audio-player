@@ -1,12 +1,12 @@
 import * as v from "./env";
 import * as d from "./data";
-import {appendChildren} from "./tools/base_page";
+import createAlert, {appendChildren} from "./tools/base_page";
 import {applyPlayerAction, togglePlayer} from "./player";
 import {defaultFolder, IFolderInfo} from "./default";
 import {throttleTimeOut} from "./tools/base_utilities";
 import {open} from '@tauri-apps/plugin-dialog';
 import {IAudioInfo, IStandardAudio} from "../interfaces/audio";
-import {enableShortcut} from "./shortcuts";
+import {enableShortcut, vsmAdd} from "./shortcuts";
 import {randomCover} from "./tools/generate_random_nums";
 import {searchAudios} from "./search";
 
@@ -107,6 +107,18 @@ async function renderFolderContent(queue: IAudioInfo[] | null, start = 0) {
     v.folderContent.replaceChildren(frag);
 }
 
+function showLoadMore(): void {
+    const div = document.createElement("div");
+    div.classList.add('load-more');
+    const span = document.createElement("span");
+    span.classList.add('less');
+    span.textContent = '显示更多';
+    div.append(span);
+
+    v.folderContent.append(div);
+    div.onclick = () => vsmAdd();
+}
+
 // 设置播放队列
 async function setDisplayFolder(array: IAudioInfo[] | null, reRender: boolean = true) {
     displayedContent = array;
@@ -158,6 +170,16 @@ async function getNewFolderInfo(create: boolean = false): Promise<IFolderInfo | 
     const abort = new AbortController();
     const {promise, resolve, reject} = Promise.withResolvers();
 
+    promise.finally(() => {
+        pendingInput = null;
+        abort.abort();
+
+        v.folderContent.parentElement.classList.remove('hide');
+        editor.classList.remove('show');
+        editor = null;
+        enableShortcut(true);
+    });
+
     coverImg.addEventListener('click', async () => {
         try {
             const files = await open({
@@ -189,16 +211,6 @@ async function getNewFolderInfo(create: boolean = false): Promise<IFolderInfo | 
         }
     }, {signal: abort.signal});
 
-    promise.finally(() => {
-        pendingInput = null;
-        abort.abort();
-
-        v.folderContent.parentElement.classList.remove('hide');
-        editor.classList.remove('show');
-        editor = null;
-        enableShortcut(true);
-    });
-
     pendingInput = reject;
     return await <Promise<IFolderInfo | null>>promise;
 }
@@ -220,6 +232,11 @@ async function choseFolderToCollect(): Promise<number | null> {
     const abort = new AbortController();
     const {promise, resolve} = Promise.withResolvers();
 
+    promise.finally(() => {
+        abort.abort();
+        v.choseFolderContent.parentElement.classList.remove('show');
+    });
+
     v.choseFolderContent.addEventListener('click', (event) => {
         const id = (<HTMLElement>event.target).closest('.audio-folder')?.getAttribute('folder_id');
         if (!id) return;
@@ -228,12 +245,7 @@ async function choseFolderToCollect(): Promise<number | null> {
 
     v.choseFolderContent.parentElement.classList.add('show');
 
-    try {
-        return await <Promise<number | null>>promise;
-    } finally {
-        abort.abort();
-        v.choseFolderContent.parentElement.classList.remove('show');
-    }
+    return await <Promise<number | null>>promise;
 }
 
 // 选择歌单
@@ -250,7 +262,7 @@ const selectFolder = throttleTimeOut(async (event: MouseEvent) => {
     const plugin = folder.getAttribute('plugin');
 
     if (plugin) {
-        // 加载特殊歌单
+        // 加载远程歌单
         audios = await d.getPlugin(plugin).getAudioList();
     } else {
         // 加载用户歌单
@@ -267,6 +279,7 @@ const selectFolder = throttleTimeOut(async (event: MouseEvent) => {
     folderTitle.textContent = folder.getElementsByTagName('span')?.[0]?.textContent || '歌单';
 
     await setDisplayFolder(audios);
+    if (plugin && !d.getPlugin(plugin).isAll()) showLoadMore();
 }, 300);
 
 v.indexLeftPanel.addEventListener('click', selectFolder);
@@ -312,6 +325,7 @@ v.preLoadCover.addEventListener('load', () => {
     (<HTMLImageElement>v.indexAudioCover.firstElementChild).src = v.preLoadCover.src;
 });
 
+// 初次加载后显示index控制面板
 v.audioEle.addEventListener('play', () =>
     document.getElementById('index-audio-control').classList.remove('hide'), {once: true});
 
@@ -337,18 +351,39 @@ document.getElementById('create-folder').addEventListener('click', async () => {
 
 // 选择歌曲
 v.folderContent.addEventListener('click', (event) => {
-    const row: HTMLElement = (<HTMLElement>event.target).closest('.row');
+    const row: HTMLElement = (<HTMLElement>event.target)?.closest('.row');
     if (!row) return;
     d.setChosenRow(row);
 });
 
 // 双击播放
 v.folderContent.addEventListener('dblclick', (event) =>
-    playChosenRow((<HTMLElement>event.target).closest('.row'))
+    playChosenRow((<HTMLElement>event.target)?.closest('.row'))
 );
 
 // 清空播放列表
-document.getElementById('clear-playing-queue').addEventListener('click', () => d.clearPlayingQueue());
+document.getElementById('playing-board-title').addEventListener('click', async (event) => {
+    const action = (<HTMLElement>event.target)?.getAttribute('action');
+    if (action === 'collect-all') {
+        const folderId = await choseFolderToCollect();
+        if (!folderId) return;
+        for (const audio of d.getPlayingQueue()) {
+            audio.parent = folderId;
+            if (audio.index) delete audio.index;
+            try {
+                await d.dbHelper.add('favor', audio);
+            } catch (err) {
+                if (err.name === 'ConstraintError') continue;
+                console.error(err);
+            }
+        }
+        createAlert('收藏完成', 'success');
+        return;
+    }
+    if (action === 'clear-queue') {
+        return d.clearPlayingQueue();
+    }
+});
 
 function initIndex(): Promise<void> {
     return renderCustomFolder();
@@ -359,6 +394,7 @@ export {
     renderFolderContent,
     renderCustomFolder,
     setDisplayFolder,
+    showLoadMore,
     playChosenRow,
     choseFolderToCollect,
     getNewFolderInfo,

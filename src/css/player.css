@@ -69,7 +69,7 @@
 .text-container {
     display: block;
     width: 80%;
-    transition: 200ms;
+    transition: opacity 200ms;
 }
 
 .text-container {
@@ -110,7 +110,6 @@
     mix-blend-mode: difference;
     color: white;
     pointer-events: none;
-    transition: 200ms;
 }
 
 .lyric-box {
@@ -123,7 +122,6 @@
     overflow: hidden;
     font-size: 20px;
     color: white;
-    transition: 250ms ease-out;
 
 }
 
@@ -231,11 +229,16 @@
                 #42b680 var(--pct),
                 #ddd 0
         );
+        transition: height 100ms;
     }
 
     &::-webkit-slider-thumb {
         height: 2px;
         border-radius: 0;
+    }
+
+    &:hover {
+        height: 4px;
     }
 
     &:hover::-webkit-slider-thumb {
@@ -337,7 +340,10 @@
     flex: 1;
 }
 
-.clear-playing-queue {
+.playing-queue-ico {
+    margin: 0 6px;
+    width: 24px;
+    height: 24px;
     cursor: pointer;
 }
 

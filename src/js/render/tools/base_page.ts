@@ -10,25 +10,15 @@ import {defaultConfirm} from "../default";
  *          'src': '/example/good.png',
  *      }
  * */
-export function setAttributes(ele: HTMLElement, attributes: { [key: string]: string }) {
+export function setAttributes(ele: HTMLElement, attributes: { [key: string]: string }): void {
     Object.entries(attributes).forEach(([attr, value]) => ele.setAttribute(attr, value));
 }
 
-export function appendChildren(parentEle: HTMLElement, ...children: HTMLElement[]) {
+export function appendChildren(parentEle: HTMLElement, ...children: HTMLElement[]): void {
     children.forEach(item => parentEle.append(item));
 }
 
-export function toggleClass(element: HTMLElement, removeClass: string[], addClass: string[]) {
-    element.classList.remove(...removeClass);
-    element.classList.add(...addClass);
-}
-
-
-// 批量从ElementId获取HTML元素,不会进行存在性检查
-export function batchGetElementsById(...ids: string[]) {
-    return ids.map(id => document.getElementById(id));
-}
-
+// 播放音频
 export async function playSound(url: string): Promise<void> {
     try {
         const audioContext = new AudioContext();
@@ -93,35 +83,38 @@ export default function createAlert(message: string, category: ECategories | str
     appendChildren(alert, p, img);
 
     // 手动关闭
-    alert.addEventListener('click', function alertAction(event) {
+    alert.onclick = event => {
         const target = (<HTMLElement>event.target).closest('.close');
         if (!target) return;
-        this.removeEventListener('click', alertAction);
-        removeNote(this, animation);
-    });
+        removeNote(alert, animation);
+    };
 
     baseAlertBox.append(alert);
 
     // 自动移除
     if (!alert || !autoRemoveDelay) return;
 
-    const totalDelay = Math.min(
-        autoRemoveDelay * boxChildren.length,
-        10000 // Cap maximum delay at 10 seconds
-    );
+    const index = Array.from(boxChildren).indexOf(alert);
+    const totalDelay = Math.min(autoRemoveDelay * (index + 1), 10000);
 
     setTimeout(() => {
         removeNote(alert, animation);
     }, totalDelay);
 }
 
-
 // 创建确认提示框
-export function createConfirm(message: string = '是否确认操作?', opts: IConfirm = {}): Promise<any> {
+export function createConfirm(message: string, opts: IConfirm = {}): Promise<boolean> {
     const {timeout, flag, category, defaultResult, strictTimeout, animation} = {...defaultConfirm, ...opts};
     const id = `confirm_${flag}`;
 
     if (document.getElementById(id)) return Promise.resolve(defaultResult);
+
+    // 默认的提示框box
+    const container = document.querySelector('.base-alert-box');
+    if (!container) {
+        console.error('Confirm container not found');
+        return Promise.resolve(defaultResult);
+    }
 
     const confirm = document.createElement('div');
     confirm.id = id;
@@ -154,30 +147,33 @@ export function createConfirm(message: string = '是否确认操作?', opts: ICo
 
     appendChildren(confirm, agreeImg, p, disagreeImg);
 
-    // 默认的提示框box
-    const baseAlertBox = document.getElementsByClassName('base-alert-box')[0];
-    if (baseAlertBox.firstChild) baseAlertBox.insertBefore(confirm, baseAlertBox.firstChild);
-    else baseAlertBox.appendChild(confirm);
+    // 置于最上层
+    if (container.firstChild) container.insertBefore(confirm, container.firstChild);
+    else container.appendChild(confirm);
 
     const {promise, resolve, reject} = Promise.withResolvers();
+    const abort = new AbortController();
+    promise.finally(() => abort.abort());
 
     let timeoutId: number = null;
     if (timeout) {
         timeoutId = setTimeout(() => {
-            strictTimeout ? reject(defaultResult) : resolve(defaultResult);
             console.warn(`Confirm timeout timeout: ${flag}`);
+
+            if (abort.signal.aborted) return;
+            strictTimeout ? reject(defaultResult) : resolve(defaultResult);
             removeNote(confirm, animation);
         }, timeout);
     }
 
-    confirm.addEventListener('click', function confirmAction(event) {
+    confirm.addEventListener('click', function (event) {
         const action = (<HTMLElement>event.target).closest('.action')?.getAttribute('action');
-        if (!action) return;
-        clearTimeout(timeoutId);
-        resolve(action === 'agree');
-        this.removeEventListener('click', confirmAction);
-        removeNote(this, animation);
-    });
+        if (!action || abort.signal.aborted) return;
 
-    return promise;
+        clearTimeout(timeoutId);
+        removeNote(this, animation);
+        resolve(action === 'agree');
+    }, {signal: abort.signal});
+
+    return <Promise<boolean>>promise;
 }

@@ -7,6 +7,7 @@ import {createCleanObj, defaultLyrics, IFolderInfo} from "./default";
 import {IAudioInfo, IFormatLyric, ILyric, ILyricAction, IStandardAudio, ISwitchAudio} from "../interfaces/audio";
 import {hideLoading, showLoading} from "./env";
 
+const SIGNIFICANT_LAG_RATIO: number = 3;
 
 let audioIndex: number = -1;
 
@@ -323,8 +324,6 @@ async function switchAudio(newIndex: number, opt: ISwitchAudio = {}): Promise<bo
             return await v.pauseToggle();
         }
         return true;
-    } catch (err) {
-        throw err;
     } finally {
         hideLoading();
     }
@@ -343,7 +342,7 @@ function highlightCurrentPlaying(scroll: boolean = true): void {
 
     const currentRow = document.getElementById(getCurrentPlaying()?.id);
     if (currentRow) {
-        v.folderContent.querySelector('.row.current')?.classList.remove('current');
+        v.folderContent.querySelector('.row.current')?.classList.remove('current', 'playing');
 
         currentRow.classList.add('current');
     }
@@ -488,7 +487,7 @@ function highlightLine(): void {
         }
     }
 
-    allLyricRows[currentLine].classList.add('highlight-line');
+    allLyricRows[currentLine]?.classList.add('highlight-line');
 
     if (syncLyricEnable && currentLine > centralPos) {
         v.lyricContent.style.transform = `translateY(${(currentLine - centralPos) * lineOffset}px)`
@@ -499,11 +498,11 @@ function highlightLine(): void {
 const significantLeapFn = debounce(() => {
     const {lyrArray, currentLine, centralPos, syncLyricEnable} = LYRIC_ACTIONS;
     const length = lyrArray?.length || 0;
+    const liElements = v.lyricContent?.children;
 
-    if (length <= 1 || !v.lyricContent?.children) return;
+    if (length <= 1 || !liElements) return;
 
     const currentTime = v.audioEle.currentTime;
-    const liElements = v.lyricContent.children;
     const LOOK_AHEAD = 4;
 
     const start = Math.max(currentLine - LOOK_AHEAD, 0);
@@ -546,7 +545,7 @@ function syncLyric(currentTime: number): void {
     const adjustedCurrentTime = currentTime + lyricOffset;
     const lyrTime = lyrArray[currentLine].time;
 
-    if (lyrTime * 3 <= adjustedCurrentTime) {
+    if (lyrTime * SIGNIFICANT_LAG_RATIO <= adjustedCurrentTime) {
         significantLeapFn();
         return;
     }

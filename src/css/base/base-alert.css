@@ -31,7 +31,6 @@
     -webkit-user-select: none;
     user-select: none;
     pointer-events: initial;
-    transition: 150ms;
 }
 
 .base-alert-box .note {

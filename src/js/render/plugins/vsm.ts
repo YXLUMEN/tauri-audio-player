@@ -40,13 +40,17 @@ export class VSM extends AbsAudioModel implements IAuthAble {
             return VSM.vsmCache;
         }
 
-        const res = await baseFetch(`${VSM.AUDIO_LISTS_URL}?token=${this.accessToken}`, {
+        const res = await baseFetch(VSM.AUDIO_LISTS_URL, {
+            headers: {
+                'Authorization': `Bearer ${this.accessToken}`,
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify({
                 'audio_lists': 1,
                 'seq': 0,
                 'search_string': opts.search || '',
                 ...opts,
-            })
+            }),
         });
 
         const json = await res.json();
@@ -71,7 +75,11 @@ export class VSM extends AbsAudioModel implements IAuthAble {
 
     public async getLyric(): Promise<IFormatLyric | null> {
         const hash = getCurrentPlaying().id;
-        const res = await baseFetch(`${VSM.LYRIC_URL}?token=${this.accessToken}`, {
+        const res = await baseFetch(VSM.LYRIC_URL, {
+            headers: {
+                'Authorization': `Bearer ${this.accessToken}`,
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify({
                 'audio_lyrics': true,
                 'audio_hash': hash
@@ -106,6 +114,10 @@ export class VSM extends AbsAudioModel implements IAuthAble {
         };
     }
 
+    public isAll(): boolean {
+        return this.seq === this.maxCount;
+    }
+
     public async loadToken(): Promise<void> {
         const access = localStorage.getItem('vsm-access-token');
         if (access) {
@@ -120,14 +132,10 @@ export class VSM extends AbsAudioModel implements IAuthAble {
         await this.refresh();
     }
 
-    public async login(payload: any): Promise<void> {
+    public async login(payload: any): Promise<boolean> {
         try {
             const res = await baseFetch(VSM.AUTH_URL, {
-                method: 'POST',
                 body: JSON.stringify(payload),
-                headers: {
-                    'Content-Type': 'application/json',
-                },
             });
 
             const {access_token, refresh_token} = await res.json();
@@ -136,26 +144,32 @@ export class VSM extends AbsAudioModel implements IAuthAble {
 
             localStorage.setItem('vsm-access-token', access_token);
             localStorage.setItem('vsm-refresh-token', refresh_token);
+            return true;
         } catch (err) {
             console.error(err);
+            return false;
         }
     }
 
-    public async refresh(): Promise<void> {
+    public async refresh(): Promise<boolean> {
         try {
             const res = await baseFetch(VSM.REFRESH_URL, {
-                method: 'POST',
                 body: JSON.stringify({refresh_token: this.refreshToken}),
             });
 
             const result = await res.json();
-            if (!result || result['status'] !== 1016) return createAlert('无法连接认证服务器', 'warning');
+            if (!result || result['status'] !== 1016) {
+                createAlert('无法连接认证服务器', 'warning');
+                return false;
+            }
 
             const access_token = result['access_token'];
             this.accessToken = access_token;
             localStorage.setItem('vsm-access-token', access_token);
+            return true;
         } catch (err) {
             console.error(err);
+            return false;
         }
     }
 

@@ -64,6 +64,14 @@
 <!-- 设置页面 -->
 <div class="settings-container" id="settings-container">
     <div class="title">设置</div>
+    <div class="setting-selections">
+        <div><a class="less" href="#select-local-audio">播放本地音频</a></div>
+        <div><a class="less" href="#fft-settings">频谱图设置</a></div>
+        <div><a class="less" href="#shortcuts-settings">快捷键设置</a></div>
+        <div><a class="less" href="#clean-cache">清理缓存</a></div>
+        <div><a class="less" href="#apis-settings">设置API</a></div>
+        <div><a class="less" href="#check-update">软件更新</a></div>
+    </div>
     <div class="base-line"></div>
 
     <div class="setting-context">
@@ -171,8 +179,8 @@
             <div class="title-like">显示/隐藏 播放器</div>
             <div class="key" action="toggle-player">P</div>
 
-            <div class="title-like">更新vsm音乐列表(可能有未知Bug)</div>
-            <div class="key" action="update-vsm">+</div>
+            <div class="title-like">更新远程音乐列表</div>
+            <div class="key" action="update-remote">+</div>
         </div>
     </div>
 
@@ -193,24 +201,6 @@
     <div class="base-line"></div>
 
     <div class="setting-context">
-        <div class="subtitle">软件更新</div>
-        <div class="setting-details table">
-            <span class="title-like">检查更新</span>
-            <input class="base-button" id="check-update" type="button" value="立即检查">
-
-            <span class="title-like">启动时检查更新</span>
-            <div class="base-switch">
-                <label>
-                    <input type="checkbox" id="auto-check">
-                    <span class="slider"></span>
-                </label>
-            </div>
-        </div>
-    </div>
-
-    <div class="base-line"></div>
-
-    <div class="setting-context">
         <div class="subtitle">密钥设置</div>
         <div class="setting-details long" id="apis-settings">
             <span class="title-like">VSM</span>
@@ -219,6 +209,24 @@
                 <input class="base-input" placeholder="Api password" name="api-psd" type="password">
                 <input class="base-button" type="button" name="submit" value="确认">
             </label>
+        </div>
+    </div>
+
+    <div class="base-line"></div>
+
+    <div class="setting-context">
+        <div class="subtitle">软件更新</div>
+        <div class="setting-details table">
+            <span class="title-like">检查更新</span>
+            <input class="base-button" id="check-update" type="button" value="立即检查">
+
+            <span class="title-like">启动时检查更新</span>
+            <div class="base-switch">
+                <label>
+                    <input type="checkbox" id="auto-check" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
         </div>
     </div>
 </div>
@@ -466,10 +474,17 @@
 <div class="close-playing-board hide" id="close-playing-board"></div>
 <div class="playing-board-container hide" id="playing-board-container">
     <div class="playing-board">
-        <div class="playing-board-title">
+        <div class="playing-board-title" id="playing-board-title">
             <span>播放队列</span>
-            <svg class="clear-playing-queue" id="clear-playing-queue" viewBox="0 0 1024 1024"
-                 xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+            <svg class="playing-queue-ico" action="collect-all" viewBox="0 0 1024 1024"
+                 xmlns="http://www.w3.org/2000/svg">
+                <path d="M511.3 959.7c-60.4 0-119-11.8-174.2-35.2-53.3-22.5-101.1-54.8-142.2-95.9-41.1-41.1-73.4-88.9-95.9-142.2-23.3-55.2-35.2-113.8-35.2-174.2S75.6 393.1 99 338c22.5-53.3 54.8-101.1 95.9-142.2 41.1-41.1 88.9-73.4 142.2-95.9 55.2-23.3 113.8-35.2 174.2-35.2 60.4 0 119 11.8 174.2 35.2 53.3 22.5 101.1 54.8 142.2 95.9 41.1 41.1 73.4 88.9 95.9 142.2 23.3 55.2 35.2 113.8 35.2 174.2s-11.8 119-35.2 174.2c-22.5 53.3-54.8 101.1-95.9 142.2-41.1 41.1-88.9 73.4-142.2 95.9-55.2 23.3-113.8 35.2-174.2 35.2z m0-839c-52.9 0-104.1 10.3-152.4 30.8-46.6 19.7-88.5 47.9-124.5 83.9-36 36-64.2 77.8-83.9 124.5-20.4 48.2-30.8 99.5-30.8 152.4s10.3 104.1 30.8 152.4c19.7 46.6 47.9 88.5 83.9 124.5 36 36 77.8 64.2 124.5 83.9 48.2 20.4 99.5 30.8 152.4 30.8 52.9 0 104.1-10.3 152.4-30.8 46.6-19.7 88.5-47.9 124.5-83.9s64.2-77.8 83.9-124.5c20.4-48.2 30.8-99.5 30.8-152.4S892.4 408 872 359.8c-19.7-46.6-47.9-88.5-83.9-124.5s-77.8-64.2-124.5-83.9c-48.2-20.4-99.5-30.7-152.3-30.7z"
+                      fill="#8a8a8a"></path>
+                <path d="M737.3 484.2h-198v-198c0-15.5-12.5-28-28-28s-28 12.5-28 28v198h-198c-15.5 0-28 12.5-28 28s12.5 28 28 28h198v198c0 15.5 12.5 28 28 28s28-12.5 28-28v-198h198c15.5 0 28-12.5 28-28s-12.6-28-28-28z"
+                      fill="#8a8a8a"></path>
+            </svg>
+            <svg class="playing-queue-ico" action="clear-queue" viewBox="0 0 1024 1024"
+                 xmlns="http://www.w3.org/2000/svg">
                 <path d="M783 312.5v510c0 16.6-13.4 30-30 30H273c-16.6 0-30-13.4-30-30v-510h540m60-60H183v600c0 33.1 26.9 60 60 60h540c33.1 0 60-26.9 60-60v-600z"
                       fill="#595959"></path>
                 <path d="M333 251v-78h360v78H333m-60 60h420c33.1 0 60-26.9 60-60v-78c0-33.1-26.9-60-60-60H333c-33.1 0-60 26.9-60 60v138z"
