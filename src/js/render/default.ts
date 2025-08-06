@@ -2,6 +2,18 @@ import {IFormatLyric} from "../interfaces/audio";
 import {IConfirm} from "../interfaces/pages";
 import {IBaseFetch} from "../interfaces/post";
 
+export interface IFolderInfo {
+    id: number;
+    name: string;
+    desc?: string;
+    cover: string;
+}
+
+export interface IShortCuts {
+    action: string;
+    code: string
+}
+
 function deepFreeze(obj: any): any {
     if (obj === null || typeof obj !== 'object') return obj;
 
@@ -24,24 +36,12 @@ function createCleanObj(obj: any): any {
     return Object.assign(Object.create(null), obj);
 }
 
-export interface IFolderInfo {
-    id: number;
-    name: string;
-    desc?: string;
-    cover: string;
-}
-
 const defaultFolder: IFolderInfo = Object.freeze({
     id: 1,
     name: '默认歌单',
     desc: '',
     cover: '/img/audio/cover/audio-2.webp'
 });
-
-export interface IShortCuts {
-    action: string;
-    code: string
-}
 
 const defaultShortcuts: IShortCuts[] = deepFreeze([
     {action: 'toggle-play', code: 'Space'},

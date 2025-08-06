@@ -8,7 +8,6 @@ import {open} from '@tauri-apps/plugin-dialog';
 import {IAudioInfo, IStandardAudio} from "../interfaces/audio";
 import {enableShortcut, vsmAdd} from "./shortcuts";
 import {randomCover} from "./tools/generate_random_nums";
-import {searchAudios} from "./search";
 
 
 // 展示的音频列表
@@ -296,9 +295,6 @@ async function playChosenRow(target: HTMLElement) {
 
     await d.switchAudio(Number(index));
 }
-
-// 触发搜索
-document.getElementById('search-submit').addEventListener('click', searchAudios);
 
 // 展示播放器或处理操作按钮
 const handleIndexPlayController = throttleTimeOut(async (event: MouseEvent) => {

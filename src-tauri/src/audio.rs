@@ -31,7 +31,7 @@ fn read_basic_metadata(path: &Path) -> Result<AudioMetadata, String> {
         hint.with_extension(ext);
     }
 
-    // 探测容器，仅加载 metadata
+    // 探测容器,仅加载 metadata
     let probe = default::get_probe()
         .format(&hint, mss, &Default::default(), &Default::default())
         .map_err(|e| format!("不支持的音频格式: {}", e))?;
@@ -40,6 +40,7 @@ fn read_basic_metadata(path: &Path) -> Result<AudioMetadata, String> {
 
     let mut metadata = AudioMetadata::default();
 
+    // 读取元数据以及第一张封面
     if let Some(meta) = format.metadata().current() {
         for tag in meta.tags() {
             match tag.std_key {
@@ -53,6 +54,13 @@ fn read_basic_metadata(path: &Path) -> Result<AudioMetadata, String> {
         if let Some(visual) = meta.visuals().iter().next() {
             metadata.cover = Some(visual.data.to_vec());
             metadata.cover_mime_type = Some(detect_image_mime_type(&visual.data));
+        }
+    }
+
+    // 回退为文件名
+    if metadata.title.is_none() {
+        if let Some(file_name) = path.file_stem().and_then(|s| s.to_str()) {
+            metadata.title = Some(file_name.to_string());
         }
     }
 

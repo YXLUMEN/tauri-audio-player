@@ -95,8 +95,21 @@ document.getElementById('check-update').addEventListener('click', async () => {
 // 启动时更新设置
 document.getElementById('auto-check').addEventListener('input', function () {
     const inputEle = <HTMLInputElement>this;
-    const bl = inputEle.checked || false;
-    localStorage.setItem('should-check-when-start', JSON.stringify(bl));
+    if (inputEle.checked) {
+        localStorage.removeItem('not-check-when-start');
+        return;
+    }
+    localStorage.setItem('not-check-when-start', '1');
+});
+
+// 退出到托盘
+document.getElementById('quit-to-tray').addEventListener('click', function () {
+    const inputEle = <HTMLInputElement>this;
+    if (inputEle.checked) {
+        localStorage.removeItem('quit-to-tray');
+        return;
+    }
+    localStorage.setItem('quit-to-tray', '1');
 });
 
 // 设置Api并重新登录

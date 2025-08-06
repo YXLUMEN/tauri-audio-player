@@ -337,7 +337,7 @@ document.getElementById('toggle-fft').addEventListener('change', async () => {
 }, {once: true});
 
 // 存储匿名操作函数,使CONTROL_MAP清晰
-const anonymous_fun: { [key: string]: CallableFunction } = Object.freeze(Object.assign(Object.create(null), {
+const anonymous_fun: { [key: string]: () => {} } = Object.freeze(Object.assign(Object.create(null), {
     skipForward: () => d.switchAudio(getNextAudioIndex(-1)),
     skipBackward: () => d.switchAudio(getNextAudioIndex(1)),
     arrowUp: () => modifyVolume(Number(v.volumeToggle.value) + 2),

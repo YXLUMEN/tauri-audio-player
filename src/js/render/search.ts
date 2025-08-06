@@ -4,7 +4,7 @@ import {dbHelper, getPlugin, removeDuplicate} from "./data";
 import {IAudioInfo} from "../interfaces/audio";
 import {hideLoading, showLoading} from "./env";
 
-export async function searchAudios() {
+async function searchAudios() {
     const input = <HTMLInputElement>document.getElementById('search-input');
     if (!input || input.value.trim() === '') return;
 
@@ -86,4 +86,8 @@ async function searchVsm(arg: string): Promise<IAudioInfo[] | null> {
         return;
     }
     return result;
+}
+
+export function initSearch() {
+    document.getElementById('search-submit').addEventListener('click', searchAudios);
 }
