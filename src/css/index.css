@@ -1,7 +1,6 @@
 :root {
     --title-width: 0.6;
     --album-width: 0.4;
-    --pct: 0;
 }
 
 ::-webkit-scrollbar {
@@ -28,6 +27,10 @@ body {
     margin: 0;
     user-select: none;
     background: linear-gradient(180deg, rgba(208, 255, 228, .4), rgb(255, 255, 255));
+}
+
+svg, img {
+    -webkit-user-drag: none;
 }
 
 .title-bar {
@@ -726,6 +729,7 @@ body {
                 #42b680 var(--pct),
                 #ddd var(--pct)
         );
+        --pct: 0;
     }
 
     &::-webkit-slider-thumb {
