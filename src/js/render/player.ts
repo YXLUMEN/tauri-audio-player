@@ -1,8 +1,7 @@
 import * as d from "./data";
 import * as v from "./env";
-import {debounce, throttleTimeOut} from "./tools/base_utilities";
+import {debounce, sleep, throttleTimeOut} from "./tools/base_utilities";
 import {generateUniqueRandomNumbers} from "./tools/generate_random_nums";
-import {initIndex} from "./index";
 import createAlert from "./tools/base_page";
 
 import {isAuthAble} from "./plugins/exports";
@@ -21,7 +20,8 @@ let isLyricDisplay: boolean = false;
 const MAX_RETRY: number = 3;
 let retryCount: number = 0;
 let pendingRetry: boolean = false;
-const onAudioError = throttleTimeOut(async (_: any, play: boolean = true) => {
+
+async function onAudioError(_: any, play: boolean = true): Promise<void> {
     if (pendingRetry) return;
     if (retryCount >= MAX_RETRY) {
         createAlert('超过最大重试次数, 请检查Api密钥是否有效或尝试重启软件', 'error', {autoRemoveDelay: 0});
@@ -35,7 +35,10 @@ const onAudioError = throttleTimeOut(async (_: any, play: boolean = true) => {
     const authAble = isAuthAble(plugin);
 
     try {
-        if (authAble) await plugin.refresh();
+        if (authAble) {
+            if (!window.navigator.onLine) return;
+            await plugin.refresh();
+        }
 
         const success = await d.switchAudio(d.getAudioIndex(), {play, force: true});
         if (success) {
@@ -47,14 +50,16 @@ const onAudioError = throttleTimeOut(async (_: any, play: boolean = true) => {
 
         const result = await d.dbHelper.get('auth', plugin.getPluginName());
         if (!result) return;
+
         await plugin.login({key: result.key, psd: result.psd});
     } catch (err) {
         createAlert(`第 ${retryCount} 次重试失败: ${err.message}`, 'warning');
         console.error(err);
     } finally {
+        await sleep(100);
         pendingRetry = false;
     }
-}, 1000);
+}
 
 // 切换播放模式
 function modeToggle() {
@@ -241,9 +246,8 @@ v.audioEle.addEventListener('ended', () => d.switchAudio(getNextAudioIndex(1)));
 
 // 第一次错误不开始播放
 v.audioEle.addEventListener('error', () => {
-    onAudioError(null, false);
-    // 音频出错监听
-    v.audioEle.addEventListener('error', onAudioError);
+    onAudioError(null, false)
+        .finally(() => v.audioEle.addEventListener('error', onAudioError));
 }, {once: true});
 
 // 修改音量
@@ -386,6 +390,7 @@ async function loadHistory() {
 
         document.getElementById('index-audio-control').classList.remove('hide');
         v.audioEle.addEventListener('loadeddata', () => {
+            if (index !== d.getAudioIndex()) return;
             v.audioEle.currentTime = Number(currentTime);
         }, {once: true});
     } catch (e) {
@@ -393,8 +398,16 @@ async function loadHistory() {
     }
 }
 
-function initPlayer(): Promise<void> {
-    return initIndex();
+window.addEventListener('offline', () => {
+    createAlert('网络连接中断', 'error');
+});
+
+window.addEventListener('online', () => {
+    if (pendingRetry || retryCount <= 0) return;
+    onAudioError(null).then();
+});
+
+function initPlayer(): void {
 }
 
 

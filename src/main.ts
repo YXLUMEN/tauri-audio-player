@@ -26,8 +26,11 @@ async function initialize(): Promise<void> {
     const settings = await import('./js/render/settings');
     await settings.initSettings();
 
+    const index = await import('./js/render/index');
+    await index.initIndex().catch(e => console.error(`渲染歌单失败: ${e.message}`));
+
     const player = await import('./js/render/player');
-    player.initPlayer().catch(e => console.error(`渲染歌单失败: ${e.message}`));
+    player.initPlayer();
 
     await appWindow.once('quit', async () => {
         await player.savePlayingQueue();
@@ -51,7 +54,7 @@ async function initialize(): Promise<void> {
 }
 
 function loadDefaults() {
-    // 移除以弃用的标志;
+    // 移除弃用的标志;
     localStorage.removeItem('should-check-when-start');
     const shouldUpdate = localStorage.getItem('not-check-when-start');
     if (shouldUpdate !== null) {

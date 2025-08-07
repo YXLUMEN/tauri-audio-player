@@ -1,6 +1,6 @@
 import * as d from "./data";
 import createAlert, {createConfirm} from "./tools/base_page";
-import {choseFolderToCollect, getNewFolderInfo, playChosenRow, renderCustomFolder, displayedContent} from "./index";
+import {choseFolderToCollect, displayedContent, getNewFolderInfo, playChosenRow, renderCustomFolder} from "./index";
 import {choseFolderContent, indexContextmenu} from "./env";
 
 // 选择的播放列表音频
@@ -103,8 +103,8 @@ async function contextmenuHandleFolder(action: string) {
         await d.deleteFolder(id);
     }
 
-    await renderCustomFolder();
     d.setChosenFolder(null);
+    await renderCustomFolder();
 }
 
 // 展示右键菜单

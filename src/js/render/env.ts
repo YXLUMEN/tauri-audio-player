@@ -112,7 +112,7 @@ function setUiPause() {
 
 // 切换播放状态
 async function pauseToggle(pause = false): Promise<boolean> {
-    if (!audioEle.src) return;
+    if (!audioEle.src) return false;
     try {
         if (audioEle.paused && !pause) {
             await audioEle.play();

@@ -1,11 +1,11 @@
 import * as v from "./env";
+import {hideLoading, showLoading} from "./env";
 import {debounce, isEmpty} from "./tools/base_utilities";
 import createAlert, {appendChildren} from "./tools/base_page";
 import {IndexedDBHelper} from "./tools/db";
 import {AbsAudioModel, isCacheAble, Local, VSM} from "./plugins/exports";
 import {createCleanObj, defaultLyrics, IFolderInfo} from "./default";
 import {IAudioInfo, IFormatLyric, ILyric, ILyricAction, IStandardAudio, ISwitchAudio} from "../interfaces/audio";
-import {hideLoading, showLoading} from "./env";
 
 const SIGNIFICANT_LAG_RATIO: number = 3;
 
@@ -277,7 +277,7 @@ v.audioEle.addEventListener('loadedmetadata', () => {
     fetchLyricFn();
 });
 
-function loadAudio(standard: IStandardAudio): void {
+function loadAudio(standard: IStandardAudio): Promise<boolean> {
     // 设置音频信息
     const {title, album, artist, url, cover} = standard;
 
@@ -291,9 +291,22 @@ function loadAudio(standard: IStandardAudio): void {
     document.getElementById('lyric-title').textContent = title;
 
     v.audioEle.src = url;
-    v.audioEle.load();
+    // v.audioEle.load();
 
     v.preLoadCover.src = cover;
+
+    return new Promise((resolve) => {
+        const abort = new AbortController();
+        v.audioEle.addEventListener('loadedmetadata', () => {
+            abort.abort();
+            resolve(true);
+        }, {once: true, signal: abort.signal});
+
+        v.audioEle.addEventListener('error', () => {
+            abort.abort();
+            resolve(false);
+        }, {once: true, signal: abort.signal});
+    });
 }
 
 async function switchAudio(newIndex: number, opt: ISwitchAudio = {}): Promise<boolean> {
@@ -305,8 +318,7 @@ async function switchAudio(newIndex: number, opt: ISwitchAudio = {}): Promise<bo
 
         if (newIndex === audioIndex && !force) {
             v.audioEle.currentTime = 0;
-            await v.pauseToggle();
-            return false;
+            return await v.pauseToggle();
         }
 
         showLoading();
@@ -317,12 +329,11 @@ async function switchAudio(newIndex: number, opt: ISwitchAudio = {}): Promise<bo
         const standard = await getPlugin(audio.plugin).parse(audio);
         if (!standard) return false;
 
-        loadAudio(standard);
+        if (!await loadAudio(standard)) return false;
+
         highlightCurrentPlaying(scroll);
 
-        if (play) {
-            return await v.pauseToggle();
-        }
+        if (play) return await v.pauseToggle();
         return true;
     } finally {
         hideLoading();
