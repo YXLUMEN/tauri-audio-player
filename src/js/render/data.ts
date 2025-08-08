@@ -277,6 +277,8 @@ v.audioEle.addEventListener('loadedmetadata', () => {
     fetchLyricFn();
 });
 
+let loadCtrl: AbortController | null = null;
+
 function loadAudio(standard: IStandardAudio): Promise<boolean> {
     // 设置音频信息
     const {title, album, artist, url, cover} = standard;
@@ -291,34 +293,50 @@ function loadAudio(standard: IStandardAudio): Promise<boolean> {
     document.getElementById('lyric-title').textContent = title;
 
     v.audioEle.src = url;
-    // v.audioEle.load();
+    v.audioEle.load();
 
     v.preLoadCover.src = cover;
 
+    loadCtrl?.abort();
     return new Promise((resolve) => {
-        const abort = new AbortController();
-        v.audioEle.addEventListener('loadedmetadata', () => {
-            abort.abort();
-            resolve(true);
-        }, {once: true, signal: abort.signal});
+        const ctrl = new AbortController();
+        loadCtrl = ctrl;
 
-        v.audioEle.addEventListener('error', () => {
-            abort.abort();
-            resolve(false);
-        }, {once: true, signal: abort.signal});
+        let timer: number;
+
+        const settle = (ok: boolean) => {
+            if (ctrl.signal.aborted) return;
+            ctrl.abort();
+            if (timer) clearTimeout(timer);
+            resolve(ok);
+        };
+
+        timer = setTimeout(() => settle(false), 3E4);
+
+        v.audioEle.addEventListener('loadedmetadata', () => settle(true), {once: true, signal: ctrl.signal});
+        v.audioEle.addEventListener('error', () => settle(false), {once: true, signal: ctrl.signal});
+
+        // 外部中断
+        ctrl.signal.addEventListener('abort', () => settle(false), {once: true});
+
+        // 若在注册后立刻处于 aborted, 立刻返回
+        if (ctrl.signal.aborted) {
+            settle(false);
+        }
     });
 }
 
 async function switchAudio(newIndex: number, opt: ISwitchAudio = {}): Promise<boolean> {
-    try {
-        if (newIndex < 0 || newIndex >= playingQueue.length) {
-            return false;
-        }
-        const {force = false, play = true, scroll = false} = opt;
+    if (newIndex < 0 || newIndex >= playingQueue.length) {
+        return false;
+    }
 
+    const {force = false, play = true, scroll = false} = opt;
+
+    try {
         if (newIndex === audioIndex && !force) {
             v.audioEle.currentTime = 0;
-            return await v.pauseToggle();
+            return await v.pauseToggle(play);
         }
 
         showLoading();
@@ -329,7 +347,8 @@ async function switchAudio(newIndex: number, opt: ISwitchAudio = {}): Promise<bo
         const standard = await getPlugin(audio.plugin).parse(audio);
         if (!standard) return false;
 
-        if (!await loadAudio(standard)) return false;
+        const loaded = await loadAudio(standard);
+        if (!loaded) return false;
 
         highlightCurrentPlaying(scroll);
 
@@ -585,7 +604,7 @@ function getPlayingQueue(): IAudioInfo[] {
     return [...playingQueue];
 }
 
-function getCurrentPlaying(): IAudioInfo {
+function getCurrentPlaying(): IAudioInfo | null {
     return playingQueue[audioIndex];
 }
 
@@ -688,7 +707,7 @@ async function removeAudio(index: number): Promise<void> {
 
 async function clearPlayingQueue(): Promise<void> {
     if (playingQueue.length === 0) return;
-    await v.pauseToggle(true);
+    await v.pauseToggle(false);
     v.audioEle.removeAttribute('src');
 
     playingQueue = [];

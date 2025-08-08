@@ -1,10 +1,11 @@
 import * as d from "./data";
 import * as v from "./env";
-import {debounce, sleep, throttleTimeOut} from "./tools/base_utilities";
+import {debounce, throttleTimeOut} from "./tools/base_utilities";
 import {generateUniqueRandomNumbers} from "./tools/generate_random_nums";
 import createAlert from "./tools/base_page";
 
 import {isAuthAble} from "./plugins/exports";
+import {IAudioInfo} from "../interfaces/audio";
 
 
 // 播放模式设置
@@ -17,49 +18,139 @@ let isPlayerDisplay: boolean = false;
 let isLyricDisplay: boolean = false;
 
 // 自动重载token
-const MAX_RETRY: number = 3;
+const MAX_RETRY: number = 5;
 let retryCount: number = 0;
 let pendingRetry: boolean = false;
 
-async function onAudioError(_: any, play: boolean = true): Promise<void> {
+let lastKey: string = '';
+let panicAt: string = '';
+let cooldownUntil: number = 0;
+let lastAlertAt: number = 0;
+
+const shouldThrottleAlert = (interval = 2000) => Date.now() - lastAlertAt < interval;
+const touchAlert = () => lastAlertAt = Date.now();
+
+function onceOnline(timeoutMs: number = 3E4): Promise<boolean> {
+    if (window.navigator.onLine) return Promise.resolve(true);
+    return new Promise((resolve) => {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => {
+            ctrl.abort();
+            resolve(false);
+        }, timeoutMs);
+
+        const on = () => {
+            clearTimeout(timer);
+            ctrl.abort();
+            resolve(true);
+        };
+        window.addEventListener('online', on, {once: true, signal: ctrl.signal});
+    });
+}
+
+const makeTrackKey = (p: IAudioInfo, idx: number) =>
+    `${p?.plugin ?? 'unknown'}|${p?.id ?? 'no-id'}|${idx}`;
+
+const onAudioError = throttleTimeOut(async (_: any, play: boolean = true) => {
+    if (Date.now() < cooldownUntil) return;
+
     if (pendingRetry) return;
-    if (retryCount >= MAX_RETRY) {
-        createAlert('超过最大重试次数, 请检查Api密钥是否有效或尝试重启软件', 'error', {autoRemoveDelay: 0});
+    pendingRetry = true;
+
+    const currentPlay = d.getCurrentPlaying();
+    const idx = d.getAudioIndex();
+    if (!currentPlay) {
+        pendingRetry = false;
         return;
     }
-    const currentPlay = d.getCurrentPlaying();
-    const plugin = d.getPlugin(currentPlay.plugin);
 
-    pendingRetry = true;
-    retryCount++;
-    const authAble = isAuthAble(plugin);
+    const key = makeTrackKey(currentPlay, idx);
+    if (key !== lastKey) {
+        retryCount = 0;
+        lastKey = key;
+    }
+
+    panicAt = key;
 
     try {
-        if (authAble) {
-            if (!window.navigator.onLine) return;
-            await plugin.refresh();
-        }
-
-        const success = await d.switchAudio(d.getAudioIndex(), {play, force: true});
-        if (success) {
+        if (retryCount >= MAX_RETRY) {
+            createAlert('超过最大重试次数, 请检查Api密钥是否有效', 'error', {autoRemoveDelay: 0});
             retryCount = 0;
+            cooldownUntil = Date.now() + 3000;
             return;
         }
 
-        if (!authAble) return;
+        retryCount++;
 
-        const result = await d.dbHelper.get('auth', plugin.getPluginName());
-        if (!result) return;
+        // 1. 重载一次
+        const ok = await d.switchAudio(idx, {play, force: true});
+        if (ok) {
+            retryCount = 0;
+            return;
+        }
+        if (panicAt !== key) return;
 
-        await plugin.login({key: result.key, psd: result.psd});
+        const plugin = d.getPlugin(currentPlay.plugin);
+        if (!isAuthAble(plugin)) return;
+
+        // 2. 离线挂起, 上线重载
+        if (!navigator.onLine) {
+            if (!shouldThrottleAlert()) {
+                createAlert('当前离线, 网络恢复后将自动重试', 'info');
+                touchAlert();
+            }
+
+            const cameOnline = await onceOnline();
+            if (panicAt !== key) return;
+
+            if (!cameOnline) {
+                // 冷却, 避免轮询
+                cooldownUntil = Date.now() + 1000;
+                createAlert('等待超时', 'warning');
+                return;
+            }
+
+            const okAfterOnline = await d.switchAudio(idx, {play, force: true});
+            if (okAfterOnline) {
+                retryCount = 0;
+                return;
+            }
+        }
+
+        // 3. 刷新Token
+        const refreshed = await plugin.refresh();
+        if (panicAt !== key) return;
+
+        if (refreshed) {
+            const ok2 = await d.switchAudio(idx, {play, force: true});
+            if (ok2) {
+                retryCount = 0;
+                return;
+            }
+        }
+
+        // 4. 第四次重试, 才尝试验证
+        if (retryCount < 4) return;
+
+        const cred = await d.dbHelper.get('auth', plugin.getPluginName());
+        if (!cred) return;
+
+        const logged = await plugin.login({key: cred.key, psd: cred.psd});
+        if (!logged || panicAt !== key) return;
+
+        const ok3 = await d.switchAudio(idx, {play, force: true});
+        if (ok3) {
+            retryCount = 0;
+            return;
+        }
     } catch (err) {
-        createAlert(`第 ${retryCount} 次重试失败: ${err.message}`, 'warning');
+        const errMsg = err?.message ?? '出现错误';
+        createAlert(`第 ${retryCount} 次重试失败: ${errMsg}`, 'warning');
         console.error(err);
     } finally {
-        await sleep(100);
         pendingRetry = false;
     }
-}
+}, 1000);
 
 // 切换播放模式
 function modeToggle() {
@@ -225,7 +316,7 @@ document.getElementById('close-player').addEventListener('click', togglePlayer);
 
 // 监听暂停已切换图标
 v.audioEle.addEventListener('pause', () => {
-    if (v.audioEle.paused) return v.pauseToggle(true);
+    if (v.audioEle.paused) return v.pauseToggle(false);
 });
 
 // 音频更新同步显示
@@ -247,7 +338,7 @@ v.audioEle.addEventListener('ended', () => d.switchAudio(getNextAudioIndex(1)));
 // 第一次错误不开始播放
 v.audioEle.addEventListener('error', () => {
     onAudioError(null, false)
-        .finally(() => v.audioEle.addEventListener('error', onAudioError));
+    v.audioEle.addEventListener('error', onAudioError);
 }, {once: true});
 
 // 修改音量
@@ -389,23 +480,12 @@ async function loadHistory() {
         if (!canPlay) return;
 
         document.getElementById('index-audio-control').classList.remove('hide');
-        v.audioEle.addEventListener('loadeddata', () => {
-            if (index !== d.getAudioIndex()) return;
-            v.audioEle.currentTime = Number(currentTime);
-        }, {once: true});
+        if (Number(index) !== d.getAudioIndex()) return;
+        v.audioEle.currentTime = Number(currentTime);
     } catch (e) {
         console.error(e);
     }
 }
-
-window.addEventListener('offline', () => {
-    createAlert('网络连接中断', 'error');
-});
-
-window.addEventListener('online', () => {
-    if (pendingRetry || retryCount <= 0) return;
-    onAudioError(null).then();
-});
 
 function initPlayer(): void {
 }

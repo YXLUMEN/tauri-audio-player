@@ -111,10 +111,10 @@ function setUiPause() {
 }
 
 // 切换播放状态
-async function pauseToggle(pause = false): Promise<boolean> {
+async function pauseToggle(play: boolean = true): Promise<boolean> {
     if (!audioEle.src) return false;
     try {
-        if (audioEle.paused && !pause) {
+        if (audioEle.paused && play) {
             await audioEle.play();
             DSD.audioContext?.resume().catch(console.error);
             setUiPlay();

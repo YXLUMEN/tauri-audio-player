@@ -131,7 +131,10 @@ let pendingInput: (reason?: any) => void = null;
 
 // 显示歌单信息界面并获取输入的值
 async function getNewFolderInfo(create: boolean = false): Promise<IFolderInfo | null> {
-    if (pendingInput) pendingInput('Interrupted');
+    if (pendingInput) {
+        pendingInput('Interrupted');
+        pendingInput = null;
+    }
 
     const nameInput = <HTMLInputElement>document.getElementById('folder-editor-name');
     const descInput = <HTMLInputElement>document.getElementById('folder-editor-desc');
@@ -281,7 +284,11 @@ const selectFolder = throttleTimeOut(async (event: MouseEvent) => {
     if (plugin && !d.getPlugin(plugin).isAll()) showLoadMore();
 }, 300);
 
-v.indexLeftPanel.addEventListener('click', selectFolder);
+v.indexLeftPanel.addEventListener('click', event => {
+    document.getElementById('custom-folder-detail').classList.remove('hide');
+    selectFolder(event);
+    v.indexLeftPanel.addEventListener('click', selectFolder);
+}, {once: true});
 
 // 播放歌曲
 async function playChosenRow(target: HTMLElement) {

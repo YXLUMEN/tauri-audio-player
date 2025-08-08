@@ -64,7 +64,6 @@ const clearCache = throttleTimeOut(async (event: MouseEvent) => {
                 plugin.seq = 0;
                 createAlert('已清除VSM缓存', 'success');
             }
-
             break;
     }
 }, 500);
