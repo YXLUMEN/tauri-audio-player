@@ -297,7 +297,7 @@ svg, img {
         color: #1abc9c;
     }
 
-    &.chosen, &:hover {
+    &.chosen, &:hover, &.current {
         background-color: #fff;
         box-shadow: rgba(213, 213, 213, 0.1) 0 5px 5px;
     }

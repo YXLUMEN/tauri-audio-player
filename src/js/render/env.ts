@@ -57,9 +57,7 @@ const DSD = new SpectrumDiagram(<HTMLCanvasElement>document.getElementById('audi
 
 const preLoadCover = <HTMLImageElement>document.getElementById('pre-load');
 
-/**
- * 音频播放时间换算
- * */
+// 音频播放时间换算
 function transTime(value: number) {
     const h = value / 3600 | 0;
     const remaining = value % 3600;
@@ -127,7 +125,9 @@ async function pauseToggle(play: boolean = true): Promise<boolean> {
     } catch (err) {
         if (err.name === 'AbortError') return true;
         console.error('Error playing audio:', err);
-        createAlert(`无法加载音频: ${err.message}`, 'warning');
+
+        const msg = err?.message ?? '未知错误';
+        createAlert(`无法加载音频: ${msg}`, 'warning');
         setUiPause();
         return false;
     }

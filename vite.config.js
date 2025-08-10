@@ -19,4 +19,14 @@ export default defineConfig({
         // 在 debug 构建中生成 sourcemap
         sourcemap: !!process.env.TAURI_ENV_DEBUG,
     },
+    plugins: [
+        {
+            name: 'inject-debug-script',
+            apply: 'serve',
+            transformIndexHtml(html) {
+                const tag = '<script src="debug/dev_toolkit.ts"></script>';
+                return html.replace('</head>', `  ${tag}\n</head>`);
+            },
+        },
+    ],
 });

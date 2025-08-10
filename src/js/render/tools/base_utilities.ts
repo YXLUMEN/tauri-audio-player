@@ -20,13 +20,20 @@ export function throttleTimeOut<T extends (...args: any[]) => any>(func: T, wait
     }
 }
 
-/**
- * 防抖函数
- * @param func
- * @param wait default: 50ms
- * */
+export function throttleTimeOutWithResult<T extends (...args: any[]) => any>(func: T, wait: number = 200) {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let lastResult: ReturnType<T> | undefined;
+
+    return function (...args: Parameters<T>) {
+        if (timer) return;
+        lastResult = func.apply(this, args);
+        timer = setTimeout((): any => timer = null, wait);
+        return lastResult;
+    }
+}
+
 export function debounce<T extends (...args: any[]) => any>(func: T, wait: number = 50) {
-    let timer: number;
+    let timer: ReturnType<typeof setTimeout> | null = null;
     return function (...args: Parameters<T>) {
         if (timer) clearTimeout(timer);
         timer = setTimeout(() => func.apply(this, args), wait);
@@ -44,37 +51,9 @@ export function isEmpty(obj: any): boolean {
     return false;
 }
 
-// 检查数组深度是否大于给定值
-export function isDeeperThan(arr: Array<any>, level = 0): any {
-    // 不是数数组，肯定是 false
-    if (!Array.isArray(arr)) return false;
-    // 如果是数组，层次肯定大于 0
-    if (level === 0) return true;
-    // 找到所有数组元素进行递归检查
-    return arr.filter(el => Array.isArray(el)).some(el => isDeeperThan(el, level - 1));
-}
-
-/**
- * 获取最大深度;
- *
- *      [] will return -Infinity
- * 也就是只会计算含有元素的最深层
- * */
-export function getMaxDeep(arr: Array<any>): number {
-    // 不是数组，深度为 0
-    if (!Array.isArray(arr)) return 0;
-    // 是数组，深度 + 1，具体是多深，还要递归判断元素中的数组
-    return 1 + Math.max(...arr.map(el => getMaxDeep(el)));
-}
-
 export function sleep(time: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, time));
 }
-
-export function isMobile(): boolean {
-    return /Mobile|Android|iPhone/.test(navigator.userAgent);
-}
-
 
 // 复制内容到剪贴板
 export function copyText(content: string): Promise<void> {

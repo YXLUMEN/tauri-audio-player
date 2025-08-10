@@ -281,10 +281,15 @@ const selectFolder = throttleTimeOut(async (event: MouseEvent) => {
     folderTitle.textContent = folder.getElementsByTagName('span')?.[0]?.textContent || '歌单';
 
     await setDisplayFolder(audios);
+    d.highlightCurrentPlaying();
     if (plugin && !d.getPlugin(plugin).isAll()) showLoadMore();
 }, 300);
 
+// 第一次载入后显示内容
 v.indexLeftPanel.addEventListener('click', event => {
+    const folder: HTMLElement = (<HTMLElement>event.target).closest('.audio-folder');
+    if (!folder) return;
+
     document.getElementById('custom-folder-detail').classList.remove('hide');
     selectFolder(event);
     v.indexLeftPanel.addEventListener('click', selectFolder);

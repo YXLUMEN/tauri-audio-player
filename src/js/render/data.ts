@@ -71,6 +71,8 @@ const LYRIC_ACTIONS: ILyricAction = Object.preventExtensions(createCleanObj({
 }));
 
 function getPlugin(type: string): AbsAudioModel | null {
+    if (!type) return null;
+
     type = type.toLowerCase();
     const plugin = loadedPlugins[type];
     if (plugin) {
@@ -280,7 +282,6 @@ v.audioEle.addEventListener('loadedmetadata', () => {
 let loadCtrl: AbortController | null = null;
 
 function loadAudio(standard: IStandardAudio): Promise<boolean> {
-    // 设置音频信息
     const {title, album, artist, url, cover} = standard;
 
     v.indexAudioTitle.firstElementChild.textContent = title;
@@ -360,6 +361,7 @@ async function switchAudio(newIndex: number, opt: ISwitchAudio = {}): Promise<bo
 }
 
 function highlightCurrentPlaying(scroll: boolean = true): void {
+    // 高亮播放列表行
     const currentPlaying: HTMLElement = v.playingQueue.querySelector(`[play-index='${audioIndex}']`);
     if (currentPlaying) {
         v.playingBoard.querySelector('.queue-row.current')?.classList.remove('current');
@@ -370,11 +372,13 @@ function highlightCurrentPlaying(scroll: boolean = true): void {
         }
     }
 
+    // 高亮歌单行
     const currentRow = document.getElementById(getCurrentPlaying()?.id);
     if (currentRow) {
         v.folderContent.querySelector('.row.current')?.classList.remove('current', 'playing');
 
         currentRow.classList.add('current');
+        if (!v.audioEle.paused) currentRow.classList.add('playing');
     }
 }
 
@@ -383,7 +387,6 @@ function createPlayingQueueItem(index: number, standardInfo: IStandardAudio): HT
     row.setAttribute('play-index', index.toString());
     row.classList.add('queue-row');
 
-    // noinspection DuplicatedCode
     const cover = document.createElement('img');
     cover.src = standardInfo.cover;
     cover.classList.add('small-cover');
@@ -697,7 +700,7 @@ async function removeAudio(index: number): Promise<void> {
         await clearPlayingQueue();
         return;
     } else if (index === audioIndex) {
-        await switchAudio(audioIndex + 1);
+        await switchAudio(audioIndex + 1, {play: false});
         setAudioIndex(index);
     }
     playingQueue.splice(index, 1);

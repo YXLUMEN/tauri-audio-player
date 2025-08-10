@@ -59,7 +59,12 @@ export class VSM extends AbsAudioModel implements IAuthAble {
             return [];
         }
 
-        if (json['status'] !== 1009) {
+        const status = json['status'];
+        if (status === 3103) {
+            await this.refresh();
+            return;
+        }
+        if (status !== 1009) {
             createAlert(json['msg'], json['category']);
             return [];
         }
