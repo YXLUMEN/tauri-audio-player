@@ -1,5 +1,5 @@
-import {ECategories, IAlert, IConfirm} from "../../interfaces/pages";
 import {defaultConfirm} from "../default";
+import {ECategories, IAlert, IConfirm} from "../api/base";
 
 
 /**
@@ -56,6 +56,7 @@ export default function createAlert(message: string, category: ECategories | str
     const {autoRemoveDelay = 2500, animation = true} = opts;
 
     const baseAlertBox = document.querySelector('.base-alert-box');
+    if (!baseAlertBox) throw new Error('base alert box does not exist');
     const boxChildren = baseAlertBox.getElementsByClassName('alert');
 
     // 清除较旧的警示框
@@ -107,13 +108,13 @@ export function createConfirm(message: string, opts: IConfirm = {}): Promise<boo
     const {timeout, flag, category, defaultResult, strictTimeout, animation} = {...defaultConfirm, ...opts};
     const id = `confirm_${flag}`;
 
-    if (document.getElementById(id)) return Promise.resolve(defaultResult);
+    if (document.getElementById(id)) return Promise.resolve(!!defaultResult);
 
     // 默认的提示框box
     const container = document.querySelector('.base-alert-box');
     if (!container) {
         console.error('Confirm container not found');
-        return Promise.resolve(defaultResult);
+        return Promise.resolve(!!defaultResult);
     }
 
     const confirm = document.createElement('div');
@@ -155,14 +156,14 @@ export function createConfirm(message: string, opts: IConfirm = {}): Promise<boo
     const abort = new AbortController();
     promise.finally(() => abort.abort());
 
-    let timeoutId: number = null;
+    let timeoutId: number;
     if (timeout) {
         timeoutId = setTimeout(() => {
             console.warn(`Confirm timeout timeout: ${flag}`);
 
             if (abort.signal.aborted) return;
             strictTimeout ? reject(defaultResult) : resolve(defaultResult);
-            removeNote(confirm, animation);
+            removeNote(confirm, !!animation);
         }, timeout);
     }
 
@@ -171,7 +172,7 @@ export function createConfirm(message: string, opts: IConfirm = {}): Promise<boo
         if (!action || abort.signal.aborted) return;
 
         clearTimeout(timeoutId);
-        removeNote(this, animation);
+        removeNote(this, !!animation);
         resolve(action === 'agree');
     }, {signal: abort.signal});
 

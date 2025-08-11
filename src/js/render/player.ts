@@ -1,8 +1,9 @@
 import * as d from "./data";
 import * as v from "./env";
-import {debounce, throttleTimeOut} from "./tools/base_utilities";
-import {generateUniqueRandomNumbers} from "./tools/generate_random_nums";
-import {onAudioError} from "./error_handler";
+import {debounce, throttleTimeOut} from "../util/base_utilities";
+import {generateUniqueRandomNumbers} from "../util/generate_random_nums";
+import {onAudioError} from "../error_handler";
+import {dbHelper} from "../db/db_init";
 
 
 // 播放模式设置
@@ -19,13 +20,13 @@ let isLyricDisplay: boolean = false;
 // 切换播放模式
 function modeToggle() {
     playMode = (playMode + 1) % 4;
-    document.querySelectorAll('[action="play-mode"]').forEach((img: HTMLImageElement) => {
-        img.src = `/img/audio/ico/play_mode_${playMode}.svg`;
+    document.querySelectorAll('img[action="play-mode"]').forEach(img => {
+        (<HTMLImageElement>img).src = `/img/audio/ico/play_mode_${playMode}.svg`;
     });
 }
 
 // 获取下一曲index
-function getNextAudioIndex(delta = 1) {
+function getNextAudioIndex(delta = 1): number {
     const max = d.getMaxAudioCount();
 
     // 列表循环
@@ -43,7 +44,7 @@ function getNextAudioIndex(delta = 1) {
         return random !== undefined ? random : (() => {
             // 如果数量极大,可以考虑百次分批生成
             randPlayedList = generateUniqueRandomNumbers(max);
-            return randPlayedList.pop();
+            return randPlayedList.pop() ?? d.getAudioIndex() + 1;
         })();
     }
 
@@ -119,26 +120,26 @@ function modifyVolume(volume: number) {
 
     v.audioEle.volume = volumeNum;
 
-    const volumes = document.querySelectorAll('[action="volume"]');
+    const volumes = document.querySelectorAll('img[action="volume"]');
     if (volume >= 70) {
-        volumes.forEach((img: HTMLImageElement) => {
-            img.src = '/img/audio/ico/volume.svg';
+        volumes.forEach(img => {
+            (<HTMLImageElement>img).src = '/img/audio/ico/volume.svg';
         });
     } else if (volume > 30 && volume < 70) {
-        volumes.forEach((img: HTMLImageElement) => {
-            img.src = '/img/audio/ico/volume-mid.svg';
+        volumes.forEach(img => {
+            (<HTMLImageElement>img).src = '/img/audio/ico/volume-mid.svg';
         });
     } else if (volume <= 30) {
-        volumes.forEach((img: HTMLImageElement) => {
-            img.src = '/img/audio/ico/volume-low.svg';
+        volumes.forEach(img => {
+            (<HTMLImageElement>img).src = '/img/audio/ico/volume-low.svg';
         });
     }
 }
 
 //显示歌词
 const lyricDisplayFn = throttleTimeOut(() => {
-    document.getElementById('text-container').classList.toggle('hide');
-    document.getElementById('lyric-container').classList.toggle('hide');
+    document.getElementById('text-container')!.classList.toggle('hide');
+    document.getElementById('lyric-container')!.classList.toggle('hide');
     isLyricDisplay = v.playerBox.classList.toggle('show-lyric');
 }, 600);
 
@@ -176,7 +177,7 @@ async function savePlayingQueue() {
 }
 
 // 关闭 player 页面
-document.getElementById('close-player').addEventListener('click', togglePlayer);
+document.getElementById('close-player')!.addEventListener('click', togglePlayer);
 
 // 监听暂停已切换图标
 v.audioEle.addEventListener('pause', () => {
@@ -201,7 +202,7 @@ v.audioEle.addEventListener('ended', () => d.switchAudio(getNextAudioIndex(1)));
 
 // 第一次错误不开始播放
 v.audioEle.addEventListener('error', () => {
-    onAudioError(null, false)
+    onAudioError();
     v.audioEle.addEventListener('error', onAudioError);
 }, {once: true});
 
@@ -238,12 +239,12 @@ v.lyricContent.addEventListener('click', (event) => {
 });
 
 // 歌词滚轮控制
-document.getElementById('lyric-box').addEventListener('wheel', event => {
+document.getElementById('lyric-box')!.addEventListener('wheel', event => {
     wheelRollingLyrics(event.deltaY > 0 ? 2 : -2);
 }, {passive: true});
 
 // 歌词微调
-document.getElementById('set-lyric-offset').addEventListener('click', event => {
+document.getElementById('set-lyric-offset')!.addEventListener('click', event => {
     const target = (<HTMLElement>event.target).closest('img');
     if (!target) return;
 
@@ -255,7 +256,7 @@ document.getElementById('set-lyric-offset').addEventListener('click', event => {
 });
 
 // 展示设置选项框
-document.getElementById('setting').addEventListener('click', toggleSettings);
+document.getElementById('setting')!.addEventListener('click', toggleSettings);
 
 // 频谱操作
 // @ts-ignore
@@ -269,7 +270,7 @@ const fftActions: Map<string, Function> = new Map([
 ]);
 
 // 初始化频谱分析
-document.getElementById('toggle-fft').addEventListener('change', async () => {
+document.getElementById('toggle-fft')!.addEventListener('change', async () => {
     const resizeDSD = debounce(() => {
         const width = window.innerWidth;
         v.DSD.width = width;
@@ -284,10 +285,10 @@ document.getElementById('toggle-fft').addEventListener('change', async () => {
     resizeDSD();
 
     // 频谱图操作
-    document.getElementById('fft-settings').addEventListener('click', (e) => {
+    document.getElementById('fft-settings')!.addEventListener('click', (e) => {
         const target = (<HTMLElement>e.target).closest('input');
         if (!target) return;
-        const name = target.getAttribute('name');
+        const name = target.getAttribute('name')!;
         fftActions.get(name)?.apply(null, [e]);
     });
 
@@ -319,7 +320,7 @@ function applyPlayerAction(action: string) {
 }
 
 // 音频控制按钮
-document.getElementById('audio-box').addEventListener('click', event => {
+document.getElementById('audio-box')!.addEventListener('click', event => {
     const target = <HTMLElement>event.target;
     const action = target.closest('.control-icon')?.getAttribute('action');
     if (!action) {
@@ -334,14 +335,16 @@ async function loadHistory() {
         const usedPlaying = localStorage.getItem('playing');
         if (!usedPlaying) return;
 
-        const result = await d.dbHelper.getAll('playing_history');
+        const result = await dbHelper.getAll('playing_history');
         if (!result) return;
 
         const {index, currentTime} = JSON.parse(usedPlaying);
         await d.setPlayingQueue(result);
 
-        await d.switchAudio(Number(index), {scroll: true, play: false});
-        document.getElementById('index-audio-control').classList.remove('hide');
+        const ok = await d.switchAudio(Number(index), {scroll: true, play: false});
+        if (!ok) return;
+
+        document.getElementById('index-audio-control')!.classList.remove('hide');
         if (Number(index) !== d.getAudioIndex()) return;
         v.audioEle.currentTime = Number(currentTime);
     } catch (e) {

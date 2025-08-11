@@ -1,15 +1,16 @@
-import {getPlugin} from "../data";
-import {VSM} from "./vsm.js";
-import {ICacheAble} from "./apis";
-import {AbsAudioModel} from "./exports";
-import {IAudioInfo, IMusicMetadata, IStandardAudio} from "../../interfaces/audio";
+import {VSM} from "./vsm";
+import {AbsAudioModel, getPlugin} from "./plugin_init";
+import {IAudioInfo, IMusicMetadata, IStandardAudio} from "../api/audio";
 import {convertFileSrc, invoke} from '@tauri-apps/api/core';
+import {ICacheAble} from "../api/plugin";
+import {MemoryLRU} from "../db/memoryLRU";
 
 export class Local extends AbsAudioModel implements ICacheAble {
-    public static readonly CACHE_SIZE: number = 64;
-
-    private static pending = new Map<string, Promise<IStandardAudio | null>>();
-    private static cache = new Map<string, IStandardAudio>();
+    private static readonly pending = new Map<string, Promise<IStandardAudio | null>>();
+    private static readonly mem = new MemoryLRU<string, IStandardAudio>(64, (event) => {
+        const cover = event.value?.cover;
+        if (cover) URL.revokeObjectURL(cover);
+    });
 
     constructor() {
         super();
@@ -27,44 +28,31 @@ export class Local extends AbsAudioModel implements ICacheAble {
         return null;
     }
 
-    public getCache() {
-        return Local.cache;
+    public getCache(): MemoryLRU<string, IStandardAudio> {
+        return Local.mem;
     }
 
     public clear(): void {
-        for (const entry of Local.cache.values()) {
-            URL.revokeObjectURL(entry.cover);
-        }
-
-        Local.cache.clear();
+        Local.mem.clear(true);
         Local.pending.clear();
     }
 
     public clearUnused(inUseIds: Set<string>): void {
-        const cache = Local.cache;
-        const toDelete: string[] = [];
+        const cache = Local.mem;
 
-        for (const [id, std] of cache) {
-            if (!inUseIds.has(id)) {
-                URL.revokeObjectURL(std.cover);
-                toDelete.push(id);
-            }
+        for (const entry of cache.stableValues()) {
+            if (inUseIds.has(entry.id)) continue;
+            URL.revokeObjectURL(entry.cover);
+            cache.delete(entry.id);
         }
-
-        toDelete.forEach(id => cache.delete(id));
     }
 
     public async parse(audioInfo: IAudioInfo): Promise<IStandardAudio | null> {
         const id = audioInfo.id.trim();
         if (!id) return null;
 
-        if (Local.cache.has(id)) {
-            const hit = Local.cache.get(id)!;
-            // LRU: 移动到尾部
-            Local.cache.delete(id);
-            Local.cache.set(id, hit);
-            return hit;
-        }
+        const cacheStd = Local.mem.get(id);
+        if (cacheStd) return cacheStd;
 
         if (Local.pending.has(id)) {
             return Local.pending.get(id)!;
@@ -92,18 +80,11 @@ export class Local extends AbsAudioModel implements ICacheAble {
                     title: metadata.title,
                     artist: metadata.artist,
                     album: metadata.album,
-                    url: convertFileSrc(audioInfo.url),
+                    url: convertFileSrc(audioInfo.url!),
                     cover: coverUrl,
                 }
 
-                Local.cache.set(id, standard);
-
-                if (Local.cache.size > Local.CACHE_SIZE) {
-                    const oldestKey = Local.cache.keys().next().value;
-                    const oldest = Local.cache.get(oldestKey);
-                    if (oldest) URL.revokeObjectURL(oldest.cover);
-                    Local.cache.delete(oldestKey);
-                }
+                Local.mem.set(id, standard);
 
                 return standard
             } catch (err) {

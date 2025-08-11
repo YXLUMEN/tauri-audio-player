@@ -1,7 +1,7 @@
-import {StoreConfig} from "../../interfaces/base";
+import {StoreConfig} from "../api/base";
 
 export class IndexedDBHelper {
-    private db: IDBDatabase = null;
+    private db: IDBDatabase | null = null;
     private readonly dbName: string;
     private readonly version: number;
     private readonly stores: StoreConfig[];
@@ -87,6 +87,18 @@ export class IndexedDBHelper {
             request.onerror = () => reject(request.error);
         });
     }
+
+    async clearStore(storeName: string): Promise<void> {
+        const db = await this.init();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(storeName, 'readwrite');
+            const store = tx.objectStore(storeName);
+            const req = store.clear();
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+        });
+    }
+
 
     async getAll(storeName: string): Promise<any> {
         const db = await this.init();

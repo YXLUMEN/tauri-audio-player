@@ -1,11 +1,10 @@
 import * as v from "./env";
-import {hideLoading, showLoading} from "./env";
-import {debounce, isEmpty} from "./tools/base_utilities";
-import createAlert, {appendChildren} from "./tools/base_page";
-import {IndexedDBHelper} from "./tools/db";
-import {AbsAudioModel, isCacheAble, Local, VSM} from "./plugins/exports";
-import {createCleanObj, defaultLyrics, IFolderInfo} from "./default";
-import {IAudioInfo, IFormatLyric, ILyric, ILyricAction, IStandardAudio, ISwitchAudio} from "../interfaces/audio";
+import {clearPlayingQueueHistory, dbHelper} from "../db/db_init"
+import {debounce, isEmpty} from "../util/base_utilities";
+import createAlert, {appendChildren} from "../util/base_page";
+import {getPlugin, isCacheAble, loadedPlugins} from "../plugins/plugin_init";
+import {createCleanObj, defaultLyrics} from "../default";
+import {IAudioInfo, IFormatLyric, ILyric, ILyricAction, IStandardAudio, ISwitchAudio} from "../api/audio";
 
 const SIGNIFICANT_LAG_RATIO: number = 3;
 
@@ -15,49 +14,6 @@ let playingQueue: IAudioInfo[] = [];
 
 let chosenRow: HTMLElement | null = null;
 let chosenFolder: HTMLElement | null = null;
-
-const loadedPlugins: { [key: string]: AbsAudioModel } = Object.create(null);
-
-const dbHelper = new IndexedDBHelper('audio_player', 2, [
-    {
-        // 歌单
-        name: 'folder',
-        keyPath: 'id',
-        autoIncrement: true,
-        indexes: [
-            {name: 'name', keyPath: 'name', unique: true}
-        ]
-    },
-    {
-        // 收藏
-        name: 'favor',
-        keyPath: 'index',
-        autoIncrement: true,
-        indexes: [
-            {name: 'id', keyPath: 'id', unique: false},
-            {name: 'parent', keyPath: 'parent', unique: false},
-            {name: 'parent_id_index', keyPath: ['parent', 'id'], unique: true}
-        ]
-    },
-    {
-        // 播放历史
-        name: 'playing_history',
-        keyPath: 'index',
-    },
-    {
-        // 自定义快捷键
-        name: 'shortcuts',
-        keyPath: 'action',
-        indexes: [
-            {name: 'code', keyPath: 'code', unique: true},
-        ]
-    },
-    {
-        // auth 密钥
-        name: 'auth',
-        keyPath: 'plugin'
-    }
-]);
 
 // 歌词同步
 const LYRIC_ACTIONS: ILyricAction = Object.preventExtensions(createCleanObj({
@@ -69,31 +25,6 @@ const LYRIC_ACTIONS: ILyricAction = Object.preventExtensions(createCleanObj({
     lyrArray: [],
     syncLyricEnable: true
 }));
-
-function getPlugin(type: string): AbsAudioModel | null {
-    if (!type) return null;
-
-    type = type.toLowerCase();
-    const plugin = loadedPlugins[type];
-    if (plugin) {
-        return plugin;
-    }
-
-    let newPlugin: AbsAudioModel | null = null;
-    switch (type) {
-        case 'vsm':
-            newPlugin = new VSM();
-            break;
-        case 'local':
-            newPlugin = new Local();
-            break;
-        default:
-            return null;
-    }
-
-    loadedPlugins[type] = newPlugin;
-    return newPlugin;
-}
 
 function clearPluginsCache(): void {
     // 播放队列中的 ID
@@ -123,124 +54,6 @@ function forceClearPluginsCache(): void {
     }
 }
 
-/* 数据库操作 */
-
-async function getFavorByFolder(folderId: number): Promise<IAudioInfo[]> {
-    const db = await dbHelper.init();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction('favor', 'readonly');
-        const store = tx.objectStore('favor');
-        const index = store.index('parent');
-        const request = index.getAll(folderId);
-
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
-}
-
-async function createFolder(folder: IFolderInfo): Promise<void> {
-    try {
-        await dbHelper.add('folder', folder);
-        createAlert('创建成功', 'success');
-    } catch (err) {
-        if (err.name === 'ConstraintError') return createAlert('歌单名称重复', 'warning');
-        console.error(`创建歌单时出错: ${err.message}`);
-        createAlert('创建失败', 'error');
-    }
-}
-
-async function modifyFolder(folder: IFolderInfo): Promise<void> {
-    try {
-        await dbHelper.update('folder', folder);
-        createAlert('修改成功', 'success')
-    } catch (err) {
-        console.error(`修改歌单出错: ${err.message}`);
-        createAlert('修改失败', 'error');
-    }
-}
-
-async function deleteFolder(folderId: number): Promise<any> {
-    const db = await dbHelper.init();
-    const {promise, resolve, reject} = Promise.withResolvers();
-
-    const tx = db.transaction(['folder', 'favor'], 'readwrite');
-    const folderStore = tx.objectStore('folder');
-    const favorStore = tx.objectStore('favor');
-
-    folderStore.delete(folderId);
-
-    const index = favorStore.index('parent');
-    const cursorRequest = index.openCursor(IDBKeyRange.only(folderId));
-    cursorRequest.onsuccess = () => {
-        const cursor = cursorRequest.result;
-        if (cursor) {
-            cursor.delete();
-            cursor.continue();
-        }
-    }
-
-    tx.oncomplete = () => resolve(null);
-    tx.onerror = () => reject(tx.error);
-
-    return promise;
-}
-
-async function collectAudio(parent: number, audioInfo: IAudioInfo): Promise<void> {
-    if (!parent) return;
-
-    audioInfo.parent = parent;
-    if (audioInfo.index) delete audioInfo.index;
-    try {
-        await dbHelper.add('favor', audioInfo);
-        createAlert('已收藏', 'success');
-
-        const chosenFolderId: string | undefined = chosenFolder?.getAttribute('folder_id');
-        if (chosenFolderId && Number(chosenFolderId) === parent) {
-            chosenFolder?.click();
-        }
-    } catch (err) {
-        if (err.name === 'ConstraintError') {
-            createAlert('重复收藏', 'warning');
-        } else {
-            console.error(`收藏时出错: ${err.message}`);
-            createAlert('收藏失败', 'error');
-        }
-    }
-}
-
-async function deCollectAudio(folderId: number, itemId: string): Promise<any> {
-    const db = await dbHelper.init();
-
-    const tx = db.transaction('favor', 'readwrite');
-    const store = tx.objectStore('favor');
-    const index = store.index('parent_id_index');
-
-    const request = index.getKey([folderId, itemId]);
-
-    const {promise, resolve, reject} = Promise.withResolvers();
-
-    request.onsuccess = () => {
-        if (request.result == undefined) {
-            createAlert('未找到要取消的收藏项', 'info');
-            resolve(null);
-            return;
-        }
-
-        store.delete(request.result);
-        createAlert('已取消收藏', 'success');
-        chosenFolder?.click();
-        resolve(request.result);
-    };
-
-    request.onerror = () => {
-        console.error(`删除收藏时出错: ${request.error}`);
-        createAlert('出现错误', 'error');
-        reject(request.error);
-    };
-
-    return promise;
-}
-
 async function storgePlayingQueue(): Promise<void> {
     if (playingQueue.length <= 0) return;
     await clearPlayingQueueHistory();
@@ -251,13 +64,6 @@ async function storgePlayingQueue(): Promise<void> {
         if (row.parent) delete row.parent;
         await dbHelper.add('playing_history', row);
     }
-}
-
-async function clearPlayingQueueHistory(): Promise<void> {
-    const db = await dbHelper.init();
-    const tx = db.transaction('playing_history', 'readwrite');
-    const store = tx.objectStore('playing_history');
-    store.clear();
 }
 
 /* 音频操作 */
@@ -284,14 +90,14 @@ let loadCtrl: AbortController | null = null;
 function loadAudio(standard: IStandardAudio): Promise<boolean> {
     const {title, album, artist, url, cover} = standard;
 
-    v.indexAudioTitle.firstElementChild.textContent = title;
-    v.indexAudioTitle.lastElementChild.textContent = artist;
+    v.indexAudioTitle.firstElementChild!.textContent = title;
+    v.indexAudioTitle.lastElementChild!.textContent = artist;
 
-    document.getElementById('author-name').textContent = artist;
-    document.getElementById('music-title').textContent = title;
-    document.getElementById('album-name').textContent = album;
+    document.getElementById('author-name')!.textContent = artist;
+    document.getElementById('music-title')!.textContent = title;
+    document.getElementById('album-name')!.textContent = album;
 
-    document.getElementById('lyric-title').textContent = title;
+    document.getElementById('lyric-title')!.textContent = title;
 
     v.audioEle.src = url;
     v.audioEle.load();
@@ -340,12 +146,12 @@ async function switchAudio(newIndex: number, opt: ISwitchAudio = {}): Promise<bo
             return await v.pauseToggle(play);
         }
 
-        showLoading();
+        v.showLoading();
         setAudioIndex(newIndex);
         const audio = playingQueue[audioIndex];
         if (!audio) return false;
 
-        const standard = await getPlugin(audio.plugin).parse(audio);
+        const standard = await getPlugin(audio.plugin)?.parse(audio);
         if (!standard) return false;
 
         const loaded = await loadAudio(standard);
@@ -356,14 +162,14 @@ async function switchAudio(newIndex: number, opt: ISwitchAudio = {}): Promise<bo
         if (play) return await v.pauseToggle();
         return true;
     } finally {
-        hideLoading();
+        v.hideLoading();
     }
 }
 
 function highlightCurrentPlaying(scroll: boolean = true): void {
     // 高亮播放列表行
-    const currentPlaying: HTMLElement = v.playingQueue.querySelector(`[play-index='${audioIndex}']`);
-    if (currentPlaying) {
+    const currentPlaying = v.playingQueue.querySelector(`[play-index='${audioIndex}']`);
+    if (currentPlaying instanceof HTMLElement) {
         v.playingBoard.querySelector('.queue-row.current')?.classList.remove('current');
         currentPlaying.classList.add('current');
 
@@ -373,7 +179,9 @@ function highlightCurrentPlaying(scroll: boolean = true): void {
     }
 
     // 高亮歌单行
-    const currentRow = document.getElementById(getCurrentPlaying()?.id);
+    const id = getCurrentPlaying()?.id;
+    if (id === undefined) return;
+    const currentRow = document.getElementById(id);
     if (currentRow) {
         v.folderContent.querySelector('.row.current')?.classList.remove('current', 'playing');
 
@@ -417,7 +225,7 @@ async function renderPlayingQueue(queue: IAudioInfo[], replace: boolean = true):
 
     for (let i = 0, len = queue.length; i < len; i++) {
         const audio = queue[i];
-        const standard = await getPlugin(audio.plugin).parse(audio);
+        const standard = await getPlugin(audio.plugin)?.parse(audio);
         if (standard) {
             frag.appendChild(createPlayingQueueItem(i, standard));
         } else {
@@ -438,7 +246,7 @@ const fetchLyricFn = debounce(async () => {
         const plugin = getPlugin(playingQueue[audioIndex]?.plugin);
         if (!plugin) return;
 
-        formatLyrics(await plugin.getLyric());
+        formatLyrics(await plugin.getLyric() ?? defaultLyrics);
     } catch (err) {
         formatLyrics(defaultLyrics);
         console.warn('Failed to fetch lyrics:', err);
@@ -531,7 +339,7 @@ function highlightLine(): void {
 const significantLeapFn = debounce(() => {
     const {lyrArray, currentLine, centralPos, syncLyricEnable} = LYRIC_ACTIONS;
     const length = lyrArray?.length || 0;
-    const liElements = v.lyricContent?.children;
+    const liElements = v.lyricContent.children;
 
     if (length <= 1 || !liElements) return;
 
@@ -619,7 +427,7 @@ function getMaxAudioCount(): number {
 function removeDuplicate(array: IAudioInfo[]): IAudioInfo[] | null {
     if (array.length === 0) return null;
 
-    const merge = new Map();
+    const merge = new Map<string, IAudioInfo>();
     for (const item of array) {
         if (item?.id !== undefined && !merge.has(item.id)) {
             merge.set(item.id, item);
@@ -630,7 +438,7 @@ function removeDuplicate(array: IAudioInfo[]): IAudioInfo[] | null {
 }
 
 // 设置播放队列
-async function setPlayingQueue(queue: IAudioInfo[]): Promise<void> {
+async function setPlayingQueue(queue: IAudioInfo[] | null): Promise<void> {
     if (!queue) return;
     playingQueue = queue;
     await renderPlayingQueue(playingQueue);
@@ -638,13 +446,13 @@ async function setPlayingQueue(queue: IAudioInfo[]): Promise<void> {
 
 
 // 合并队列, 会去除id重复的元素
-async function mergePlayingQueue(queue: IAudioInfo[]) {
+async function mergePlayingQueue(queue: IAudioInfo[] | null) {
     if (!queue) return;
     await setPlayingQueue(removeDuplicate(playingQueue.concat(queue)));
 }
 
 // 顺序添加
-async function pushAudios(audios: IAudioInfo[] | IAudioInfo): Promise<void> {
+async function pushAudios(audios: IAudioInfo[] | IAudioInfo | null): Promise<void> {
     if (!audios) return;
 
     if (Array.isArray(audios)) {
@@ -656,7 +464,7 @@ async function pushAudios(audios: IAudioInfo[] | IAudioInfo): Promise<void> {
     await renderPlayingQueue(playingQueue, false);
 }
 
-async function insertAudio(at: number, audios: IAudioInfo[] | IAudioInfo): Promise<void> {
+async function insertAudio(at: number, audios: IAudioInfo[] | IAudioInfo | null): Promise<void> {
     if (!audios) return;
     const insertIndex = Math.max(0, Math.min(at, playingQueue.length));
 
@@ -721,29 +529,22 @@ async function clearPlayingQueue(): Promise<void> {
 }
 
 // 设置选中的音乐并高亮
-function setChosenRow(row: HTMLElement): void {
+function setChosenRow(row: HTMLElement | null): void {
     v.folderContent.querySelector('.row.chosen')?.classList.remove('chosen');
     row?.classList.add('chosen');
     chosenRow = row;
 }
 
 // 设置选中的歌单
-function setChosenFolder(folder: HTMLElement): void {
+function setChosenFolder(folder: HTMLElement | null): void {
     chosenFolder = folder;
 }
 
 export {
     LYRIC_ACTIONS,
-    dbHelper,
     significantLeapFn,
     chosenRow,
     chosenFolder,
-    collectAudio,
-    deCollectAudio,
-    storgePlayingQueue,
-    clearPlayingQueueHistory,
-    getFavorByFolder,
-    getPlugin,
     clearPluginsCache,
     forceClearPluginsCache,
     getAudioIndex,
@@ -763,10 +564,8 @@ export {
     clearPlayingQueue,
     switchAudio,
     syncLyric,
-    createFolder,
-    modifyFolder,
-    deleteFolder,
     highlightCurrentPlaying,
     getPlayingQueue,
     getCurrentPlaying,
+    storgePlayingQueue
 }

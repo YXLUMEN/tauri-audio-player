@@ -1,12 +1,12 @@
-import {IFormatLyric} from "../interfaces/audio";
-import {IConfirm} from "../interfaces/pages";
-import {IBaseFetch} from "../interfaces/post";
+import {IFormatLyric} from "./api/audio";
+import {IBaseFetch} from "./api/http";
+import {IConfirm} from "./api/base";
 
 export interface IFolderInfo {
     id: number;
     name: string;
     desc?: string;
-    cover: string;
+    cover?: string;
 }
 
 export interface IShortCuts {

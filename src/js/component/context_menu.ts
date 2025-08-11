@@ -1,30 +1,31 @@
-import * as d from "./data";
-import createAlert, {createConfirm} from "./tools/base_page";
-import {choseFolderToCollect, displayedContent, getNewFolderInfo, playChosenRow, renderCustomFolder} from "./index";
-import {choseFolderContent, indexContextmenu} from "./env";
+import * as d from "../render/data";
+import createAlert, {createConfirm} from "../util/base_page";
+import {choseFolderToCollect, displayedContent, getNewFolderInfo, playChosenRow, renderCustomFolder} from "../render";
+import {choseFolderContent, indexContextmenu} from "../render/env";
+import {collectAudio, deCollectAudio, deleteFolder, modifyFolder} from "../db/db_init";
 
 // 选择的播放列表音频
-let chosenQueueRowId: string = null;
+let chosenQueueRowId: string | null = null;
 
 function chosenElement(target: HTMLElement) {
-    const row: HTMLElement = target.closest('.row');
+    const row = target.closest('.row') as HTMLElement;
     if (row) {
         d.setChosenRow(row);
-        indexContextmenu.querySelector('.menu.for-row').classList.add('show');
+        indexContextmenu.querySelector('.menu.for-row')?.classList.add('show');
         return true;
     }
 
     const queueRow = target.closest('.queue-row');
     if (queueRow) {
         chosenQueueRowId = queueRow.getAttribute('play-index');
-        indexContextmenu.querySelector('.menu.for-queue-row').classList.add('show');
+        indexContextmenu.querySelector('.menu.for-queue-row')?.classList.add('show');
         return true;
     }
 
-    const folder: HTMLElement = target.closest('.audio-folder');
+    const folder = target.closest('.audio-folder') as HTMLElement;
     if (folder) {
         d.setChosenFolder(folder);
-        indexContextmenu.querySelector('.menu.for-folder').classList.add('show');
+        indexContextmenu.querySelector('.menu.for-folder')?.classList.add('show');
         return true;
     }
     return false;
@@ -32,7 +33,7 @@ function chosenElement(target: HTMLElement) {
 
 // 右键菜单处理歌单内容音频
 async function contextmenuHandleRow(action: string) {
-    const index = Number(d.chosenRow.getAttribute('index'));
+    const index = Number(d.chosenRow?.getAttribute('index'));
     if (isNaN(index)) return;
 
     switch (action) {
@@ -41,23 +42,28 @@ async function contextmenuHandleRow(action: string) {
             createAlert('开始播放', 'success');
             break;
         case 'add-to-queue':
-            await d.pushAudios(displayedContent[index]);
+            if (!displayedContent) break;
+            await d.pushAudios(displayedContent?.[index]);
             createAlert('已添加至队列', 'success');
             break;
         case 'next-play':
+            if (!displayedContent) break;
             await d.insertAudio(d.getAudioIndex() + 1, displayedContent[index]);
             createAlert('将在下一曲播放', 'success');
             break;
         case 'collect':
-            await d.collectAudio(await choseFolderToCollect(), displayedContent[index]);
+            const folder = await choseFolderToCollect();
+            if (!displayedContent || !folder) break;
+            await collectAudio(folder, displayedContent[index]);
             break;
         case 'de-collect':
             if (d.chosenFolder?.getAttribute('plugin')) return;
-            const parent: number = Number(d.chosenFolder.getAttribute('folder_id'));
-            const id: string = d.chosenRow.id;
+
+            const parent = Number(d.chosenFolder?.getAttribute('folder_id'));
+            const id = d.chosenRow?.id;
             if (!isNaN(parent) && id) {
-                await d.deCollectAudio(parent, id);
-                d.chosenFolder.click();
+                await deCollectAudio(parent, id);
+                d.chosenFolder?.click();
             }
     }
 
@@ -82,7 +88,9 @@ async function contextmenuHandlerQueueRow(action: string) {
             await d.removeAudio(index);
             break;
         case 'collect':
-            await d.collectAudio(await choseFolderToCollect(), d.getPlayingQueue()[index]);
+            const folder = await choseFolderToCollect();
+            if (!folder) break;
+            await collectAudio(folder, d.getPlayingQueue()[index]);
             break;
     }
 
@@ -91,16 +99,16 @@ async function contextmenuHandlerQueueRow(action: string) {
 
 // 右键菜单处理歌单
 async function contextmenuHandleFolder(action: string) {
-    const id = Number(d.chosenFolder.getAttribute('folder_id'));
+    const id = Number(d.chosenFolder?.getAttribute('folder_id'));
     if (isNaN(id)) return;
 
     if (action === 'mod-folder') {
         const folder = await getNewFolderInfo();
         if (!folder) return;
-        await d.modifyFolder(folder);
+        await modifyFolder(folder);
     } else if (action === 'delete-folder') {
         if (!await createConfirm('确定删除歌单吗?')) return;
-        await d.deleteFolder(id);
+        await deleteFolder(id);
     }
 
     d.setChosenFolder(null);
@@ -108,7 +116,7 @@ async function contextmenuHandleFolder(action: string) {
 }
 
 // 展示右键菜单
-document.addEventListener('contextmenu', (event) => {
+document.addEventListener('contextmenu', event => {
     event.stopPropagation();
     event.preventDefault();
 
@@ -135,7 +143,7 @@ document.addEventListener('contextmenu', (event) => {
 });
 
 // 右键菜单操作
-indexContextmenu.addEventListener('click', (event) => {
+indexContextmenu.addEventListener('click', event => {
     const action = (<HTMLElement>event.target).closest('.item')?.getAttribute('action');
     if (!action) return;
     if (d.chosenRow) contextmenuHandleRow(action).catch(console.error);
@@ -144,11 +152,11 @@ indexContextmenu.addEventListener('click', (event) => {
 });
 
 // 隐藏右键菜单
-document.addEventListener('click', (event) => {
+document.addEventListener('click', event => {
     indexContextmenu.style.display = 'none';
 
-    if (!choseFolderContent.parentElement.contains(<HTMLElement>event.target)) {
-        choseFolderContent.parentElement.classList.remove('show');
+    if (!choseFolderContent.parentElement?.contains(<HTMLElement>event.target)) {
+        choseFolderContent.parentElement?.classList.remove('show');
     }
 }, true);
 

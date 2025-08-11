@@ -1,5 +1,7 @@
+import {MemoryLRU} from "../db/memoryLRU";
+
 export interface ICacheAble {
-    getCache(): Map<string, any>;
+    getCache(): MemoryLRU<any, any> | Map<string, any> | Array<any>
 
     clear(): void;
 
@@ -9,8 +11,10 @@ export interface ICacheAble {
 export interface IAuthAble {
     // 使用密钥获取token
     login(payload: any): Promise<boolean>;
+
     // 加载保存的token
     loadToken(): Promise<void>;
+
     // 获取新的access token
     refresh(): Promise<boolean>;
 }

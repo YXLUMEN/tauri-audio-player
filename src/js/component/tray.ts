@@ -11,8 +11,8 @@ export async function initTray(): Promise<void> {
         await oldTray.close();
     }
 
-    const env = await import('./env');
-    const player = await import('./player');
+    const env = await import('../render/env');
+    const player = await import('../render/player');
 
     const menu = await Menu.new({
         id: 'tray-menu',
@@ -44,7 +44,7 @@ export async function initTray(): Promise<void> {
         id: 'main-tray',
         menu: menu,
         title: 'Lumen Audio Player',
-        icon: await defaultWindowIcon(),
+        icon: await defaultWindowIcon() ?? undefined,
         showMenuOnLeftClick: false,
         action: async (event) => {
             if (event.type === 'DoubleClick') {

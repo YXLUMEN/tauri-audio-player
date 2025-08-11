@@ -1,16 +1,17 @@
-import {defaultShortcuts} from "./default";
-import {IAudioInfo} from "../interfaces/audio";
-import {throttleTimeOut} from "./tools/base_utilities";
-import createAlert from "./tools/base_page";
-import {updateApp} from "./update";
-import {isAuthAble, VSM} from "./plugins/exports";
+import {defaultShortcuts} from "../default";
+import {IAudioInfo} from "../api/audio";
+import {throttleTimeOut} from "../util/base_utilities";
+import createAlert from "../util/base_page";
+import {updateApp} from "../http/update";
+import {getPlugin, isAuthAble, VSM} from "../plugins/plugin_init";
 import {enableShortcut, mapKeys} from "./shortcuts";
-import * as d from './data';
-import {choseFolderToCollect} from "./index";
+import * as d from '../render/data';
+import {choseFolderToCollect} from "../render";
 
 import {invoke} from '@tauri-apps/api/core';
 import {open} from '@tauri-apps/plugin-dialog';
-import {hideLoading, showLoading} from "./env";
+import {hideLoading, showLoading} from "../render/env";
+import {clearPlayingQueueHistory, dbHelper} from "../db/db_init";
 
 // 设置快捷键
 const setShortcut = throttleTimeOut((event: MouseEvent) => {
@@ -30,7 +31,7 @@ const setShortcut = throttleTimeOut((event: MouseEvent) => {
         if (defaultShortcuts.some(value => value.code === code)) {
             createAlert('按键重复', 'warning');
         } else {
-            await d.dbHelper.update('shortcuts', {action, code});
+            await dbHelper.update('shortcuts', {action, code});
             await mapKeys();
             target.textContent = event.key.toUpperCase();
         }
@@ -40,7 +41,7 @@ const setShortcut = throttleTimeOut((event: MouseEvent) => {
     }, {once: true});
 }, 2000);
 
-document.getElementById('shortcuts-settings').addEventListener('click', setShortcut);
+document.getElementById('shortcuts-settings')!.addEventListener('click', setShortcut);
 
 // 清理缓存
 const clearCache = throttleTimeOut(async (event: MouseEvent) => {
@@ -54,12 +55,12 @@ const clearCache = throttleTimeOut(async (event: MouseEvent) => {
             break;
         case 'clean-history':
             localStorage.removeItem('playing');
-            await d.clearPlayingQueueHistory();
+            await clearPlayingQueueHistory();
             createAlert('已清除播放历史', 'success');
             break;
         case 'clean-vsm':
             VSM.vsmCache.length = 0;
-            const plugin = d.getPlugin('vsm');
+            const plugin = getPlugin('vsm');
             if (plugin instanceof VSM) {
                 plugin.seq = 0;
                 createAlert('已清除VSM缓存', 'success');
@@ -68,10 +69,10 @@ const clearCache = throttleTimeOut(async (event: MouseEvent) => {
     }
 }, 500);
 
-document.getElementById('clean-cache').addEventListener('click', clearCache);
+document.getElementById('clean-cache')!.addEventListener('click', clearCache);
 
 // 重置快捷键
-document.getElementById('shortcuts-settings').addEventListener('auxclick', async (event) => {
+document.getElementById('shortcuts-settings')!.addEventListener('auxclick', async (event) => {
     const target = (<HTMLElement>event.target).closest('.key');
     if (!target) return;
     const action = target.getAttribute('action');
@@ -80,19 +81,19 @@ document.getElementById('shortcuts-settings').addEventListener('auxclick', async
     if (!defaultKey) return;
 
     target.textContent = defaultKey.code.replace('Key', '');
-    await d.dbHelper.delete('shortcuts', action);
+    await dbHelper.delete('shortcuts', action);
     await mapKeys();
 });
 
 // 检查更新
-document.getElementById('check-update').addEventListener('click', async () => {
+document.getElementById('check-update')!.addEventListener('click', async () => {
     const result = await updateApp();
     if (result === 0) createAlert('无可用更新');
     else if (result === 1) createAlert('开始更新', 'info', {autoRemoveDelay: 0});
 });
 
 // 启动时更新设置
-document.getElementById('auto-check').addEventListener('input', function () {
+document.getElementById('auto-check')!.addEventListener('input', function () {
     const inputEle = <HTMLInputElement>this;
     if (inputEle.checked) {
         localStorage.removeItem('not-check-when-start');
@@ -102,7 +103,7 @@ document.getElementById('auto-check').addEventListener('input', function () {
 });
 
 // 退出到托盘
-document.getElementById('quit-to-tray').addEventListener('click', function () {
+document.getElementById('quit-to-tray')!.addEventListener('click', function () {
     const inputEle = <HTMLInputElement>this;
     if (inputEle.checked) {
         localStorage.removeItem('quit-to-tray');
@@ -112,7 +113,7 @@ document.getElementById('quit-to-tray').addEventListener('click', function () {
 });
 
 // 设置Api并重新登录
-document.getElementById('apis-settings').addEventListener('click', async (event) => {
+document.getElementById('apis-settings')!.addEventListener('click', async (event) => {
     try {
         const label = (<HTMLElement>event.target).closest('.base-button')?.parentElement;
         if (!label) return;
@@ -123,27 +124,30 @@ document.getElementById('apis-settings').addEventListener('click', async (event)
         if (!key || !psd) return;
 
         const pluginName = label.getAttribute('action');
-        await d.dbHelper.update('auth', {plugin: pluginName, key, psd});
+        if (!pluginName) return;
+        await dbHelper.update('auth', {plugin: pluginName, key, psd});
 
-        const plugin = d.getPlugin(pluginName);
+        const plugin = getPlugin(pluginName);
         if (isAuthAble(plugin)) {
             await plugin.login({key, psd});
         }
 
         createAlert(`以设置 ${pluginName} API`, 'success');
-    } catch (error) {
-        console.error(error);
-        createAlert(`设置失败: ${error.message}`, 'error', {autoRemoveDelay: 0});
+    } catch (err) {
+        let msg = '未知错误';
+        if (err instanceof Error) msg = err.message;
+        console.error(err);
+        createAlert(`设置失败: ${msg}`, 'error', {autoRemoveDelay: 0});
     }
 });
 
 // 本地文件播放
-document.getElementById('select-local-audio').addEventListener('click', async (event) => {
+document.getElementById('select-local-audio')!.addEventListener('click', async (event) => {
     const target = (<HTMLElement>event.target).closest('.base-button');
     if (!target) return;
 
     try {
-        const filePath: string[] = await open({
+        const filePath: string[] | null = await open({
             title: '选则音频',
             multiple: true,
             directory: false,
@@ -167,7 +171,7 @@ document.getElementById('select-local-audio').addEventListener('click', async (e
 
         for (const audio of list) {
             audio.parent = folderId;
-            await d.dbHelper.add('favor', audio);
+            await dbHelper.add('favor', audio);
         }
     } catch (err) {
         console.error(err);
@@ -180,11 +184,12 @@ document.getElementById('select-local-audio').addEventListener('click', async (e
 async function initSettings(): Promise<void> {
     try {
         // 加载API密钥
-        const apiSettings = document.getElementById('apis-settings');
+        const apiSettings = document.getElementById('apis-settings')!;
         const allLabel = apiSettings.querySelectorAll('label');
         for (const label of allLabel) {
             const pluginName = label.getAttribute('action');
-            const result = await d.dbHelper.get('auth', pluginName);
+            if (!pluginName) continue;
+            const result = await dbHelper.get('auth', pluginName);
             if (!result) continue;
 
             const keyEle: HTMLInputElement = <HTMLInputElement>label.querySelector('[name="api-key"]');
@@ -194,7 +199,7 @@ async function initSettings(): Promise<void> {
                 psdEle.value = result.psd;
             }
 
-            const plugin = d.getPlugin(pluginName);
+            const plugin = getPlugin(pluginName);
             if (isAuthAble(plugin)) {
                 await plugin.loadToken();
             }

@@ -4,6 +4,7 @@ export function throttleDateTime<T extends (...args: any[]) => any>(func: T, wai
     return function (...args: Parameters<T>) {
         const now = Date.now();
         if (now - lastExecutionTime > wait) {
+            // @ts-ignore
             func.apply(this, args);
             lastExecutionTime = now;
         }
@@ -12,9 +13,10 @@ export function throttleDateTime<T extends (...args: any[]) => any>(func: T, wai
 
 // 节流函数
 export function throttleTimeOut<T extends (...args: any[]) => any>(func: T, wait: number = 200) {
-    let timer: number = null;
+    let timer: number | null = null;
     return function (...args: Parameters<T>) {
         if (timer) return;
+        // @ts-ignore
         func.apply(this, args);
         timer = setTimeout((): any => timer = null, wait);
     }
@@ -26,6 +28,7 @@ export function throttleTimeOutWithResult<T extends (...args: any[]) => any>(fun
 
     return function (...args: Parameters<T>) {
         if (timer) return;
+        // @ts-ignore
         lastResult = func.apply(this, args);
         timer = setTimeout((): any => timer = null, wait);
         return lastResult;
@@ -36,6 +39,7 @@ export function debounce<T extends (...args: any[]) => any>(func: T, wait: numbe
     let timer: ReturnType<typeof setTimeout> | null = null;
     return function (...args: Parameters<T>) {
         if (timer) clearTimeout(timer);
+        // @ts-ignore
         timer = setTimeout(() => func.apply(this, args), wait);
     }
 }
@@ -44,9 +48,10 @@ export function debounce<T extends (...args: any[]) => any>(func: T, wait: numbe
  * 空值判断,
  * 传入参数为 0, '', undefined, null, NaN, 空数组, 空对象 时返回 false;
  * */
-export function isEmpty(obj: any): boolean {
+export function isEmpty(obj: unknown): obj is null | undefined {
+    if (obj === null || obj === undefined) return true;
     if (typeof obj !== "object") return !obj;
-    if (Object.prototype.toString.call(obj) === "[object Array]") return !obj.length;
+    if (Array.isArray(obj)) return obj.length === 0;
     if (Object.prototype.toString.call(obj) === "[object Object]") return Object.keys(obj).length === 0;
     return false;
 }

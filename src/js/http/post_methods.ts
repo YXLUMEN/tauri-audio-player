@@ -1,8 +1,8 @@
-import createAlert from "./base_page";
-import {IBaseFetch} from "../../interfaces/post";
-import {ECategories} from "../../interfaces/pages";
+import createAlert from "../util/base_page";
+import {IBaseFetch} from "../api/http";
 import {fetch} from '@tauri-apps/plugin-http';
 import {defaultFetch} from "../default";
+import {ECategories} from "../api/base";
 
 
 // 封装的fetch方法
@@ -17,7 +17,7 @@ export default async function baseFetch(url: string, opts: IBaseFetch = {}): Pro
     const response = await fetch(url, options);
     const status = response.status;
 
-    if (!response.ok && !options.ignore_err.includes(status)) statusAlert(status);
+    if (!response.ok && !options.ignore_err?.includes(status)) statusAlert(status);
     return response;
 }
 

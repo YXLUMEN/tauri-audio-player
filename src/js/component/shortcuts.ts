@@ -1,10 +1,12 @@
-import * as d from "./data";
-import * as v from "./env";
-import * as p from "./player";
-import {displayedContent, showLoadMore, setDisplayFolder} from "./index";
-import {defaultShortcuts} from "./default";
-import {VSM} from "./plugins/vsm";
-import {throttleTimeOut} from "./tools/base_utilities";
+import * as d from "../render/data";
+import * as v from "../render/env";
+import * as p from "../render/player";
+import {displayedContent, setDisplayFolder, showContentTip} from "../render";
+import {defaultShortcuts} from "../default";
+import {VSM} from "../plugins/vsm";
+import {throttleTimeOut} from "../util/base_utilities";
+import {dbHelper} from "../db/db_init";
+import {getPlugin} from "../plugins/plugin_init";
 
 const shortcuts: Map<string, Function> = new Map();
 
@@ -21,7 +23,7 @@ const keyControlFn = throttleTimeOut((code: string) => {
 }, 100);
 
 async function mapKeys() {
-    const customShortcuts = await d.dbHelper.getAll('shortcuts');
+    const customShortcuts = await dbHelper.getAll('shortcuts');
     const mapFunc: { [key: string]: Function } = {
         'toggle-play': v.pauseToggle,
         'forward': p.anonymous_fun.skipBackward,
@@ -51,7 +53,7 @@ async function mapKeys() {
 async function vsmAdd() {
     if (d.chosenFolder?.getAttribute('plugin') !== 'vsm') return;
 
-    const vsm = d.getPlugin('vsm');
+    const vsm = getPlugin('vsm');
     if (!(vsm instanceof VSM)) return;
 
     vsm.setSeq(vsm.seq + 32);
@@ -60,7 +62,7 @@ async function vsmAdd() {
     }
 
     await setDisplayFolder(VSM.vsmCache);
-    if (!vsm.isAll()) showLoadMore();
+    if (!vsm.isAll()) showContentTip('显示更多');
     requestAnimationFrame(() => d.mergePlayingQueue(displayedContent));
 }
 
@@ -85,8 +87,11 @@ document.addEventListener('keydown', (event) => {
 async function initShortcuts(): Promise<void> {
     try {
         await mapKeys();
-    } catch (e) {
-        console.error(`绑定快捷键失败: ${e.message}`);
+    } catch (err) {
+        let msg = '未知错误';
+        if (err instanceof Error) msg = err.message;
+        else if (typeof err === 'string') msg = err;
+        console.error(`绑定快捷键失败: ${msg}`);
     }
 }
 

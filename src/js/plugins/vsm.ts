@@ -1,25 +1,23 @@
-import {getCurrentPlaying} from "../data";
-import createAlert from "../tools/base_page";
+import {getCurrentPlaying} from "../render/data";
+import createAlert from "../util/base_page";
 import {AbsAudioModel} from "./audio_model";
-import {IAudioInfo, IFormatLyric, IStandardAudio, IVSMOptions} from "../../interfaces/audio";
-import baseFetch from "../tools/post_methods";
-import {IAuthAble} from "./apis";
+import {IAudioInfo, IFormatLyric, IStandardAudio, IVSMOptions} from "../api/audio";
+import baseFetch from "../http/post_methods";
+import {IAuthAble} from "../api/plugin";
 
 export class VSM extends AbsAudioModel implements IAuthAble {
+    public static vsmCache: Array<IAudioInfo> = [];
     private static readonly AUDIO_LISTS_URL: string = 'https://www.yangandxu.asia/api/asset/audio_lists';
     private static readonly PLAY_URL: string = 'https://www.yangandxu.asia/api/asset/play';
     private static readonly LYRIC_URL: string = 'https://www.yangandxu.asia/api/asset/lyrics';
     private static readonly AUTH_URL: string = 'https://www.yangandxu.asia/api/auth';
     private static readonly REFRESH_URL: string = 'https://www.yangandxu.asia/api/refresh';
-
-    public static vsmCache: Array<IAudioInfo> = [];
-
     public seq: number;
     public imgIndex: number;
     public maxCount: number;
 
-    private accessToken: string;
-    private refreshToken: string;
+    private accessToken: string = '';
+    private refreshToken: string = '';
 
     constructor() {
         super();
@@ -62,7 +60,7 @@ export class VSM extends AbsAudioModel implements IAuthAble {
         const status = json['status'];
         if (status === 3103) {
             await this.refresh();
-            return;
+            return [];
         }
         if (status !== 1009) {
             createAlert(json['msg'], json['category']);
@@ -70,16 +68,19 @@ export class VSM extends AbsAudioModel implements IAuthAble {
         }
 
         this.maxCount = json['item_counts'];
+        // @ts-ignore
+        const results = Object.values(json['audio_dict']).map(this.transform);
         if (opts.search) {
-            return Object.values(json['audio_dict']).map(this.transform);
+            return results;
         }
 
-        VSM.vsmCache = VSM.vsmCache.concat(Object.values(json['audio_dict']).map(this.transform));
+        VSM.vsmCache = VSM.vsmCache.concat(results);
         return VSM.vsmCache;
     }
 
     public async getLyric(): Promise<IFormatLyric | null> {
-        const hash = getCurrentPlaying().id;
+        const hash = getCurrentPlaying()?.id;
+        if (!hash) return null;
         const res = await baseFetch(VSM.LYRIC_URL, {
             headers: {
                 'Authorization': `Bearer ${this.accessToken}`,
@@ -106,17 +107,6 @@ export class VSM extends AbsAudioModel implements IAuthAble {
     public getCover(): string {
         this.imgIndex = (this.imgIndex + 1) % 30;
         return `/img/audio/cover/audio-${this.imgIndex}.webp`;
-    }
-
-    private transform(raw: Array<string>) {
-        return {
-            plugin: 'vsm',
-            id: raw[4],
-            title: raw[1],
-            album: raw[2],
-            artist: raw[0],
-            cover: this.getCover(),
-        };
     }
 
     public isAll(): boolean {
@@ -180,5 +170,16 @@ export class VSM extends AbsAudioModel implements IAuthAble {
 
     public setSeq(num: number): void {
         this.seq = Math.min(this.maxCount, Math.max(0, num));
+    }
+
+    private transform(raw: Array<string>) {
+        return {
+            plugin: 'vsm',
+            id: raw[4],
+            title: raw[1],
+            album: raw[2],
+            artist: raw[0],
+            cover: this.getCover(),
+        };
     }
 }

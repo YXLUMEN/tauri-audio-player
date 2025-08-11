@@ -13,7 +13,7 @@ async function initialize(): Promise<void> {
     });
 
     await appWindow.onResized(async () => {
-        const maximizeIco = document.getElementById('title-bar-maximize');
+        const maximizeIco = document.getElementById('title-bar-maximize')!;
         if (await appWindow.isMaximized()) {
             maximizeIco.innerHTML = '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="16" height="16"><path d="M812.2 65H351.6c-78.3 0-142.5 61.1-147.7 138.1-77 5.1-138.1 69.4-138.1 147.7v460.6c0 81.6 66.4 148 148 148h460.6c78.3 0 142.5-61.1 147.7-138.1 77-5.1 138.1-69.4 138.1-147.7V213c0-81.6-66.4-148-148-148z m-45.8 746.3c0 50.7-41.3 92-92 92H213.8c-50.7 0-92-41.3-92-92V350.7c0-50.7 41.3-92 92-92h460.6c50.7 0 92 41.3 92 92v460.6z m137.8-137.7c0 47.3-35.8 86.3-81.8 91.4V350.7c0-81.6-66.4-148-148-148H260.2c5.1-45.9 44.2-81.8 91.4-81.8h460.6c50.7 0 92 41.3 92 92v460.7z" fill="#8a8a8a"></path></svg>';
         } else {
@@ -23,7 +23,7 @@ async function initialize(): Promise<void> {
 
     loadDefaults();
 
-    const settings = await import('./js/render/settings');
+    const settings = await import('./js/component/settings');
     await settings.initSettings();
 
     const index = await import('./js/render/index');
@@ -37,16 +37,16 @@ async function initialize(): Promise<void> {
         await appWindow.close();
     });
 
-    const contextMenu = await import('./js/render/context_menu');
+    const contextMenu = await import('./js/component/context_menu');
     contextMenu.initContextMenu();
 
-    const shortcuts = await import('./js/render/shortcuts');
+    const shortcuts = await import('./js/component/shortcuts');
     await shortcuts.initShortcuts();
 
-    const tray = await import('./js/render/tray');
+    const tray = await import('./js/component/tray');
     await tray.initTray();
 
-    const search = await import('./js/render/search');
+    const search = await import('./js/component/search');
     search.initSearch();
 
     await player.loadHistory();
@@ -71,7 +71,7 @@ async function checkUpdate() {
         const shouldUpdate = localStorage.getItem('not-check-when-start');
         if (shouldUpdate !== null) return;
 
-        const mod = await import('./js/render/update');
+        const mod = await import('./js/http/update');
         await mod.updateApp();
     } catch (e) {
         console.error(e);

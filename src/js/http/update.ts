@@ -1,5 +1,5 @@
 import {check} from '@tauri-apps/plugin-updater';
-import {createConfirm, playSound} from "./tools/base_page";
+import {createConfirm, playSound} from "../util/base_page";
 import {relaunch} from '@tauri-apps/plugin-process';
 
 export async function updateApp(callable?: Function): Promise<number> {
@@ -8,7 +8,7 @@ export async function updateApp(callable?: Function): Promise<number> {
 
     console.log(`found update ${update.version} from ${update.date} with notes ${update.body}`);
 
-    const updateIco = document.getElementById('update');
+    const updateIco = document.getElementById('update')!;
     updateIco.classList.remove('hide');
     updateIco.title = `可用更新: ${update.version}`
 
@@ -22,7 +22,7 @@ export async function updateApp(callable?: Function): Promise<number> {
     await update.downloadAndInstall((event) => {
         switch (event.event) {
             case 'Started':
-                contentLength = event.data.contentLength;
+                contentLength = event.data.contentLength ?? 0;
                 console.log(`started downloading ${event.data.contentLength} bytes`);
                 if (callable) callable({done: false, contentLength});
                 break;
@@ -37,7 +37,7 @@ export async function updateApp(callable?: Function): Promise<number> {
                 break;
         }
     });
-    callable = null;
+    callable = undefined;
 
     console.log('update installed');
     const restart = await createConfirm('更新完成, 是否立即重启软件', {flag: 'update', category: 'success'});
@@ -47,4 +47,5 @@ export async function updateApp(callable?: Function): Promise<number> {
     }
 
     await relaunch();
+    return 3;
 }

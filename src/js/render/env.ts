@@ -1,61 +1,60 @@
-import SpectrumDiagram from "./tools/spectrum_diagram";
-import createAlert from "./tools/base_page";
+import SpectrumDiagram from "../util/spectrum_diagram";
+import createAlert from "../util/base_page";
 import {getCurrentPlaying} from "./data";
 
-const indexContextmenu = document.getElementById('index-contextmenu');
+const indexContextmenu = document.getElementById('index-contextmenu')!;
 
-const indexLeftPanel = document.getElementById('index-left-panel');
+const indexLeftPanel = document.getElementById('index-left-panel')!;
 
-const customFolderList = document.getElementById('custom-folder-list');
+const customFolderList = document.getElementById('custom-folder-list')!;
 
-const folderContent = document.getElementById('folder-content');
+const folderContent = document.getElementById('folder-content')!;
 
-const indexAudioCover = document.getElementById('index-audio-cover');
+const indexAudioCover = document.getElementById('index-audio-cover')!;
 
-const indexAudioTitle = document.getElementById('index-audio-title');
+const indexAudioTitle = document.getElementById('index-audio-title')!;
 
-const choseFolderContent = document.getElementById('chose-folder-content');
+const choseFolderContent = document.getElementById('chose-folder-content')!;
 
-const iPgsPlay: HTMLInputElement = <HTMLInputElement>document.getElementById('i-progress-played');
+const iPgsPlay: HTMLInputElement = <HTMLInputElement>document.getElementById('i-progress-played')!;
 
-const iTotalTime = document.getElementById('i-total-time');
+const iTotalTime = document.getElementById('i-total-time')!;
 
-const iPlayedTime = document.getElementById('i-played-time');
+const iPlayedTime = document.getElementById('i-played-time')!;
 
-const playerBackground = document.getElementById('player-background');
+const playerBackground = document.getElementById('player-background')!;
 
-const playerBox = document.getElementById('player-box');
+const playerBox = document.getElementById('player-box')!;
 
-const audioEle: HTMLAudioElement = <HTMLAudioElement>document.getElementById('audio-loader');
+const audioEle: HTMLAudioElement = <HTMLAudioElement>document.getElementById('audio-loader')!;
 audioEle.loop = false;
 audioEle.volume = .7;
 
-const lyricContent = document.getElementById('lyric-ul');
+const lyricContent = document.getElementById('lyric-ul')!;
 
-const lyricOffsetEle = document.getElementById('lyric-offset');
+const lyricOffsetEle = document.getElementById('lyric-offset')!;
 
-const progressPlayed: HTMLInputElement = <HTMLInputElement>document.getElementById('progress-played');
+const progressPlayed: HTMLInputElement = <HTMLInputElement>document.getElementById('progress-played')!;
 
-const playedTime = document.getElementById('played-time');
+const playedTime = document.getElementById('played-time')!;
 
-const audioTime = document.getElementById('audio-time');
+const audioTime = document.getElementById('audio-time')!;
 
-const iVolumeToggle = <HTMLInputElement>document.getElementById('i-volume-toggle');
+const iVolumeToggle = <HTMLInputElement>document.getElementById('i-volume-toggle')!;
 
-const volumeToggle = <HTMLInputElement>document.getElementById('volume-toggle');
+const volumeToggle = <HTMLInputElement>document.getElementById('volume-toggle')!;
 
-const closeBoard = document.getElementById('close-playing-board');
+const closeBoard = document.getElementById('close-playing-board')!;
 
-const playingBoard = document.getElementById('playing-board-container');
+const playingBoard = document.getElementById('playing-board-container')!;
 
-const playingQueue = document.getElementById('playing-queue');
+const playingQueue = document.getElementById('playing-queue')!;
 
-const settings = document.getElementById('settings-container');
-
+const settings = document.getElementById('settings-container')!;
 
 const DSD = new SpectrumDiagram(<HTMLCanvasElement>document.getElementById('audio-canvas'), window.innerWidth, 400);
 
-const preLoadCover = <HTMLImageElement>document.getElementById('pre-load');
+const preLoadCover = <HTMLImageElement>document.getElementById('pre-load')!;
 
 // 音频播放时间换算
 function transTime(value: number) {
@@ -91,21 +90,25 @@ function updatePlayingProgress(currentTime: number) {
 }
 
 function setUiPlay() {
-    document.querySelectorAll('[action="play-pause"]').forEach((img: HTMLImageElement) => {
-        img.src = '/img/audio/ico/pause.svg';
+    document.querySelectorAll('img[action="play-pause"]').forEach(img => {
+        (<HTMLImageElement>img).src = '/img/audio/ico/pause.svg';
     });
 
     indexAudioCover.classList.remove('paused');
-    document.getElementById(getCurrentPlaying()?.id)?.classList.add('playing');
+    const id = getCurrentPlaying()?.id;
+    if (id === undefined) return;
+    document.getElementById(id)?.classList.add('playing');
 }
 
 function setUiPause() {
-    document.querySelectorAll('[action="play-pause"]').forEach((img: HTMLImageElement) => {
-        img.src = '/img/audio/ico/play.svg';
+    document.querySelectorAll('img[action="play-pause"]').forEach(img => {
+        (<HTMLImageElement>img).src = '/img/audio/ico/play.svg';
     });
 
     indexAudioCover.classList.add('paused');
-    document.getElementById(getCurrentPlaying()?.id)?.classList.remove('playing');
+    const id = getCurrentPlaying()?.id;
+    if (id === undefined) return;
+    document.getElementById(id)?.classList.remove('playing');
 }
 
 // 切换播放状态
@@ -123,10 +126,13 @@ async function pauseToggle(play: boolean = true): Promise<boolean> {
         }
         return true;
     } catch (err) {
-        if (err.name === 'AbortError') return true;
-        console.error('Error playing audio:', err);
+        let msg = '未知错误';
+        if (err instanceof Error) {
+            if (err.name === 'AbortError') return true;
+            msg = err.message;
+        }
 
-        const msg = err?.message ?? '未知错误';
+        console.error('Error playing audio:', err);
         createAlert(`无法加载音频: ${msg}`, 'warning');
         setUiPause();
         return false;
@@ -142,35 +148,35 @@ function toggleMuted() {
         volumeToggle.value = lastVolume;
         iVolumeToggle.value = lastVolume;
         audioEle.muted = false;
-        document.querySelectorAll('[action="volume"]').forEach((img: HTMLImageElement) => {
-            img.src = '/img/audio/ico/volume.svg';
+        document.querySelectorAll('img[action="volume"]').forEach(img => {
+            (<HTMLImageElement>img).src = '/img/audio/ico/volume.svg';
         });
     } else {
         lastVolume = volumeToggle.value;
         volumeToggle.value = '0';
         iVolumeToggle.value = '0';
         audioEle.muted = true;
-        document.querySelectorAll('[action="volume"]').forEach((img: HTMLImageElement) => {
-            img.src = '/img/audio/ico/volume-muted.svg';
+        document.querySelectorAll('img[action="volume"]').forEach(img => {
+            (<HTMLImageElement>img).src = '/img/audio/ico/volume-muted.svg';
         });
     }
 }
 
 function showLoading() {
-    document.getElementById('index-loading').classList.add('show');
+    document.getElementById('index-loading')!.classList.add('show');
 }
 
 function hideLoading() {
-    document.getElementById('index-loading').classList.remove('show');
+    document.getElementById('index-loading')!.classList.remove('show');
 }
 
 async function toggleDraw(e: Event) {
     if ((<HTMLInputElement>e.target).checked) {
         await DSD.startDraw();
-        DSD.canvas.style.display = 'block';
+        if (DSD.canvas) DSD.canvas.style.display = 'block';
     } else {
         DSD.stopDraw();
-        DSD.canvas.style.display = 'none';
+        if (DSD.canvas) DSD.canvas.style.display = 'none';
     }
 }
 

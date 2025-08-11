@@ -1,8 +1,10 @@
-import createAlert from "./tools/base_page";
-import {setDisplayFolder} from "./index";
-import {dbHelper, getPlugin, removeDuplicate} from "./data";
-import {IAudioInfo} from "../interfaces/audio";
-import {hideLoading, showLoading} from "./env";
+import createAlert from "../util/base_page";
+import {setDisplayFolder} from "../render";
+import {removeDuplicate} from "../render/data";
+import {IAudioInfo} from "../api/audio";
+import {hideLoading, showLoading} from "../render/env";
+import {dbHelper} from "../db/db_init";
+import {getPlugin} from "../plugins/plugin_init";
 
 async function searchAudios() {
     const input = <HTMLInputElement>document.getElementById('search-input');
@@ -26,6 +28,7 @@ async function searchAudios() {
             break;
         default:
             result = await searchVsm(value);
+            if (!result) break;
             result = result.concat(await searchFavour(value));
             result = removeDuplicate(result);
     }
@@ -45,7 +48,7 @@ async function searchFavour(arg: string): Promise<IAudioInfo[]> {
     const request = store.openCursor();
 
     const {promise, resolve, reject} = Promise.withResolvers();
-    request.onerror = (err) => {
+    request.onerror = (err: Event) => {
         console.error('Cursor error:', err);
         reject(err);
     };
@@ -65,7 +68,8 @@ async function searchFavour(arg: string): Promise<IAudioInfo[]> {
     await promise;
 
     for (const raw of items.values()) {
-        const standard = await getPlugin(raw.plugin).parse(raw);
+        const standard = await getPlugin(raw.plugin)?.parse(raw);
+        if (!standard) continue;
         const {title, album, artist} = standard;
         if (
             title.toLowerCase().includes(arg) ||
@@ -80,14 +84,14 @@ async function searchFavour(arg: string): Promise<IAudioInfo[]> {
 }
 
 async function searchVsm(arg: string): Promise<IAudioInfo[] | null> {
-    const result = await getPlugin('vsm').getAudioList({search: arg});
+    const result = await getPlugin('vsm')?.getAudioList({search: arg});
     if (!result) {
         createAlert('无结果', 'info');
-        return;
+        return null;
     }
     return result;
 }
 
 export function initSearch() {
-    document.getElementById('search-submit').addEventListener('click', searchAudios);
+    document.getElementById('search-submit')!.addEventListener('click', searchAudios);
 }
