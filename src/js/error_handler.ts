@@ -37,13 +37,6 @@ function clearRetryTimer(state?: RetryState): void {
     }
 }
 
-function resetRetryState(state: RetryState): void {
-    clearRetryTimer(state);
-    state.retryCount = 0;
-    state.cooldownUntil = 0;
-    state.pending = false;
-}
-
 function backoffDelay(n: number, base = 1000, cap = 15000, jitter = 300): number {
     return Math.min(base * Math.pow(2, n), cap) + Math.floor(Math.random() * jitter);
 }

@@ -12,7 +12,7 @@ export class Local extends AbsAudioModel implements ICacheAble {
         if (cover) URL.revokeObjectURL(cover);
     });
 
-    constructor() {
+    public constructor() {
         super();
     }
 

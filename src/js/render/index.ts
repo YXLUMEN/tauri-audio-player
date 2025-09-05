@@ -139,9 +139,9 @@ async function getNewFolderInfo(create: boolean = false): Promise<IFolderInfo | 
         pendingInput = null;
     }
 
-    const nameInput = <HTMLInputElement>document.getElementById('folder-editor-name');
-    const descInput = <HTMLInputElement>document.getElementById('folder-editor-desc');
-    const coverImg = <HTMLInputElement>document.getElementById('folder-editor-cover');
+    const nameInput = document.getElementById('folder-editor-name') as HTMLInputElement;
+    const descInput = document.getElementById('folder-editor-desc') as HTMLInputElement;
+    const coverImg = document.getElementById('folder-editor-cover') as HTMLInputElement;
     const confirmButtons = document.getElementById('folder-editor-buttons');
 
     if (!nameInput || !descInput || !coverImg || !confirmButtons) {
@@ -201,7 +201,7 @@ async function getNewFolderInfo(create: boolean = false): Promise<IFolderInfo | 
     }, {signal: abort.signal});
 
     confirmButtons.addEventListener('click', event => {
-        const action = (<HTMLElement>event.target).closest('.base-button')?.getAttribute('action');
+        const action = (event.target as HTMLElement).closest('.base-button')?.getAttribute('action');
         if (!action) return;
 
         if (action === 'submit' && nameInput.value.trim() !== '') {
@@ -217,7 +217,7 @@ async function getNewFolderInfo(create: boolean = false): Promise<IFolderInfo | 
     }, {signal: abort.signal});
 
     pendingInput = reject;
-    return await <Promise<IFolderInfo | null>>promise;
+    return await promise as Promise<IFolderInfo | null>;
 }
 
 // 显示歌单选择框并返回选中的歌单
@@ -243,19 +243,19 @@ async function choseFolderToCollect(): Promise<number | null> {
     });
 
     v.choseFolderContent.addEventListener('click', (event) => {
-        const id = (<HTMLElement>event.target).closest('.audio-folder')?.getAttribute('folder_id');
+        const id = (event.target as HTMLElement).closest('.audio-folder')?.getAttribute('folder_id');
         if (!id) return;
         resolve(Number(id));
     }, {signal: abort.signal});
 
     v.choseFolderContent.parentElement!.classList.add('show');
 
-    return await <Promise<number | null>>promise;
+    return await promise as Promise<number | null>;
 }
 
 // 选择歌单
 const selectFolder = throttleTimeOut(async (event: MouseEvent) => {
-    const folder = (<HTMLElement>event.target).closest('.audio-folder') as HTMLElement;
+    const folder = (event.target as HTMLElement).closest('.audio-folder') as HTMLElement;
     if (!folder) return;
 
     v.indexLeftPanel.querySelector('.audio-folder.current')?.classList.remove('current');
@@ -279,7 +279,7 @@ const selectFolder = throttleTimeOut(async (event: MouseEvent) => {
     if (!audios) return;
 
     const folderTitle = document.getElementById('folder-info-title')!;
-    const folderCover = <HTMLImageElement>document.getElementById('folder-info-cover');
+    const folderCover = document.getElementById('folder-info-cover') as HTMLImageElement;
 
     folderCover.src = folder.getElementsByTagName('img')?.[0].src || randomCover();
     folderTitle.textContent = folder.getElementsByTagName('span')?.[0]?.textContent || '歌单';
@@ -291,7 +291,7 @@ const selectFolder = throttleTimeOut(async (event: MouseEvent) => {
 
 // 第一次载入后显示内容
 v.indexLeftPanel.addEventListener('click', event => {
-    const folder = (<HTMLElement>event.target).closest('.audio-folder');
+    const folder = (event.target as HTMLElement).closest('.audio-folder');
     if (!folder) return;
 
     document.getElementById('custom-folder-detail')!.classList.remove('hide');
@@ -314,7 +314,7 @@ async function playChosenRow(target: HTMLElement | null) {
 
 // 展示播放器或处理操作按钮
 const handleIndexPlayController = throttleTimeOut(async (event: MouseEvent) => {
-    const action = (<HTMLElement>event.target).getAttribute('action');
+    const action = (event.target as HTMLElement).getAttribute('action');
     if (!action) {
         togglePlayer();
         return;
@@ -337,7 +337,7 @@ document.getElementById('index-audio-control')!.addEventListener('click', handle
 // 预加载避免闪烁, 同时作为音频切换触发
 v.preLoadCover.addEventListener('load', () => {
     v.playerBackground.style.backgroundImage = `url(${v.preLoadCover.src})`;
-    (<HTMLImageElement>v.indexAudioCover.firstElementChild).src = v.preLoadCover.src;
+    (v.indexAudioCover.firstElementChild as HTMLImageElement).src = v.preLoadCover.src;
 });
 
 // 初次加载后显示index控制面板
@@ -365,21 +365,21 @@ document.getElementById('create-folder')!.addEventListener('click', async () => 
 
 // 选择歌曲
 v.folderContent.addEventListener('click', (event) => {
-    const row = (<HTMLElement>event.target)?.closest('.row') as HTMLElement;
+    const row = (event.target as HTMLElement)?.closest('.row') as HTMLElement;
     if (!row) return;
     d.setChosenRow(row);
 });
 
 // 双击播放
 v.folderContent.addEventListener('dblclick', (event) => {
-    const row = (<HTMLElement>event.target)?.closest('.row') as HTMLElement;
+    const row = (event.target as HTMLElement)?.closest('.row') as HTMLElement;
     if (!row) return;
     return playChosenRow(row);
 });
 
 // 清空播放列表
 document.getElementById('playing-board-title')!.addEventListener('click', async (event) => {
-    const action = (<HTMLElement>event.target)?.getAttribute('action');
+    const action = (event.target as HTMLElement)?.getAttribute('action');
     if (action === 'collect-all') {
         const folderId = await choseFolderToCollect();
         if (!folderId) return;

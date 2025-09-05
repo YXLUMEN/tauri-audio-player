@@ -77,7 +77,7 @@ document.addEventListener('keydown', (event) => {
     }
 
     if (!ableShortcuts || event.ctrlKey || event.metaKey || !shortcuts.has(event.code)) return;
-    if ((<HTMLElement>event.target).classList.contains('base-input')) return;
+    if ((event.target as HTMLElement).classList.contains('base-input')) return;
     event.stopPropagation();
     event.preventDefault();
 

@@ -6,13 +6,13 @@ export class IndexedDBHelper {
     private readonly version: number;
     private readonly stores: StoreConfig[];
 
-    constructor(name: string, version: number, stores: StoreConfig[]) {
+    public constructor(name: string, version: number, stores: StoreConfig[]) {
         this.dbName = name;
         this.version = version;
         this.stores = stores;
     }
 
-    init(): Promise<IDBDatabase> {
+    public init(): Promise<IDBDatabase> {
         if (this.db) return Promise.resolve(this.db);
 
         const {promise, resolve, reject} = Promise.withResolvers();
@@ -41,10 +41,10 @@ export class IndexedDBHelper {
 
         request.onerror = () => reject(request.error);
 
-        return <Promise<IDBDatabase>>promise;
+        return promise as Promise<IDBDatabase>;
     }
 
-    async add(storeName: string, data: object): Promise<IDBValidKey> {
+    public async add(storeName: string, data: object): Promise<IDBValidKey> {
         const db = await this.init();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(storeName, 'readwrite');
@@ -55,7 +55,7 @@ export class IndexedDBHelper {
         });
     }
 
-    async get(storeName: string, key: IDBValidKey): Promise<any | undefined> {
+    public async get(storeName: string, key: IDBValidKey): Promise<any | undefined> {
         const db = await this.init();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(storeName, 'readonly');
@@ -66,7 +66,7 @@ export class IndexedDBHelper {
         });
     }
 
-    async update(storeName: string, data: object): Promise<IDBValidKey> {
+    public async update(storeName: string, data: object): Promise<IDBValidKey> {
         const db = await this.init();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(storeName, 'readwrite');
@@ -77,7 +77,7 @@ export class IndexedDBHelper {
         });
     }
 
-    async delete(storeName: string, key: IDBValidKey | IDBKeyRange): Promise<boolean> {
+    public async delete(storeName: string, key: IDBValidKey | IDBKeyRange): Promise<boolean> {
         const db = await this.init();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(storeName, 'readwrite');
@@ -88,7 +88,7 @@ export class IndexedDBHelper {
         });
     }
 
-    async clearStore(storeName: string): Promise<void> {
+    public async clearStore(storeName: string): Promise<void> {
         const db = await this.init();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(storeName, 'readwrite');
@@ -100,7 +100,7 @@ export class IndexedDBHelper {
     }
 
 
-    async getAll(storeName: string): Promise<any> {
+    public async getAll(storeName: string): Promise<any> {
         const db = await this.init();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(storeName, 'readonly');

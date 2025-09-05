@@ -7,7 +7,7 @@ import {dbHelper} from "../db/db_init";
 import {getPlugin} from "../plugins/plugin_init";
 
 async function searchAudios() {
-    const input = <HTMLInputElement>document.getElementById('search-input');
+    const input = document.getElementById('search-input') as HTMLInputElement;
     if (!input || input.value.trim() === '') return;
 
     let result: IAudioInfo[] | null;

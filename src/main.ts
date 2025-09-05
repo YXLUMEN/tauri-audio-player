@@ -3,9 +3,9 @@ import {Window} from '@tauri-apps/api/window';
 const appWindow: Window = new Window('main');
 
 async function initialize(): Promise<void> {
-    document.getElementById('title-bar-minimize')?.addEventListener('click', () => appWindow.minimize());
-    document.getElementById('title-bar-maximize')?.addEventListener('click', () => appWindow.toggleMaximize());
-    document.getElementById('title-bar-close')?.addEventListener('click', () => {
+    document.getElementById('title-bar-minimize')!.addEventListener('click', () => appWindow.minimize());
+    document.getElementById('title-bar-maximize')!.addEventListener('click', () => appWindow.toggleMaximize());
+    document.getElementById('title-bar-close')!.addEventListener('click', () => {
         if (localStorage.getItem('quit-to-tray') === null) {
             return appWindow.hide();
         }
@@ -58,11 +58,11 @@ function loadDefaults() {
     localStorage.removeItem('should-check-when-start');
     const shouldUpdate = localStorage.getItem('not-check-when-start');
     if (shouldUpdate !== null) {
-        (<HTMLInputElement>document.getElementById('auto-check')).checked = false;
+        (document.getElementById('auto-check') as HTMLInputElement).checked = false;
     }
     const quitToTray = localStorage.getItem('quit-to-tray');
     if (quitToTray !== null) {
-        (<HTMLInputElement>document.getElementById('quit-to-tray')).checked = false;
+        (document.getElementById('quit-to-tray') as HTMLInputElement).checked = false;
     }
 }
 

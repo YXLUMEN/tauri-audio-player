@@ -1,3 +1,4 @@
+use id3::{frame::PictureType, Tag, TagLike};
 use serde::Serialize;
 use std::fs::File;
 use std::path::{Path, PathBuf};
@@ -11,6 +12,7 @@ pub struct AudioMetadata {
     title: Option<String>,
     album: Option<String>,
     artist: Option<String>,
+    lyrics: Option<String>,
     cover: Option<Vec<u8>>,
     cover_mime_type: Option<String>,
 }
@@ -23,13 +25,40 @@ pub async fn fetch_meta(path: PathBuf) -> Result<AudioMetadata, String> {
 }
 
 fn read_basic_metadata(path: &Path) -> Result<AudioMetadata, String> {
+    let mut metadata = AudioMetadata::default();
+    let ext = path
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+
+    if ext == "mp3" {
+        match Tag::read_from_path(path) {
+            Ok(tag) => {
+                metadata.title = Some(tag.title().expect("No title").to_string());
+                metadata.album = Some(tag.album().expect("No album").to_string());
+                metadata.artist = Some(tag.artist().expect("No artist").to_string());
+                metadata.lyrics = tag.lyrics().next().map(|l| l.text.to_string());
+                if let Some(picture) = tag
+                    .pictures()
+                    .find(|p| p.picture_type == PictureType::CoverFront)
+                    .or_else(|| tag.pictures().next())
+                {
+                    metadata.cover = Some(picture.data.clone());
+                    metadata.cover_mime_type = Some(picture.mime_type.clone());
+                }
+            }
+            Err(e) => {
+                return Err(format!("无法读取 ID3 标签: {}", e));
+            }
+        }
+    }
+
     let src = File::open(path).map_err(|e| format!("无法打开文件: {}", e))?;
     let mss = MediaSourceStream::new(Box::new(src), Default::default());
 
     let mut hint = Hint::new();
-    if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
-        hint.with_extension(ext);
-    }
+    hint.with_extension(&ext);
 
     // 探测容器,仅加载 metadata
     let probe = default::get_probe()
@@ -38,8 +67,6 @@ fn read_basic_metadata(path: &Path) -> Result<AudioMetadata, String> {
 
     let mut format = probe.format;
 
-    let mut metadata = AudioMetadata::default();
-
     // 读取元数据以及第一张封面
     if let Some(meta) = format.metadata().current() {
         for tag in meta.tags() {
@@ -47,6 +74,7 @@ fn read_basic_metadata(path: &Path) -> Result<AudioMetadata, String> {
                 Some(StandardTagKey::TrackTitle) => metadata.title = Some(tag.value.to_string()),
                 Some(StandardTagKey::Album) => metadata.album = Some(tag.value.to_string()),
                 Some(StandardTagKey::Artist) => metadata.artist = Some(tag.value.to_string()),
+                Some(StandardTagKey::Lyrics) => metadata.lyrics = Some(tag.value.to_string()),
                 _ => {}
             }
         }

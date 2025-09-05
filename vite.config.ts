@@ -1,5 +1,8 @@
 import {defineConfig} from 'vite';
 
+// @ts-expect-error process is a Node.js global
+const env = process.env;
+
 export default defineConfig({
     clearScreen: false,
     server: {
@@ -11,13 +14,13 @@ export default defineConfig({
     build: {
         // Tauri 在 Windows 上使用 Chromium，在 macOS 和 Linux 上使用 WebKit
         target:
-            process.env.TAURI_ENV_PLATFORM === 'windows'
+            env.TAURI_ENV_PLATFORM === 'windows'
                 ? 'chrome105'
                 : 'safari13',
         // 在 debug 构建中不使用 minify
-        minify: !process.env.TAURI_ENV_DEBUG ? 'esbuild' : false,
+        minify: !env.TAURI_ENV_DEBUG ? 'esbuild' : false,
         // 在 debug 构建中生成 sourcemap
-        sourcemap: !!process.env.TAURI_ENV_DEBUG,
+        sourcemap: !!env.TAURI_ENV_DEBUG,
     },
     plugins: [
         {

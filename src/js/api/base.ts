@@ -24,9 +24,4 @@ export interface IConfirm {
     animation?: boolean,
 }
 
-export enum ECategories {
-    INFO = 'info',
-    SUCCESS = 'success',
-    WARNING = 'warning',
-    ERROR = 'error'
-}
+export type ECategories = 'info' | 'success' | 'warning' | 'error'

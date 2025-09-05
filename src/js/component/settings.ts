@@ -15,7 +15,7 @@ import {clearPlayingQueueHistory, dbHelper} from "../db/db_init";
 
 // 设置快捷键
 const setShortcut = throttleTimeOut((event: MouseEvent) => {
-    const target = (<HTMLElement>event.target).closest('.key');
+    const target = (event.target as HTMLElement).closest('.key');
     if (!target) return;
 
     enableShortcut(false);
@@ -45,7 +45,7 @@ document.getElementById('shortcuts-settings')!.addEventListener('click', setShor
 
 // 清理缓存
 const clearCache = throttleTimeOut(async (event: MouseEvent) => {
-    const action = (<HTMLElement>event.target).closest('input')?.getAttribute('action');
+    const action = (event.target as HTMLElement).closest('input')?.getAttribute('action');
     if (!action) return;
 
     switch (action) {
@@ -73,7 +73,7 @@ document.getElementById('clean-cache')!.addEventListener('click', clearCache);
 
 // 重置快捷键
 document.getElementById('shortcuts-settings')!.addEventListener('auxclick', async (event) => {
-    const target = (<HTMLElement>event.target).closest('.key');
+    const target = (event.target as HTMLElement).closest('.key');
     if (!target) return;
     const action = target.getAttribute('action');
     if (!action) return;
@@ -94,7 +94,7 @@ document.getElementById('check-update')!.addEventListener('click', async () => {
 
 // 启动时更新设置
 document.getElementById('auto-check')!.addEventListener('input', function () {
-    const inputEle = <HTMLInputElement>this;
+    const inputEle = this as HTMLInputElement;
     if (inputEle.checked) {
         localStorage.removeItem('not-check-when-start');
         return;
@@ -104,7 +104,7 @@ document.getElementById('auto-check')!.addEventListener('input', function () {
 
 // 退出到托盘
 document.getElementById('quit-to-tray')!.addEventListener('click', function () {
-    const inputEle = <HTMLInputElement>this;
+    const inputEle = this as HTMLInputElement;
     if (inputEle.checked) {
         localStorage.removeItem('quit-to-tray');
         return;
@@ -115,10 +115,10 @@ document.getElementById('quit-to-tray')!.addEventListener('click', function () {
 // 设置Api并重新登录
 document.getElementById('apis-settings')!.addEventListener('click', async (event) => {
     try {
-        const label = (<HTMLElement>event.target).closest('.base-button')?.parentElement;
+        const label = (event.target as HTMLElement).closest('.base-button')?.parentElement;
         if (!label) return;
-        const keyEle: HTMLInputElement = <HTMLInputElement>label.querySelector('[name="api-key"]');
-        const psdEle: HTMLInputElement = <HTMLInputElement>label.querySelector('[name="api-psd"]');
+        const keyEle: HTMLInputElement = label.querySelector('[name="api-key"]') as HTMLInputElement;
+        const psdEle: HTMLInputElement = label.querySelector('[name="api-psd"]') as HTMLInputElement;
         const key = keyEle.value;
         const psd = psdEle.value;
         if (!key || !psd) return;
@@ -143,7 +143,7 @@ document.getElementById('apis-settings')!.addEventListener('click', async (event
 
 // 本地文件播放
 document.getElementById('select-local-audio')!.addEventListener('click', async (event) => {
-    const target = (<HTMLElement>event.target).closest('.base-button');
+    const target = (event.target as HTMLElement).closest('.base-button');
     if (!target) return;
 
     try {
@@ -192,8 +192,8 @@ async function initSettings(): Promise<void> {
             const result = await dbHelper.get('auth', pluginName);
             if (!result) continue;
 
-            const keyEle: HTMLInputElement = <HTMLInputElement>label.querySelector('[name="api-key"]');
-            const psdEle: HTMLInputElement = <HTMLInputElement>label.querySelector('[name="api-psd"]');
+            const keyEle = label.querySelector('[name="api-key"]') as HTMLInputElement;
+            const psdEle = label.querySelector('[name="api-psd"]') as HTMLInputElement;
             if (keyEle && psdEle) {
                 keyEle.value = result.key;
                 psdEle.value = result.psd;

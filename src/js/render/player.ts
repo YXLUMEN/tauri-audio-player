@@ -1,6 +1,6 @@
 import * as d from "./data";
 import * as v from "./env";
-import {debounce, throttleTimeOut} from "../util/base_utilities";
+import {debounce, isEmpty, throttleTimeOut} from "../util/base_utilities";
 import {generateUniqueRandomNumbers} from "../util/generate_random_nums";
 import {onAudioError} from "../error_handler";
 import {dbHelper} from "../db/db_init";
@@ -21,7 +21,7 @@ let isLyricDisplay: boolean = false;
 function modeToggle() {
     playMode = (playMode + 1) % 4;
     document.querySelectorAll('img[action="play-mode"]').forEach(img => {
-        (<HTMLImageElement>img).src = `/img/audio/ico/play_mode_${playMode}.svg`;
+        (img as HTMLImageElement).src = `/img/audio/ico/play_mode_${playMode}.svg`;
     });
 }
 
@@ -59,7 +59,7 @@ function getNextAudioIndex(delta = 1): number {
 const progressSeeking = throttleTimeOut((event: Event) => {
     if (!v.audioEle?.currentTime) return;
     isSeeking = true;
-    const value: string = (<HTMLInputElement>event.target).value;
+    const value: string = (event.target as HTMLInputElement).value;
     const duration: number = (Number(value) / 100) * v.audioEle.duration;
     v.updatePlayingProgress(duration);
 }, 32);
@@ -67,7 +67,7 @@ const progressSeeking = throttleTimeOut((event: Event) => {
 // 音频进度跳跃
 function progressLeap(event: Event) {
     if (!v.audioEle?.currentTime) return;
-    const value = (<HTMLInputElement>event.target).value;
+    const value = (event.target as HTMLInputElement).value;
     v.audioEle.currentTime = (Number(value) / 100) * v.audioEle.duration;
     isSeeking = false;
 }
@@ -123,15 +123,15 @@ function modifyVolume(volume: number) {
     const volumes = document.querySelectorAll('img[action="volume"]');
     if (volume >= 70) {
         volumes.forEach(img => {
-            (<HTMLImageElement>img).src = '/img/audio/ico/volume.svg';
+            (img as HTMLImageElement).src = '/img/audio/ico/volume.svg';
         });
     } else if (volume > 30 && volume < 70) {
         volumes.forEach(img => {
-            (<HTMLImageElement>img).src = '/img/audio/ico/volume-mid.svg';
+            (img as HTMLImageElement).src = '/img/audio/ico/volume-mid.svg';
         });
     } else if (volume <= 30) {
         volumes.forEach(img => {
-            (<HTMLImageElement>img).src = '/img/audio/ico/volume-low.svg';
+            (img as HTMLImageElement).src = '/img/audio/ico/volume-low.svg';
         });
     }
 }
@@ -186,7 +186,7 @@ v.audioEle.addEventListener('pause', () => {
 
 // 音频更新同步显示
 v.audioEle.addEventListener('timeupdate', (event) => {
-    const currentTime = (<HTMLAudioElement>event.target).currentTime;
+    const currentTime = (event.target as HTMLAudioElement).currentTime;
     if (isPlayerDisplay && isLyricDisplay) d.syncLyric(currentTime);
     if (!isSeeking) v.updatePlayingProgress(currentTime);
 }, {passive: true});
@@ -200,11 +200,7 @@ v.audioEle.addEventListener('seeked', () => {
 // 音频结束后下一曲
 v.audioEle.addEventListener('ended', () => d.switchAudio(getNextAudioIndex(1)));
 
-// 第一次错误不开始播放
-v.audioEle.addEventListener('error', () => {
-    onAudioError();
-    v.audioEle.addEventListener('error', onAudioError);
-}, {once: true});
+v.audioEle.addEventListener('error', onAudioError);
 
 // 修改音量
 v.volumeToggle.addEventListener('input', () => modifyVolume(Number(v.volumeToggle.value)));
@@ -219,7 +215,7 @@ v.progressPlayed.addEventListener('change', progressLeap);
 
 // 选中播放队列
 v.playingQueue.addEventListener('click', (event) => {
-    const target = (<HTMLElement>event.target).closest('.queue-row');
+    const target = (event.target as HTMLElement).closest('.queue-row');
     if (!target) return;
     d.switchAudio(Number(target.getAttribute('play-index'))).catch();
 });
@@ -230,7 +226,7 @@ v.closeBoard.addEventListener('click', closePlayingBoard);
 // 点击歌词行跳转
 v.lyricContent.addEventListener('click', (event) => {
     if (d.LYRIC_ACTIONS.lyrArray.length <= 1) return;
-    const target = (<HTMLElement>event.target).closest('.text');
+    const target = (event.target as HTMLElement).closest('.text');
     if (!target) return;
 
     const leap = Number(target.getAttribute('time'));
@@ -245,7 +241,7 @@ document.getElementById('lyric-box')!.addEventListener('wheel', event => {
 
 // 歌词微调
 document.getElementById('set-lyric-offset')!.addEventListener('click', event => {
-    const target = (<HTMLElement>event.target).closest('img');
+    const target = (event.target as HTMLElement).closest('img');
     if (!target) return;
 
     const offset = target.alt;
@@ -286,7 +282,7 @@ document.getElementById('toggle-fft')!.addEventListener('change', async () => {
 
     // 频谱图操作
     document.getElementById('fft-settings')!.addEventListener('click', (e) => {
-        const target = (<HTMLElement>e.target).closest('input');
+        const target = (e.target as HTMLElement).closest('input');
         if (!target) return;
         const name = target.getAttribute('name')!;
         fftActions.get(name)?.apply(null, [e]);
@@ -321,7 +317,7 @@ function applyPlayerAction(action: string) {
 
 // 音频控制按钮
 document.getElementById('audio-box')!.addEventListener('click', event => {
-    const target = <HTMLElement>event.target;
+    const target = event.target as HTMLElement;
     const action = target.closest('.control-icon')?.getAttribute('action');
     if (!action) {
         if (!target.id || target?.id === 'player-box') return togglePlayer();
@@ -336,13 +332,12 @@ async function loadHistory() {
         if (!usedPlaying) return;
 
         const result = await dbHelper.getAll('playing_history');
-        if (!result) return;
+        if (isEmpty(result)) return;
 
         const {index, currentTime} = JSON.parse(usedPlaying);
         await d.setPlayingQueue(result);
 
-        const ok = await d.switchAudio(Number(index), {scroll: true, play: false});
-        if (!ok) return;
+        await d.switchAudio(Number(index), {scroll: true, play: false});
 
         document.getElementById('index-audio-control')!.classList.remove('hide');
         if (Number(index) !== d.getAudioIndex()) return;

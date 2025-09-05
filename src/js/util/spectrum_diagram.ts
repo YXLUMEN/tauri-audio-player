@@ -11,7 +11,7 @@ export default class SpectrumDiagram {
     private bufferLength: number = 0;
     private dataArray: Uint8Array<ArrayBuffer> | null = null;
 
-    constructor(canvas: HTMLCanvasElement, width: number, height: number) {
+    public constructor(canvas: HTMLCanvasElement, width: number, height: number) {
         this._canvas = canvas;
         this.canvasContext = canvas.getContext('2d')!;
         this._color = 'rgba(0,185,115,0.3)';
@@ -38,31 +38,31 @@ export default class SpectrumDiagram {
 
     private _canvas: HTMLCanvasElement | null;
 
-    get canvas(): HTMLCanvasElement | null {
+    public get canvas(): HTMLCanvasElement | null {
         return this._canvas;
     }
 
     private _color: string;
 
-    set color(value: string) {
+    public set color(value: string) {
         this._color = value;
     }
 
     private _width: number;
 
-    set width(value: number) {
+    public set width(value: number) {
         this._width = Math.max(0, value);
     }
 
     private _height: number;
 
-    set height(value: number) {
+    public set height(value: number) {
         this._height = Math.max(0, value);
     }
 
     private _drawInterval: number;
 
-    set drawInterval(value: number) {
+    public set drawInterval(value: number) {
         this._drawInterval = Math.max(0, value);
     }
 

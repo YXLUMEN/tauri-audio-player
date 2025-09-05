@@ -14,10 +14,11 @@ export interface IShortCuts {
     code: string
 }
 
-function deepFreeze(obj: any): any {
+function deepFreeze<T>(obj: T): T {
     if (obj === null || typeof obj !== 'object') return obj;
 
     Object.getOwnPropertyNames(obj).forEach((key) => {
+        // @ts-ignore
         const value = obj[key];
 
         if (
@@ -32,16 +33,16 @@ function deepFreeze(obj: any): any {
     return Object.freeze(obj);
 }
 
-function createCleanObj(obj: any): any {
+function createCleanObj<T>(obj: T): T {
     return Object.assign(Object.create(null), obj);
 }
 
-const defaultFolder: IFolderInfo = Object.freeze({
+const defaultFolder: IFolderInfo = createCleanObj({
     id: 1,
     name: '默认歌单',
     desc: '',
     cover: '/img/audio/cover/audio-2.webp'
-});
+} as const);
 
 const defaultShortcuts: IShortCuts[] = deepFreeze([
     {action: 'toggle-play', code: 'Space'},
@@ -58,20 +59,20 @@ const defaultShortcuts: IShortCuts[] = deepFreeze([
     {action: 'toggle-player', code: 'KeyP'},
     {action: 'update-remote', code: 'NumpadAdd'},
     {action: 'close-page', code: 'Escape'},
-]);
+] as const);
 
 const defaultLyrics: IFormatLyric = deepFreeze(createCleanObj({
-    lyric: Object.freeze([Object.freeze({text: "暂无歌词", time: 0.0})])
-}));
+    lyric: [{text: "暂无歌词", time: 0.0}]
+} as const));
 
-const defaultConfirm: IConfirm = deepFreeze(createCleanObj({
+const defaultConfirm: IConfirm = createCleanObj({
     timeout: 0,
     flag: 'default',
     category: 'info',
     defaultResult: false,
     strictTimeout: false,
     animation: true,
-}));
+} as const);
 
 const defaultFetch: IBaseFetch = deepFreeze(createCleanObj({
     method: 'POST',
@@ -82,7 +83,7 @@ const defaultFetch: IBaseFetch = deepFreeze(createCleanObj({
     referrer: "about:client",
     cache: 'default',
     ignore_err: [],
-}));
+} as const));
 
 export {
     defaultFolder,

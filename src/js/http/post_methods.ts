@@ -22,16 +22,16 @@ export default async function baseFetch(url: string, opts: IBaseFetch = {}): Pro
 }
 
 // 默认的错误处理
-const errors = new Map([
-    [400, ['不支持的请求', ECategories.WARNING]],
-    [401, ['您还没有登录', ECategories.WARNING]],
-    [404, ['访问资源不存在', ECategories.WARNING]],
-    [405, ['不允许的请求', ECategories.ERROR]],
-    [429, ['请求速率限制', ECategories.ERROR]],
-    [500, ['服务器未能处理请求', ECategories.ERROR]]
+const errors: Map<number, [string, ECategories]> = new Map([
+    [400, ['不支持的请求', 'warning']],
+    [401, ['您还没有登录', 'warning']],
+    [404, ['访问资源不存在', 'warning']],
+    [405, ['不允许的请求', 'error']],
+    [429, ['请求速率限制', 'error']],
+    [500, ['服务器未能处理请求', 'error']],
 ]);
 
 function statusAlert(statusCode: number = 404) {
-    const msg = errors.get(statusCode) ?? [`未知错误: ${statusCode}`, ECategories.ERROR];
+    const msg = errors.get(statusCode) ?? [`未知错误: ${statusCode}`, 'error'];
     createAlert(msg[0], msg[1]);
 }

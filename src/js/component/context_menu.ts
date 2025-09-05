@@ -122,7 +122,7 @@ document.addEventListener('contextmenu', event => {
 
     indexContextmenu.querySelector('.menu.show')?.classList.remove('show');
 
-    if (!chosenElement(<HTMLElement>event.target)) return;
+    if (!chosenElement(event.target as HTMLElement)) return;
 
     indexContextmenu.style.display = 'block';
 
@@ -144,7 +144,7 @@ document.addEventListener('contextmenu', event => {
 
 // 右键菜单操作
 indexContextmenu.addEventListener('click', event => {
-    const action = (<HTMLElement>event.target).closest('.item')?.getAttribute('action');
+    const action = (event.target as HTMLElement).closest('.item')?.getAttribute('action');
     if (!action) return;
     if (d.chosenRow) contextmenuHandleRow(action).catch(console.error);
     else if (chosenQueueRowId) contextmenuHandlerQueueRow(action).catch(console.error);
@@ -155,7 +155,7 @@ indexContextmenu.addEventListener('click', event => {
 document.addEventListener('click', event => {
     indexContextmenu.style.display = 'none';
 
-    if (!choseFolderContent.parentElement?.contains(<HTMLElement>event.target)) {
+    if (!choseFolderContent.parentElement?.contains(event.target as HTMLElement)) {
         choseFolderContent.parentElement?.classList.remove('show');
     }
 }, true);

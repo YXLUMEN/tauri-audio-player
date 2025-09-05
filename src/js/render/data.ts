@@ -168,8 +168,8 @@ async function switchAudio(newIndex: number, opt: ISwitchAudio = {}): Promise<bo
 
 function highlightCurrentPlaying(scroll: boolean = true): void {
     // 高亮播放列表行
-    const currentPlaying = v.playingQueue.querySelector(`[play-index='${audioIndex}']`);
-    if (currentPlaying instanceof HTMLElement) {
+    const currentPlaying = v.playingQueue.querySelector(`[play-index='${audioIndex}']`) as HTMLElement;
+    if (currentPlaying) {
         v.playingBoard.querySelector('.queue-row.current')?.classList.remove('current');
         currentPlaying.classList.add('current');
 
@@ -563,6 +563,7 @@ export {
     removeAudio,
     clearPlayingQueue,
     switchAudio,
+    loadAudio,
     syncLyric,
     highlightCurrentPlaying,
     getPlayingQueue,

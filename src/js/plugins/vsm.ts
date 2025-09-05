@@ -19,7 +19,7 @@ export class VSM extends AbsAudioModel implements IAuthAble {
     private accessToken: string = '';
     private refreshToken: string = '';
 
-    constructor() {
+    public constructor() {
         super();
 
         this.seq = 0;

@@ -16,7 +16,7 @@ const indexAudioTitle = document.getElementById('index-audio-title')!;
 
 const choseFolderContent = document.getElementById('chose-folder-content')!;
 
-const iPgsPlay: HTMLInputElement = <HTMLInputElement>document.getElementById('i-progress-played')!;
+const iPgsPlay = document.getElementById('i-progress-played')! as HTMLInputElement;
 
 const iTotalTime = document.getElementById('i-total-time')!;
 
@@ -26,7 +26,7 @@ const playerBackground = document.getElementById('player-background')!;
 
 const playerBox = document.getElementById('player-box')!;
 
-const audioEle: HTMLAudioElement = <HTMLAudioElement>document.getElementById('audio-loader')!;
+const audioEle = document.getElementById('audio-loader')! as HTMLAudioElement;
 audioEle.loop = false;
 audioEle.volume = .7;
 
@@ -34,15 +34,15 @@ const lyricContent = document.getElementById('lyric-ul')!;
 
 const lyricOffsetEle = document.getElementById('lyric-offset')!;
 
-const progressPlayed: HTMLInputElement = <HTMLInputElement>document.getElementById('progress-played')!;
+const progressPlayed = document.getElementById('progress-played')! as HTMLInputElement;
 
 const playedTime = document.getElementById('played-time')!;
 
 const audioTime = document.getElementById('audio-time')!;
 
-const iVolumeToggle = <HTMLInputElement>document.getElementById('i-volume-toggle')!;
+const iVolumeToggle = document.getElementById('i-volume-toggle')! as HTMLInputElement;
 
-const volumeToggle = <HTMLInputElement>document.getElementById('volume-toggle')!;
+const volumeToggle = document.getElementById('volume-toggle')! as HTMLInputElement;
 
 const closeBoard = document.getElementById('close-playing-board')!;
 
@@ -52,9 +52,9 @@ const playingQueue = document.getElementById('playing-queue')!;
 
 const settings = document.getElementById('settings-container')!;
 
-const DSD = new SpectrumDiagram(<HTMLCanvasElement>document.getElementById('audio-canvas'), window.innerWidth, 400);
+const DSD = new SpectrumDiagram(document.getElementById('audio-canvas') as HTMLCanvasElement, window.innerWidth, 400);
 
-const preLoadCover = <HTMLImageElement>document.getElementById('pre-load')!;
+const preLoadCover = document.getElementById('pre-load')! as HTMLImageElement;
 
 // 音频播放时间换算
 function transTime(value: number) {
@@ -91,7 +91,7 @@ function updatePlayingProgress(currentTime: number) {
 
 function setUiPlay() {
     document.querySelectorAll('img[action="play-pause"]').forEach(img => {
-        (<HTMLImageElement>img).src = '/img/audio/ico/pause.svg';
+        (img as HTMLImageElement).src = '/img/audio/ico/pause.svg';
     });
 
     indexAudioCover.classList.remove('paused');
@@ -102,7 +102,7 @@ function setUiPlay() {
 
 function setUiPause() {
     document.querySelectorAll('img[action="play-pause"]').forEach(img => {
-        (<HTMLImageElement>img).src = '/img/audio/ico/play.svg';
+        (img as HTMLImageElement).src = '/img/audio/ico/play.svg';
     });
 
     indexAudioCover.classList.add('paused');
@@ -149,7 +149,7 @@ function toggleMuted() {
         iVolumeToggle.value = lastVolume;
         audioEle.muted = false;
         document.querySelectorAll('img[action="volume"]').forEach(img => {
-            (<HTMLImageElement>img).src = '/img/audio/ico/volume.svg';
+            (img as HTMLImageElement).src = '/img/audio/ico/volume.svg';
         });
     } else {
         lastVolume = volumeToggle.value;
@@ -157,7 +157,7 @@ function toggleMuted() {
         iVolumeToggle.value = '0';
         audioEle.muted = true;
         document.querySelectorAll('img[action="volume"]').forEach(img => {
-            (<HTMLImageElement>img).src = '/img/audio/ico/volume-muted.svg';
+            (img as HTMLImageElement).src = '/img/audio/ico/volume-muted.svg';
         });
     }
 }
@@ -171,7 +171,7 @@ function hideLoading() {
 }
 
 async function toggleDraw(e: Event) {
-    if ((<HTMLInputElement>e.target).checked) {
+    if ((e.target as HTMLInputElement).checked) {
         await DSD.startDraw();
         if (DSD.canvas) DSD.canvas.style.display = 'block';
     } else {
@@ -183,12 +183,12 @@ async function toggleDraw(e: Event) {
 async function switchDrawMode() {
     DSD.stopDraw();
 
-    const selectedRadio = <HTMLInputElement>document.querySelector('input[name="draw-mode"]:checked');
+    const selectedRadio = document.querySelector('input[name="draw-mode"]:checked') as HTMLInputElement;
     if (selectedRadio) await DSD.startDraw(selectedRadio.value)
 }
 
 function changeFFTSize() {
-    const target = <HTMLInputElement>document.querySelector('input[name="change-fftSize"]');
+    const target = document.querySelector('input[name="change-fftSize"]') as HTMLInputElement;
     const value: string = target.value;
     const n = value === '' ? 256 : Number(value);
     if (isNaN(n) || n < 32 || n > 32768 || (n & (n - 1)) !== 0) {
@@ -199,7 +199,7 @@ function changeFFTSize() {
 }
 
 function changeDrawInterval() {
-    const target = <HTMLInputElement>document.querySelector('input[name="change-draw-interval"]');
+    const target = document.querySelector('input[name="change-draw-interval"]') as HTMLInputElement;
     const value = target.value;
     const tick = value === '' ? 10 : Number(value);
     if (isNaN(tick)) return;
@@ -207,8 +207,8 @@ function changeDrawInterval() {
 }
 
 function changeDecibels() {
-    const minEle = <HTMLInputElement>document.querySelector('input[name="min-decibels"]');
-    const maxEle = <HTMLInputElement>document.querySelector('input[name="max-decibels"]');
+    const minEle = document.querySelector('input[name="min-decibels"]') as HTMLInputElement;
+    const maxEle = document.querySelector('input[name="max-decibels"]') as HTMLInputElement;
 
     const minV = minEle.value;
     const maxV = maxEle.value;

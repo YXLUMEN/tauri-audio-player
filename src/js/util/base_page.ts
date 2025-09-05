@@ -52,7 +52,7 @@ function removeNote(element: HTMLElement, animation: boolean): void {
 }
 
 // 创建通用提示框
-export default function createAlert(message: string, category: ECategories | string = 'info', opts: IAlert = {}): void {
+export default function createAlert(message: string, category: ECategories = 'info', opts: IAlert = {}): void {
     const {autoRemoveDelay = 2500, animation = true} = opts;
 
     const baseAlertBox = document.querySelector('.base-alert-box');
@@ -61,7 +61,7 @@ export default function createAlert(message: string, category: ECategories | str
 
     // 清除较旧的警示框
     if (boxChildren.length > 4) {
-        removeNote(<HTMLElement>boxChildren[0], false);
+        removeNote(boxChildren[0] as HTMLElement, false);
     }
 
     const alert = document.createElement('div');
@@ -85,7 +85,7 @@ export default function createAlert(message: string, category: ECategories | str
 
     // 手动关闭
     alert.onclick = event => {
-        const target = (<HTMLElement>event.target).closest('.close');
+        const target = (event.target as HTMLElement).closest('.close');
         if (!target) return;
         removeNote(alert, animation);
     };
@@ -168,7 +168,7 @@ export function createConfirm(message: string, opts: IConfirm = {}): Promise<boo
     }
 
     confirm.addEventListener('click', function (event) {
-        const action = (<HTMLElement>event.target).closest('.action')?.getAttribute('action');
+        const action = (event.target as HTMLElement).closest('.action')?.getAttribute('action');
         if (!action || abort.signal.aborted) return;
 
         clearTimeout(timeoutId);
@@ -176,5 +176,5 @@ export function createConfirm(message: string, opts: IConfirm = {}): Promise<boo
         resolve(action === 'agree');
     }, {signal: abort.signal});
 
-    return <Promise<boolean>>promise;
+    return promise as Promise<boolean>;
 }

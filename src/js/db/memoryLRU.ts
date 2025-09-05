@@ -6,16 +6,9 @@ export class MemoryLRU<K, V> {
     private readonly capacity: number;
     private readonly onRemove?: (event: RemoveEvent<K, V>) => void;
 
-    constructor(capacity: number, onRemove?: (event: RemoveEvent<K, V>) => void) {
+    public constructor(capacity: number, onRemove?: (event: RemoveEvent<K, V>) => void) {
         this.capacity = Math.max(0, capacity | 0);
         this.onRemove = onRemove;
-    }
-
-    private notify(k: K, v: V | undefined, reason: RemoveReason) {
-        try {
-            this.onRemove?.({key: k, value: v, reason});
-        } catch {
-        }
     }
 
     public get(k: K): V | undefined {
@@ -59,6 +52,13 @@ export class MemoryLRU<K, V> {
 
     public stableValues(): V[] {
         return Array.from(this.cacheMap.values());
+    }
+
+    private notify(k: K, v: V | undefined, reason: RemoveReason) {
+        try {
+            this.onRemove?.({key: k, value: v, reason});
+        } catch {
+        }
     }
 
 }
