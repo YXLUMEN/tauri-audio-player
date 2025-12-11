@@ -1,0 +1,118 @@
+import {throttleTimeOut} from "../utils/util";
+import {dbHelper} from "../database/db_init";
+import {defaultShortcuts, IShortCuts} from "../config/default";
+import {getPlugin, VSM} from "../plugins/plugin_init";
+import {QueueStatus} from "../playing_queue/queue_status";
+import {QueueController} from "../playing_queue/queue_controller";
+import {IndexRender} from "../index/index_render";
+import {PlayMode} from "../play/play_mode";
+import {PlayVolume} from "../play/play_volume";
+import {QueueRender} from "../playing_queue/queue_render";
+import {LyricStatus} from "../lyric/lyric_status";
+import {PlayerRender} from "../player/player_render";
+import {toggleSettings} from "./setting";
+
+export class Shortcuts {
+    private static readonly volumeToggle = document.getElementById('volume-toggle')! as HTMLInputElement;
+
+    private static readonly shortcuts: Map<string, Function> = new Map();
+    private static ableShortcuts: boolean = true;
+
+    public static enableShortcut(bl: boolean) {
+        this.ableShortcuts = bl;
+    }
+
+    public static async mapKeys(): Promise<void> {
+        const mapFunc: Record<string, Function> = {
+            'toggle-play': QueueController.pauseToggle,
+            'forward': () => QueueController.switchAudio(PlayMode.getNextAudioIndex(1)),
+            'backward': () => QueueController.switchAudio(PlayMode.getNextAudioIndex(-1)),
+            'volume-increase': () => PlayVolume.modifyVolume(Number(this.volumeToggle.value) + 2),
+            'volume-decrease': () => PlayVolume.modifyVolume(Number(this.volumeToggle.value) - 2),
+            'switch-mode': PlayMode.modeToggle,
+            'switch-mute': PlayVolume.toggleMuted,
+            'scroll-current': QueueRender.highlightCurrentPlaying,
+            'toggle-lyric': LyricStatus.lyricDisplayFn,
+            'toggle-playing-queue': PlayerRender.togglePlayingBoard,
+            'toggle-settings': toggleSettings,
+            'toggle-player': PlayerRender.togglePlayer,
+            'update-remote': this.vsmAdd,
+            'close-page': PlayerRender.closePage,
+        }
+
+        this.shortcuts.clear();
+        for (const key of defaultShortcuts) {
+            this.shortcuts.set(key.code, mapFunc[key.action]);
+        }
+
+        const result = await dbHelper.getAll<IShortCuts>('shortcuts');
+        if (result.isErr()) {
+            const error = result.unwrapErr();
+
+            let msg = '未知错误';
+            if (error) msg = error.message;
+            console.error(`绑定快捷键失败: ${msg}`);
+            return;
+        }
+
+        const optional = result.ok();
+        if (optional.isEmpty()) return;
+
+        const custom = optional.get();
+        if (custom.length === 0) return;
+
+        for (const key of custom) {
+            this.shortcuts.set(key.code, mapFunc[key.action]);
+        }
+    }
+
+    public static async vsmAdd() {
+        if (QueueController.chosenFolder?.getAttribute('plugin') !== 'vsm') return;
+
+        const vsm = getPlugin('vsm');
+        if (vsm instanceof VSM) {
+            vsm.setSeq(vsm.seq + 32);
+            if (vsm.seq < vsm.maxCount) {
+                await vsm.getAudioList({seq: vsm.seq});
+            }
+
+            await IndexRender.setDisplayFolder(VSM.vsmCache);
+            if (!vsm.isAll()) IndexRender.showContentTip('显示更多');
+            requestAnimationFrame(() => QueueStatus.mergePlayingQueue(IndexRender.displayedContent));
+        }
+    }
+
+    public static async initShortcuts(): Promise<void> {
+        try {
+            await this.mapKeys();
+        } catch (err) {
+            let msg = '未知错误';
+            if (err instanceof Error) msg = err.message;
+            else if (typeof err === 'string') msg = err;
+            console.error(`绑定快捷键失败: ${msg}`);
+        }
+
+        const keyControlFn = throttleTimeOut((code: string) => {
+            this.shortcuts.get(code)?.();
+        }, 100);
+
+        document.addEventListener('keydown', event => {
+            if (
+                event.key === 'F5' ||
+                (event.ctrlKey && event.key === 'r') ||
+                (event.metaKey && event.key === 'r')
+            ) {
+                event.preventDefault();
+                return;
+            }
+
+            if (!this.ableShortcuts) return;
+            if ((event.target as HTMLElement).classList.contains('base-input')) return;
+            event.stopPropagation();
+            event.preventDefault();
+
+            keyControlFn(event.code);
+        });
+    }
+}
+

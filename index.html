@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <link rel="stylesheet" href="src/css/base/base-alert.css"/>
-    <link rel="stylesheet" href="src/css/base/base-style.css"/>
+    <link rel="stylesheet" href="/css/base/base-alert.css"/>
+    <link rel="stylesheet" href="/css/base/base-style.css"/>
 
-    <link rel="stylesheet" href="src/css/index.css"/>
-    <link rel="stylesheet" href="src/css/settings.css">
-    <link rel="stylesheet" href="src/css/player.css"/>
+    <link rel="stylesheet" href="/css/index.css"/>
+    <link rel="stylesheet" href="/css/settings.css">
+    <link rel="stylesheet" href="/css/player.css"/>
 
     <script type="module" src="src/main.ts" defer></script>
     <title>Audio Player</title>
@@ -153,10 +153,10 @@
             <div class="key" action="forward">右方向键</div>
 
             <div class="title-like">提高音量</div>
-            <div class="key" action="lyric-up">上方向键</div>
+            <div class="key" action="volume-increase">上方向键</div>
 
             <div class="title-like">降低音量</div>
-            <div class="key" action="lyric-down">下方向键</div>
+            <div class="key" action="volume-decrease">下方向键</div>
 
             <div class="title-like">播放模式切换</div>
             <div class="key" action="switch-mode">R</div>
@@ -594,7 +594,6 @@
     </div>
 </div>
 
-<audio id="audio-loader" crossorigin="anonymous" preload="metadata"></audio>
 <img id="pre-load" src="" alt="" decoding="async">
 </body>
 </html>

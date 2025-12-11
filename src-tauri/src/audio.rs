@@ -35,10 +35,16 @@ fn read_basic_metadata(path: &Path) -> Result<AudioMetadata, String> {
     if ext == "mp3" {
         match Tag::read_from_path(path) {
             Ok(tag) => {
-                metadata.title = Some(tag.title().expect("No title").to_string());
-                metadata.album = Some(tag.album().expect("No album").to_string());
-                metadata.artist = Some(tag.artist().expect("No artist").to_string());
+                metadata.title = tag.title().map(|t| t.to_string()).or_else(|| {
+                    path.file_stem()
+                        .and_then(|s| s.to_str())
+                        .map(|s| s.to_string())
+                });
+
+                metadata.album = Some(tag.album().unwrap_or("No album").to_string());
+                metadata.artist = Some(tag.artist().unwrap_or("No artist").to_string());
                 metadata.lyrics = tag.lyrics().next().map(|l| l.text.to_string());
+
                 if let Some(picture) = tag
                     .pictures()
                     .find(|p| p.picture_type == PictureType::CoverFront)
@@ -52,6 +58,7 @@ fn read_basic_metadata(path: &Path) -> Result<AudioMetadata, String> {
                 return Err(format!("无法读取 ID3 标签: {}", e));
             }
         }
+        return Ok(metadata);
     }
 
     let src = File::open(path).map_err(|e| format!("无法打开文件: {}", e))?;
@@ -81,7 +88,7 @@ fn read_basic_metadata(path: &Path) -> Result<AudioMetadata, String> {
 
         if let Some(visual) = meta.visuals().iter().next() {
             metadata.cover = Some(visual.data.to_vec());
-            metadata.cover_mime_type = Some(detect_image_mime_type(&visual.data));
+            metadata.cover_mime_type = Some(detect_image_mime_type(&visual.data).to_string());
         }
     }
 
@@ -95,15 +102,16 @@ fn read_basic_metadata(path: &Path) -> Result<AudioMetadata, String> {
     Ok(metadata)
 }
 
-fn detect_image_mime_type(data: &[u8]) -> String {
-    match data {
-        [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, ..] => "image/png",
-        [0xFF, 0xD8, 0xFF, ..] => "image/jpeg",
-        [0x47, 0x49, 0x46, 0x38, 0x39, 0x61, ..] | [0x47, 0x49, 0x46, 0x38, 0x37, 0x61, ..] => {
-            "image/gif"
-        }
-        [0x42, 0x4D, ..] => "image/bmp",
-        _ => "application/octet-stream",
+fn detect_image_mime_type(data: &[u8]) -> &'static str {
+    if data.starts_with(b"\x89PNG\r\n\x1a\n") {
+        "image/png"
+    } else if data.starts_with(b"\xFF\xD8\xFF") {
+        "image/jpeg"
+    } else if data.starts_with(b"GIF87a") || data.starts_with(b"GIF89a") {
+        "image/gif"
+    } else if data.starts_with(b"BM") {
+        "image/bmp"
+    } else {
+        "application/octet-stream"
     }
-    .to_string()
 }
