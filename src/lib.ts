@@ -12,6 +12,7 @@ import {QueueController} from "./playing_queue/queue_controller";
 import {Dsd} from "./spectrum_diagram";
 import {QueueHistory} from "./playing_queue/queue_history";
 import {invoke} from "@tauri-apps/api/core";
+import {Search} from "./component/search";
 
 const appWindow: Window = new Window('main');
 
@@ -19,10 +20,8 @@ export async function initialize(): Promise<void> {
     document.getElementById('title-bar-minimize')!.addEventListener('click', () => appWindow.minimize());
     document.getElementById('title-bar-maximize')!.addEventListener('click', () => appWindow.toggleMaximize());
     document.getElementById('title-bar-close')!.addEventListener('click', () => {
-        if (localStorage.getItem('quit-to-tray') === null) {
-            return appWindow.hide();
-        }
-        return appWindow.close();
+        if (localStorage.getItem('quit-to-tray') === null) appWindow.hide();
+        else closeApp();
     });
 
     await appWindow.onResized(async () => {
@@ -41,14 +40,15 @@ export async function initialize(): Promise<void> {
     ContextMenu.initialize();
     IndexController.initialize();
     IndexRender.initialize();
-    await IndexRender.renderCustomFolder();
     LyricStatus.initialize();
     PlayVolume.initialize();
     PlayerController.initialize();
     QueueController.initialize();
-    await QueueHistory.loadHistory();
     Dsd.initialize();
+    Search.initialize();
 
+    await IndexRender.renderCustomFolder();
+    await QueueHistory.loadHistory();
     await Shortcuts.initShortcuts();
     await initSettings();
     await initTray();
@@ -83,4 +83,12 @@ async function checkUpdate() {
     } catch (e) {
         console.error(e);
     }
+}
+
+let pendingClose = false;
+
+export function closeApp() {
+    if (pendingClose) return;
+    pendingClose = true;
+    appWindow.close().catch(e => console.error(e));
 }

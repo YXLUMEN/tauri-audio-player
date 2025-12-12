@@ -15,7 +15,7 @@ export class ContextMenu {
     private static chosenElement(target: HTMLElement) {
         const row = target.closest('.row') as HTMLElement;
         if (row) {
-            QueueController.setChosenRow(row);
+            IndexController.setChosenRow(row);
             this.indexContextmenu.querySelector('.menu.for-row')?.classList.add('show');
             return true;
         }
@@ -29,7 +29,7 @@ export class ContextMenu {
 
         const folder = target.closest('.audio-folder') as HTMLElement;
         if (folder) {
-            QueueController.setChosenFolder(folder);
+            IndexController.setChosenFolder(folder);
             this.indexContextmenu.querySelector('.menu.for-folder')?.classList.add('show');
             return true;
         }
@@ -38,7 +38,7 @@ export class ContextMenu {
 
     // 右键菜单处理歌单内容音频
     private static async contextmenuHandleRow(action: string): Promise<void> {
-        const row = QueueController.chosenRow;
+        const row = IndexController.getChosenRow();
         if (!row) return;
 
         const index = Number(row.getAttribute('index'));
@@ -46,13 +46,13 @@ export class ContextMenu {
 
         switch (action) {
             case 'play': {
-                await IndexController.playChosenRow(QueueController.chosenRow);
+                await IndexController.playChosenRow(row);
                 createAlert('开始播放', 'success');
                 break;
             }
             case 'add-to-queue': {
                 if (!IndexRender.displayedContent) break;
-                await QueueStatus.pushAudios(IndexRender.displayedContent?.[index]);
+                await QueueStatus.pushAudios(IndexRender.displayedContent[index]);
                 createAlert('已添加至队列', 'success');
                 break;
             }
@@ -74,18 +74,19 @@ export class ContextMenu {
                 break;
             }
             case 'de-collect': {
-                if (QueueController.chosenFolder?.getAttribute('plugin')) return;
+                const folder = IndexController.getChosenFolder();
+                if (folder?.getAttribute('plugin')) return;
 
-                const parent = Number(QueueController.chosenFolder?.getAttribute('folder_id'));
-                const id = QueueController.chosenRow?.id;
+                const parent = Number(folder?.getAttribute('folder_id'));
+                const id = row?.id;
                 if (!isNaN(parent) && id) {
                     await deCollectAudio(parent, id);
-                    QueueController.chosenFolder?.click();
+                    folder?.click();
                 }
             }
         }
 
-        QueueController.setChosenRow(null);
+        IndexController.setChosenRow(null);
     }
 
     // 右键菜单处理播放列表音频
@@ -124,7 +125,7 @@ export class ContextMenu {
 
     // 右键菜单处理歌单
     private static async contextmenuHandleFolder(action: string) {
-        const id = Number(QueueController.chosenFolder?.getAttribute('folder_id'));
+        const id = Number(IndexController.getChosenFolder()?.getAttribute('folder_id'));
         if (isNaN(id)) return;
 
         if (action === 'mod-folder') {
@@ -135,14 +136,14 @@ export class ContextMenu {
             }
 
             const folder = result.ok().get();
-            if (!folder) return;
+            if (typeof folder === 'string') return;
             await modifyFolder(folder);
         } else if (action === 'delete-folder') {
             if (!await createConfirm('确定删除歌单吗?')) return;
             await deleteFolder(id);
         }
 
-        QueueController.setChosenFolder(null);
+        IndexController.setChosenFolder(null);
         await IndexRender.renderCustomFolder();
     }
 
@@ -178,11 +179,11 @@ export class ContextMenu {
         this.indexContextmenu.addEventListener('click', event => {
             const action = (event.target as HTMLElement).closest('.item')?.getAttribute('action');
             if (!action) return;
-            if (QueueController.chosenRow) {
+            if (IndexController.getChosenRow()) {
                 this.contextmenuHandleRow(action).catch(console.error);
             } else if (this.chosenQueueRowId) {
                 this.contextmenuHandlerQueueRow(action).catch(console.error);
-            } else if (QueueController.chosenFolder) {
+            } else if (IndexController.getChosenFolder()) {
                 this.contextmenuHandleFolder(action).catch(console.error);
             }
         });

@@ -10,13 +10,15 @@ export class Dsd {
     );
 
     public static async toggleDraw(event: Event) {
+        const canvas = this.DSD.getCanvas();
+
         if ((event.target as HTMLInputElement).checked) {
             await this.DSD.startDraw();
-            if (this.DSD.canvas) this.DSD.canvas.style.display = 'block';
-            return
+            if (canvas) canvas.style.display = 'block';
+            return;
         }
         this.DSD.stopDraw();
-        if (this.DSD.canvas) this.DSD.canvas.style.display = 'none';
+        if (canvas) canvas.style.display = 'none';
     }
 
     public static async switchDrawMode() {
@@ -29,20 +31,20 @@ export class Dsd {
     public static changeFFTSize() {
         const target = document.querySelector('input[name="change-fftSize"]') as HTMLInputElement;
         const value: string = target.value;
-        const n = value === '' ? 256 : Number(value);
-        if (isNaN(n) || n < 32 || n > 32768 || (n & (n - 1)) !== 0) {
+        const num = value === '' ? 256 : Number(value);
+        if (!Number.isInteger(num) || num < 32 || num > 32768 || (num & (num - 1)) !== 0) {
             alert('必须为2的次方并且满足[32,32768]');
             return false;
         }
-        this.DSD.setAnalyser({fftSize: n});
+        this.DSD.setAnalyser({fftSize: num});
     }
 
     public static changeDrawInterval() {
         const target = document.querySelector('input[name="change-draw-interval"]') as HTMLInputElement;
         const value = target.value;
         const tick = value === '' ? 10 : Number(value);
-        if (isNaN(tick)) return;
-        this.DSD.drawInterval = Math.max(0, tick);
+        if (!Number.isInteger(tick)) return;
+        this.DSD.setDrawInterval(tick);
     }
 
     public static changeDecibels() {
@@ -52,7 +54,7 @@ export class Dsd {
         const minV = minEle.value;
         const maxV = maxEle.value;
         const [min, max] = [minV === '' ? -100 : Number(minV), maxV === '' ? -10 : Number(maxV)];
-        if (isNaN(min) || isNaN(max) || min >= max) return;
+        if (!Number.isInteger(min) || !Number.isInteger(max) || min >= max) return;
         this.DSD.setAnalyser({
             minDecibels: min,
             maxDecibels: max,
@@ -86,7 +88,7 @@ export class Dsd {
         document.getElementById('toggle-fft')!.addEventListener('change', async () => {
             const resizeDSD = debounce(() => {
                 const width = window.innerWidth;
-                this.DSD.width = width;
+                this.DSD.setWidth(width);
                 this.DSD.setAnalyser({
                     fftSize: width >= 650 ? 256 : 128
                 });

@@ -6,7 +6,6 @@ import {createAlert} from "../utils/front/alert";
 import {Result} from "../utils/Result";
 
 
-// 封装的fetch方法
 export default async function baseFetch(url: string, opts: IBaseFetch = {}): Promise<Result<Response, Error>> {
     try {
         const options: IBaseFetch = {

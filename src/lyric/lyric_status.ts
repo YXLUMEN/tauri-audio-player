@@ -1,10 +1,10 @@
 import {debounce, throttleTimeOut} from "../utils/util";
-import {getPlugin} from "../plugins/plugin_init";
 import {defaultLyrics} from "../config/default";
 import {QueueStatus} from "../playing_queue/queue_status";
 import {LyricRender} from "./lyric_render";
 import {ILyric} from "../types/audio";
 import {PlayerStatus} from "../player/player_status";
+import {getPlugin} from "../plugins";
 
 export class LyricStatus {
     private static readonly lyricContent = document.getElementById('lyric-ul')!;

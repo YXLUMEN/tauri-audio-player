@@ -1,16 +1,14 @@
 import {throttleTimeOut} from "../utils/util";
 import {dbHelper} from "../database/db_init";
 import {defaultShortcuts, IShortCuts} from "../config/default";
-import {getPlugin, VSM} from "../plugins/plugin_init";
-import {QueueStatus} from "../playing_queue/queue_status";
 import {QueueController} from "../playing_queue/queue_controller";
-import {IndexRender} from "../index/index_render";
 import {PlayMode} from "../play/play_mode";
 import {PlayVolume} from "../play/play_volume";
 import {QueueRender} from "../playing_queue/queue_render";
 import {LyricStatus} from "../lyric/lyric_status";
 import {PlayerRender} from "../player/player_render";
 import {toggleSettings} from "./setting";
+import {VSM} from "../plugins";
 
 export class Shortcuts {
     private static readonly volumeToggle = document.getElementById('volume-toggle')! as HTMLInputElement;
@@ -36,7 +34,7 @@ export class Shortcuts {
             'toggle-playing-queue': PlayerRender.togglePlayingBoard,
             'toggle-settings': toggleSettings,
             'toggle-player': PlayerRender.togglePlayer,
-            'update-remote': this.vsmAdd,
+            'update-remote': VSM.vsmAdd,
             'close-page': PlayerRender.closePage,
         }
 
@@ -63,22 +61,6 @@ export class Shortcuts {
 
         for (const key of custom) {
             this.shortcuts.set(key.code, mapFunc[key.action]);
-        }
-    }
-
-    public static async vsmAdd() {
-        if (QueueController.chosenFolder?.getAttribute('plugin') !== 'vsm') return;
-
-        const vsm = getPlugin('vsm');
-        if (vsm instanceof VSM) {
-            vsm.setSeq(vsm.seq + 32);
-            if (vsm.seq < vsm.maxCount) {
-                await vsm.getAudioList({seq: vsm.seq});
-            }
-
-            await IndexRender.setDisplayFolder(VSM.vsmCache);
-            if (!vsm.isAll()) IndexRender.showContentTip('显示更多');
-            requestAnimationFrame(() => QueueStatus.mergePlayingQueue(IndexRender.displayedContent));
         }
     }
 

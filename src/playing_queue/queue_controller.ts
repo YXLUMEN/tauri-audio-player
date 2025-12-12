@@ -1,5 +1,4 @@
-import {IStandardAudio, ISwitchAudio} from "../types/audio";
-import {getPlugin} from "../plugins/plugin_init";
+import {StandardAudio} from "../types/audio";
 import {createAlert} from "../utils/front/alert";
 import {transTime} from "../utils/math/math";
 import {QueueStatus} from "./queue_status";
@@ -7,10 +6,11 @@ import {QueueRender} from "./queue_render";
 import {PlayerRender} from "../player/player_render";
 import {LyricRender} from "../lyric/lyric_render";
 import {LyricStatus} from "../lyric/lyric_status";
-import {onAudioError} from "../play/error_handler";
 import {PlayMode} from "../play/play_mode";
 import {PlayerStatus} from "../player/player_status";
 import {Dsd} from "../spectrum_diagram";
+import {PlayErrorHandler} from "../play/error_handler";
+import {getPlugin} from "../plugins";
 
 export class QueueController {
     // DOM
@@ -23,15 +23,12 @@ export class QueueController {
     private static readonly playerTotalTime = document.getElementById('audio-time')!;
     private static readonly indexAudioTitle = document.getElementById('index-audio-title')!;
     private static readonly coverPreload = document.getElementById('pre-load')! as HTMLImageElement;
-    private static readonly folderContent = document.getElementById('folder-content')!;
     private static readonly playerBackground = document.getElementById('player-background')!;
     private static readonly indexAudioCover = document.getElementById('index-audio-cover')!;
 
     private static loadCtrl: AbortController | null = null;
-    public static chosenRow: HTMLElement | null = null;
-    public static chosenFolder: HTMLElement | null = null;
 
-    private static loadAudio(standard: IStandardAudio): Promise<boolean> {
+    private static loadAudio(standard: StandardAudio): Promise<boolean> {
         this.indexAudioTitle.firstElementChild!.textContent = standard.title;
         this.indexAudioTitle.lastElementChild!.textContent = standard.artist;
 
@@ -109,12 +106,10 @@ export class QueueController {
         }
     }
 
-    public static async switchAudio(newIndex: number, opt: ISwitchAudio = {}): Promise<boolean> {
+    public static async switchAudio(newIndex: number, force = false, play = true, scroll = false): Promise<boolean> {
         if (newIndex < 0 || newIndex >= QueueStatus.getMaxAudioCount()) {
             return false;
         }
-
-        const {force = false, play = true, scroll = false} = opt;
 
         try {
             if (newIndex === QueueStatus.getCurrentIndex() && !force) {
@@ -135,23 +130,11 @@ export class QueueController {
 
             QueueRender.highlightCurrentPlaying(scroll);
 
-            if (play) return await this.pauseToggle();
+            if (play) return this.pauseToggle();
             return true;
         } finally {
             QueueRender.hideLoading();
         }
-    }
-
-    // 设置选中的音乐并高亮
-    public static setChosenRow(row: HTMLElement | null): void {
-        this.folderContent.querySelector('.row.chosen')?.classList.remove('chosen');
-        row?.classList.add('chosen');
-        this.chosenRow = row;
-    }
-
-    // 设置选中的歌单
-    public static setChosenFolder(folder: HTMLElement | null): void {
-        this.chosenFolder = folder;
     }
 
     public static initialize() {
@@ -195,7 +178,7 @@ export class QueueController {
         // 音频结束后下一曲
         audio.addEventListener('ended', () => this.switchAudio(PlayMode.getNextAudioIndex(1)));
 
-        audio.addEventListener('error', onAudioError);
+        audio.addEventListener('error', PlayErrorHandler.errorHandler);
 
         this.coverPreload.addEventListener('load', () => {
             this.playerBackground.style.backgroundImage = `url(${this.coverPreload.src})`;

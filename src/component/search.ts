@@ -1,100 +1,111 @@
-import {IAudioInfo} from "../types/audio";
+import {AudioInfo} from "../types/audio";
 import {dbHelper} from "../database/db_init";
-import {getPlugin} from "../plugins/plugin_init";
 import {createAlert} from "../utils/front/alert";
 import {QueueRender} from "../playing_queue/queue_render";
 import {removeDuplicate} from "../playing_queue/util";
 import {IndexRender} from "../index/index_render";
+import {getPlugin} from "../plugins";
 
-async function searchAudios() {
-    const input = document.getElementById('search-input') as HTMLInputElement | null;
-    if (!input || input.value.trim() === '') return;
+export class Search {
+    public static async searchAudios() {
+        const input = document.getElementById('search-input') as HTMLInputElement | null;
+        if (!input || input.value.trim() === '') return;
 
-    let result: IAudioInfo[] | null;
+        let result: AudioInfo[] | null;
 
-    const args = input.value.trim().toLowerCase().split(':');
-    const value = args.splice(1).join('').trim();
-    QueueRender.showLoading();
+        const arg = input.value.trim().toLowerCase();
+        const args = arg.split(':');
+        const value = args.length > 1 ? args.splice(1).join('').trim() : arg;
+        QueueRender.showLoading();
 
-    switch (args[0]) {
-        case 'v':
-        case 'vsm':
-            result = await searchVsm(value);
-            break;
-        case 'f':
-        case 'fa':
-        case 'favor':
-        case 'favour':
-            result = await searchFavour(value);
-            break;
-        default:
-            result = await searchVsm(value);
-            if (!result) break;
-            result = result.concat(await searchFavour(value));
-            result = removeDuplicate(result);
+        switch (args[0]) {
+            case 'v':
+            case 'vsm':
+                result = await this.searchVsm(value);
+                break;
+            case 'f':
+            case 'fa':
+            case 'favor':
+            case 'favour':
+                result = await this.searchLocal(value);
+                break;
+            default:
+                result = await this.searchVsm(value);
+                if (!result) result = [];
+                const local = await this.searchLocal(value);
+                result.push(...local);
+                result = removeDuplicate(result);
+        }
+
+        await IndexRender.setDisplayFolder(result);
+        QueueRender.hideLoading();
     }
 
-    await IndexRender.setDisplayFolder(result);
-    QueueRender.hideLoading();
-}
+    public static async searchLocal(arg: string): Promise<AudioInfo[]> {
+        const db = await dbHelper.init();
 
-async function searchFavour(arg: string): Promise<IAudioInfo[]> {
-    const db = await dbHelper.init();
-    const {promise, resolve} = Promise.withResolvers<void>();
+        const items: Map<string, AudioInfo> = new Map();
 
-    const matched: IAudioInfo[] = [];
-    const items: Map<string, IAudioInfo> = new Map();
+        const {promise: dbTask, resolve} = Promise.withResolvers<void>();
+        const tx = db.transaction('favor', 'readonly');
+        const store = tx.objectStore('favor');
+        const request = store.openCursor();
 
-    const tx = db.transaction('favor', 'readonly');
-    const store = tx.objectStore('favor');
-    const request = store.openCursor();
-
-
-    request.onerror = event => {
-        console.error(`[Search] Error on cursor: ${event.type}`);
-        resolve();
-    };
-
-    request.onsuccess = () => {
-        const cursor = request.result;
-        if (!cursor || items.size >= 128) {
+        request.onerror = event => {
+            console.error(`[Search] Error on cursor: ${event.type}`);
             resolve();
-            return;
+        };
+
+        request.onsuccess = () => {
+            const cursor = request.result;
+            if (!cursor || items.size >= 128) {
+                resolve();
+                return;
+            }
+
+            const audio: AudioInfo = cursor.value;
+            items.set(audio.id, audio);
+            cursor.continue();
         }
 
-        const audio: IAudioInfo = cursor.value;
-        items.set(audio.id, audio);
-        cursor.continue();
-    }
+        await dbTask;
 
-    await promise;
+        const matched: AudioInfo[] = [];
+        const searchArg = arg.toLowerCase();
+        for (const item of items.values()) {
+            const plugin = getPlugin(item.plugin);
+            if (!plugin) continue;
 
-    arg = arg.toLowerCase();
-    for (const raw of items.values()) {
-        const standard = await getPlugin(raw.plugin)?.parse(raw);
-        if (!standard) continue;
-        const {title, album, artist} = standard;
-        if (
-            title.toLowerCase().includes(arg) ||
-            album.toLowerCase().includes(arg) ||
-            artist.toLowerCase().includes(arg)
-        ) {
-            matched.push(standard);
+            const standard = await plugin.parse(item);
+            if (!standard) continue;
+
+            const {title, album, artist} = standard;
+            if (!title || !album || !artist) continue;
+            if (
+                title.toLowerCase().includes(searchArg) ||
+                album.toLowerCase().includes(searchArg) ||
+                artist.toLowerCase().includes(searchArg)
+            ) {
+                matched.push(standard);
+            }
         }
+
+        return matched;
     }
 
-    return matched;
-}
+    public static async searchVsm(arg: string): Promise<AudioInfo[] | null> {
+        const plugin = getPlugin('vsm');
+        if (!plugin) return null;
 
-async function searchVsm(arg: string): Promise<IAudioInfo[] | null> {
-    const result = await getPlugin('vsm')?.getAudioList({search: arg});
-    if (!result) {
-        createAlert('无结果', 'info');
-        return null;
+        const result = await plugin.getAudioList({search: arg});
+        if (!result) {
+            createAlert('无结果', 'info');
+            return null;
+        }
+        return result;
     }
-    return result;
-}
 
-export function initSearch() {
-    document.getElementById('search-submit')!.addEventListener('click', searchAudios);
+    public static initialize() {
+        document.getElementById('search-submit')!.addEventListener('click', this.searchAudios.bind(this));
+    }
 }

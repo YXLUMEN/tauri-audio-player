@@ -16,7 +16,7 @@ export type ResultType<T, E> = Ok<T> | Err<E>;
 export class Result<T, E> {
     private readonly inner: ResultType<T, E>;
 
-    public constructor(result: ResultType<T, E>) {
+    private constructor(result: ResultType<T, E>) {
         this.inner = result;
     }
 

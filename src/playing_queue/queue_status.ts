@@ -1,10 +1,11 @@
-import {IAudioInfo} from "../types/audio";
+import {AudioInfo} from "../types/audio";
 import {dbHelper} from "../database/db_init";
 import {clearPlayingQueueHistory} from "../database/db_util";
-import {isCacheAble, loadedPlugins} from "../plugins/plugin_init";
 import {removeDuplicate} from "./util";
 import {QueueRender} from "./queue_render";
 import {QueueController} from "./queue_controller";
+import {clamp} from "../utils/Math";
+import {isCacheAble, loadedPlugins} from "../plugins";
 
 
 export class QueueStatus {
@@ -13,7 +14,7 @@ export class QueueStatus {
     private static folderContent = document.getElementById('folder-content')!;
 
     private static playingIndex: number = -1;
-    private static playingQueue: IAudioInfo[] = [];
+    private static playingQueue: AudioInfo[] = [];
 
     static {
         this.audioPlayer.crossOrigin = 'anonymous';
@@ -29,7 +30,7 @@ export class QueueStatus {
 
     public static setAudioIndex(index: number): void {
         if (!Number.isSafeInteger(index)) return;
-        this.playingIndex = Math.min(Math.max(0, index), this.playingQueue.length);
+        this.playingIndex = clamp(index, 0, this.playingQueue.length);
     }
 
     public static setAudioIndexUnclamp(index: number): void {
@@ -37,11 +38,11 @@ export class QueueStatus {
         this.playingIndex = index;
     }
 
-    public static getPlayingQueue(): IAudioInfo[] {
+    public static getPlayingQueue(): AudioInfo[] {
         return [...this.playingQueue];
     }
 
-    public static getCurrentPlaying(): IAudioInfo | null {
+    public static getCurrentPlaying(): AudioInfo | null {
         return this.playingQueue[this.playingIndex];
     }
 
@@ -50,19 +51,19 @@ export class QueueStatus {
     }
 
     // 设置播放队列
-    public static async setPlayingQueue(queue: IAudioInfo[] | null): Promise<void> {
+    public static async setPlayingQueue(queue: AudioInfo[] | null): Promise<void> {
         if (!queue) return;
         this.playingQueue = queue;
         await QueueRender.renderPlayingQueue(this.playingQueue);
     }
 
     // 合并队列, 会去除id重复的元素
-    public static async mergePlayingQueue(queue: IAudioInfo[] | null): Promise<void> {
+    public static async mergePlayingQueue(queue: AudioInfo[] | null): Promise<void> {
         if (!queue) return;
         await this.setPlayingQueue(removeDuplicate(this.playingQueue.concat(queue)));
     }
 
-    public static async pushAudios(audios: IAudioInfo[] | IAudioInfo | null): Promise<void> {
+    public static async pushAudios(audios: AudioInfo[] | AudioInfo | null): Promise<void> {
         if (!audios) return;
 
         if (Array.isArray(audios)) {
@@ -74,9 +75,9 @@ export class QueueStatus {
         await QueueRender.renderPlayingQueue(this.playingQueue, false);
     }
 
-    public static async insertAudio(at: number, audios: IAudioInfo[] | IAudioInfo | null): Promise<void> {
+    public static async insertAudio(at: number, audios: AudioInfo[] | AudioInfo | null): Promise<void> {
         if (!audios) return;
-        const insertIndex = Math.max(0, Math.min(at, this.playingQueue.length));
+        const insertIndex = clamp(at, 0, this.playingQueue.length);
 
         if (Array.isArray(audios)) {
             this.playingQueue.splice(insertIndex, 0, ...audios);
@@ -97,7 +98,7 @@ export class QueueStatus {
         await QueueRender.renderPlayingQueue(this.playingQueue);
     }
 
-    public static async unshiftAudios(audios: IAudioInfo[] | IAudioInfo): Promise<void> {
+    public static async unshiftAudios(audios: AudioInfo[] | AudioInfo): Promise<void> {
         if (!audios) return;
 
         if (Array.isArray(audios)) {
@@ -119,7 +120,7 @@ export class QueueStatus {
             return;
         }
         if (index === this.playingIndex) {
-            await QueueController.switchAudio(this.playingIndex + 1, {play: false});
+            await QueueController.switchAudio(this.playingIndex + 1, false, false);
             this.setAudioIndex(index);
         }
         this.playingQueue.splice(index, 1);

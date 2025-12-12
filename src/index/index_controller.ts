@@ -5,8 +5,7 @@ import {QueueController} from "../playing_queue/queue_controller";
 import {open} from "@tauri-apps/plugin-dialog";
 import {Result} from "../utils/Result";
 import {IndexRender} from "./index_render";
-import {IAudioInfo, IStandardAudio} from "../types/audio";
-import {getPlugin} from "../plugins/plugin_init";
+import {AudioInfo, StandardAudio} from "../types/audio";
 import {throttleTimeOut} from "../utils/util";
 import {QueueRender} from "../playing_queue/queue_render";
 import {collectAudio, createFolder, getFavorByFolder} from "../database/db_util";
@@ -18,15 +17,18 @@ import {LyricStatus} from "../lyric/lyric_status";
 import {PlayMode} from "../play/play_mode";
 import {PlayVolume} from "../play/play_volume";
 import {Shortcuts} from "../component/shortcuts";
+import {getPlugin} from "../plugins";
 
 export class IndexController {
     private static readonly folderContent = document.getElementById('folder-content')!;
     private static readonly choseFolderContent = document.getElementById('chose-folder-content')!;
     private static readonly indexLeftPanel = document.getElementById('index-left-panel')!;
 
+    private static chosenRow: HTMLElement | null = null;
+    private static chosenFolder: HTMLElement | null = null;
     private static pendingInput: Supplier<void> | null = null;
 
-    public static async getNewFolderInfo(create: boolean = false): Promise<Result<IFolderInfo | null, string>> {
+    public static async getNewFolderInfo(create: boolean = false): Promise<Result<IFolderInfo | string, string>> {
         if (this.pendingInput) {
             this.pendingInput();
             this.pendingInput = null;
@@ -48,7 +50,7 @@ export class IndexController {
             descInput.value = '';
             coverImg.src = randomCover();
         } else {
-            const folderId = QueueController.chosenFolder?.getAttribute('folder_id');
+            const folderId = this.chosenFolder?.getAttribute('folder_id');
             if (!folderId) return Result.err('Cannot find folder');
 
             const id = Number(folderId);
@@ -71,7 +73,7 @@ export class IndexController {
         this.folderContent.parentElement!.classList.add('hide');
 
         const abort = new AbortController();
-        const {promise, resolve} = Promise.withResolvers<Result<IFolderInfo | null, string>>();
+        const {promise, resolve} = Promise.withResolvers<Result<IFolderInfo | string, string>>();
 
         promise.finally(() => {
             this.pendingInput = null;
@@ -109,7 +111,7 @@ export class IndexController {
                     cover: coverImg.src
                 }));
             } else if (action === 'cancel') {
-                resolve(Result.ok(null));
+                resolve(Result.ok('Canceled'));
             }
         }, {signal: abort.signal});
 
@@ -158,10 +160,10 @@ export class IndexController {
 
         this.indexLeftPanel.querySelector('.audio-folder.current')?.classList.remove('current');
         folder.classList.add('current');
-        QueueController.setChosenFolder(folder);
+        this.setChosenFolder(folder);
         IndexRender.wasMerge = false;
 
-        let audios: IAudioInfo[] | IStandardAudio[] | null;
+        let audios: AudioInfo[] | StandardAudio[] | null;
         const plugin = folder.getAttribute('plugin');
 
         if (plugin) {
@@ -191,15 +193,20 @@ export class IndexController {
     }, 300);
 
     public static async playChosenRow(target: HTMLElement | null) {
-        const index = target?.getAttribute('index');
+        if (!target) return;
+
+        const index = target.getAttribute('index');
         if (!index) return;
+
         if (!IndexRender.wasMerge) {
             await QueueStatus.setPlayingQueue(IndexRender.displayedContent);
         }
         IndexRender.wasMerge = true;
         QueueStatus.setAudioIndexUnclamp(-1);
 
-        await QueueController.switchAudio(Number(index));
+        const num = Number(index);
+        if (isNaN(num)) return;
+        await QueueController.switchAudio(num);
     }
 
     public static handleIndexPlayController = throttleTimeOut(async (event: MouseEvent) => {
@@ -253,6 +260,26 @@ export class IndexController {
         }
     }
 
+    // 设置选中的音乐并高亮
+    public static setChosenRow(row: HTMLElement | null): void {
+        this.folderContent.querySelector('.row.chosen')?.classList.remove('chosen');
+        row?.classList.add('chosen');
+        this.chosenRow = row;
+    }
+
+    public static getChosenRow() {
+        return this.chosenRow;
+    }
+
+    // 设置选中的歌单
+    public static setChosenFolder(folder: HTMLElement | null): void {
+        this.chosenFolder = folder;
+    }
+
+    public static getChosenFolder() {
+        return this.chosenFolder;
+    }
+
     public static initialize() {
         this.indexLeftPanel.addEventListener('click', event => {
             const folder = (event.target as HTMLElement).closest('.audio-folder');
@@ -280,7 +307,7 @@ export class IndexController {
             }
 
             const info = result.ok().get();
-            if (!info) return;
+            if (typeof info === 'string') return;
 
             await createFolder(info);
             await IndexRender.renderCustomFolder();
@@ -290,7 +317,7 @@ export class IndexController {
         this.folderContent.addEventListener('click', (event) => {
             const row = (event.target as HTMLElement)?.closest('.row') as HTMLElement;
             if (!row) return;
-            QueueController.setChosenRow(row);
+            this.setChosenRow(row);
         });
 
         // 双击播放

@@ -1,9 +1,7 @@
 import {throttleTimeOut} from "../utils/util";
 import {defaultShortcuts} from "../config/default";
 import {createAlert} from "../utils/front/alert";
-import {getPlugin, isAuthAble, VSM} from "../plugins/plugin_init";
 import {updateApp} from "../http/update";
-import {IAudioInfo} from "../types/audio";
 import {invoke} from "@tauri-apps/api/core";
 import {clearPlayingQueueHistory} from "../database/db_util";
 import {dbHelper} from "../database/db_init";
@@ -13,6 +11,9 @@ import {QueueStatus} from "../playing_queue/queue_status";
 import {QueueController} from "../playing_queue/queue_controller";
 import {IndexController} from "../index/index_controller";
 import {Shortcuts} from "./shortcuts";
+import {getPlugin, isAuthAble, VSM} from "../plugins";
+import {PromisePool} from "../utils/collection/PromisePool";
+import {AudioInfo} from "../types/audio";
 
 const settings = document.getElementById('settings-container')!;
 
@@ -63,7 +64,7 @@ const clearCache = throttleTimeOut(async (event: MouseEvent) => {
             break;
         }
         case 'clean-vsm': {
-            VSM.vsmCache.length = 0;
+            VSM.getCache().length = 0;
             const plugin = getPlugin('vsm');
             if (plugin instanceof VSM) {
                 plugin.seq = 0;
@@ -169,11 +170,23 @@ document.getElementById('select-local-audio')!.addEventListener('click', async (
         if (!filePath) return;
         QueueRender.showLoading();
 
-        const list: IAudioInfo[] = [];
-        for (const path of filePath) {
-            const hash: string = await invoke('calculate_hash', {filePath: path});
-            if (hash) list.push({plugin: 'local', id: hash, url: path});
-        }
+        const pool = new PromisePool(6);
+        const tasks: Promise<{ hash: unknown, path: string }>[] = filePath.map(path =>
+            pool.submit(() =>
+                invoke('calculate_hash', {filePath: path})
+                    .then(hash => ({hash, path}))
+            )
+        );
+        const results = await Promise.allSettled(tasks);
+        const list: AudioInfo[] = results
+            .reduce((acc, res) => {
+                if (res.status !== 'fulfilled') return acc;
+                if (typeof res.value.hash === 'string') {
+                    const {hash, path} = res.value;
+                    acc.push({plugin: 'local', id: hash, url: path});
+                }
+                return acc;
+            }, [] as AudioInfo[]);
 
         const index = QueueStatus.getCurrentIndex();
         await QueueStatus.insertAudio(index + 1, list);

@@ -44,7 +44,7 @@ export class LyricRender {
         this.lyricOffset.textContent = offset ? offset.toFixed(1) : '';
 
         const frag = document.createDocumentFragment();
-        lyric.forEach((row: ILyric) => frag.append(this.createLyricRow(row, offset)));
+        lyric.forEach(row => frag.append(this.createLyricRow(row, offset)));
 
         this.lyricContent.replaceChildren(frag);
 
@@ -91,7 +91,7 @@ export class LyricRender {
         }
     }
 
-// 跨度较大时快速跳转歌词
+    // 跨度较大时快速跳转歌词
     public static significantLeapFn = debounce(() => {
         const {lyrArray, currentLine, centralPos, syncLyricEnable} = LyricStatus;
         const length = lyrArray?.length || 0;

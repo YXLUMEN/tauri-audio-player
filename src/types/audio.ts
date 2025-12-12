@@ -1,4 +1,4 @@
-export interface IMusicMetadata {
+export interface MusicMetadata {
     title: string;
     album: string;
     artist: string;
@@ -6,7 +6,7 @@ export interface IMusicMetadata {
     cover_mime_type?: string;
 }
 
-export interface IAudioInfo {
+export interface AudioInfo {
     id: string; // 唯一标识,如hash,uuid
     plugin: string; // 加载的插件
     url?: string; // 可以直接播放的链接
@@ -14,7 +14,7 @@ export interface IAudioInfo {
     index?: number // 播放序列
 }
 
-export interface IStandardAudio extends IAudioInfo {
+export interface StandardAudio extends AudioInfo {
     title: string;
     album: string;
     artist: string;
@@ -37,16 +37,6 @@ export interface ISwitchAudio {
     scroll?: boolean,
     play?: boolean,
     force?: boolean,
-}
-
-export interface ILyricAction {
-    currentLine: number,
-    centralPos: number,
-    lineOffset: number,
-    lyricOffset: number,
-    maxScrollHeight: number,
-    lyrArray: ILyric[],
-    syncLyricEnable: boolean
 }
 
 export interface IFormatLyric {

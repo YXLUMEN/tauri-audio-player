@@ -13,7 +13,10 @@ export class PlayerStatus {
 
         this.isSeeking = true;
         const value: string = (event.target as HTMLInputElement).value;
-        const duration: number = (Number(value) / 100) * audio.duration;
+        const num = Number(value);
+        if (isNaN(num)) return;
+
+        const duration: number = (num / 100) * audio.duration;
 
         PlayerRender.updatePlayingProgress(duration);
     }, 32);
@@ -23,8 +26,16 @@ export class PlayerStatus {
         if (!audio.currentTime) return;
 
         const value = (event.target as HTMLInputElement).value;
-        audio.currentTime = (Number(value) / 100) * audio.duration;
+        const num = Number(value);
+        if (isNaN(num)) return;
+
+        audio.currentTime = (num / 100) * audio.duration;
         this.isSeeking = false;
+    }
+
+    static {
+        this.progressSeeking = this.progressSeeking.bind(this);
+        this.progressLeap = this.progressLeap.bind(this);
     }
 }
 

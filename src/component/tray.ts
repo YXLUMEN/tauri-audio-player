@@ -4,6 +4,7 @@ import {defaultWindowIcon} from '@tauri-apps/api/app';
 import {getCurrentWindow} from "@tauri-apps/api/window";
 import {QueueController} from "../playing_queue/queue_controller";
 import {PlayMode} from "../play/play_mode";
+import {closeApp} from "../lib";
 
 
 export async function initTray(): Promise<void> {
@@ -34,7 +35,7 @@ export async function initTray(): Promise<void> {
             {
                 id: 'quit',
                 text: '退出',
-                action: () => getCurrentWindow().close(),
+                action: () => closeApp(),
             },
         ],
     });

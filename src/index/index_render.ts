@@ -1,21 +1,20 @@
-import type {IAudioInfo, IStandardAudio} from "../types/audio";
+import type {AudioInfo, StandardAudio} from "../types/audio";
 import {defaultFolder, IFolderInfo} from "../config/default";
 import {dbHelper} from "../database/db_init";
 import {appendChildren} from "../utils/front/element";
 import {randomCover} from "../utils/math/random";
 import {isEmpty} from "../utils/util";
-import {QueueController} from "../playing_queue/queue_controller";
-import {getPlugin} from "../plugins/plugin_init";
 import {createAlert} from "../utils/front/alert";
 import {QueueStatus} from "../playing_queue/queue_status";
-import {Shortcuts} from "../component/shortcuts";
+import {IndexController} from "./index_controller";
+import {getPlugin, VSM} from "../plugins";
 
 export class IndexRender {
     private static readonly customFolderList = document.getElementById('custom-folder-list')!;
     private static readonly folderContent = document.getElementById('folder-content')!;
     private static readonly indexAudioControl = document.getElementById('index-audio-control')!
 
-    public static displayedContent: IAudioInfo[] | null = [];
+    public static displayedContent: AudioInfo[] | null = [];
     public static wasMerge: boolean = false;
 
     public static createFolderItem(folder: IFolderInfo): HTMLDivElement {
@@ -35,19 +34,18 @@ export class IndexRender {
     }
 
     // 创建歌单内容元素
-    private static createFolderContentItem(index: number, standard: IStandardAudio): HTMLDivElement {
+    private static createFolderContentItem(index: number, standard: StandardAudio): HTMLDivElement {
         const row = document.createElement('div');
         row.id = standard.id;
-        // noinspection JSCheckFunctionSignatures
+
         row.setAttribute('index', index.toString());
         row.classList.add('row');
 
         const play = document.createElement('div');
         play.classList.add('play-icon');
-        // noinspection JSValidateTypes
+
         play.textContent = index.toString();
 
-        // noinspection DuplicatedCode
         const cover = document.createElement('img');
         cover.src = standard.cover;
         cover.classList.add('small-cover');
@@ -77,7 +75,7 @@ export class IndexRender {
         const result = await dbHelper.getAll<IFolderInfo>('folder');
         if (result.isErr()) {
             console.error(result.unwrapErr());
-            createAlert('渲染歌单是出错');
+            createAlert('渲染歌单出错');
             return;
         }
 
@@ -92,11 +90,11 @@ export class IndexRender {
         playList.forEach(item => frag.append(this.createFolderItem(item)));
 
         this.customFolderList.replaceChildren(frag);
-        QueueController.chosenFolder?.classList.add('current');
+        IndexController.getChosenFolder()?.classList.add('current');
     }
 
     // 渲染歌单内容
-    public static async renderFolderContent(queue: IAudioInfo[] | null, start = 0) {
+    public static async renderFolderContent(queue: AudioInfo[] | null, start = 0) {
         if (isEmpty(queue)) {
             this.folderContent.textContent = '';
             this.showContentTip('无内容');
@@ -123,10 +121,10 @@ export class IndexRender {
         div.append(span);
 
         this.folderContent.append(div);
-        div.onclick = () => Shortcuts.vsmAdd();
+        div.onclick = () => VSM.vsmAdd();
     }
 
-    public static async setDisplayFolder(array: IAudioInfo[] | null, reRender: boolean = true) {
+    public static async setDisplayFolder(array: AudioInfo[] | null, reRender: boolean = true) {
         this.displayedContent = array;
         if (!reRender) return;
         await this.renderFolderContent(this.displayedContent);

@@ -1,10 +1,9 @@
-import {IAudioInfo, IStandardAudio} from "../types/audio";
-import {getPlugin} from "../plugins/plugin_init";
-import {isEmpty} from "../utils/util";
+import {AudioInfo, StandardAudio} from "../types/audio";
 import {appendChildren} from "../utils/front/element";
 import {createAlert} from "../utils/front/alert";
 import {PlayMode} from "../play/play_mode";
 import {QueueStatus} from "./queue_status";
+import {getPlugin} from "../plugins";
 
 export class QueueRender {
     private static readonly indexLoading = document.getElementById('index-loading')!;
@@ -13,7 +12,7 @@ export class QueueRender {
     private static readonly playingBoard = document.getElementById('playing-board-container')!;
     private static readonly folderContent = document.getElementById('folder-content')!;
 
-    private static createPlayingQueueItem(index: number, standardInfo: IStandardAudio): HTMLDivElement {
+    private static createPlayingQueueItem(index: number, standardInfo: StandardAudio): HTMLDivElement {
         const row = document.createElement('div');
         row.setAttribute('play-index', index.toString());
         row.classList.add('queue-row');
@@ -41,21 +40,25 @@ export class QueueRender {
      * @param queue 将渲染的列表,为空跳过
      * @param replace 是否重新渲染整个列表
      * */
-    public static async renderPlayingQueue(queue: IAudioInfo[], replace: boolean = true): Promise<void> {
-        if (isEmpty(queue)) return;
+    public static async renderPlayingQueue(queue: AudioInfo[], replace: boolean = true): Promise<void> {
+        if (queue.length === 0) return;
 
         const frag = document.createDocumentFragment();
-        let cannotLoad = 0;
+        const promises: Promise<StandardAudio | null>[] = [];
 
-        for (let i = 0, len = queue.length; i < len; i++) {
-            const audio = queue[i];
-            const standard = await getPlugin(audio.plugin)?.parse(audio);
-            if (standard) {
-                frag.appendChild(this.createPlayingQueueItem(i, standard));
-            } else {
-                cannotLoad += 1;
-            }
+        for (const audio of queue) {
+            const plugin = getPlugin(audio.plugin);
+            if (!plugin) continue;
+            promises.push(plugin.parse(audio));
         }
+
+        const parsed = await Promise.all(promises);
+        for (let i = 0; i < parsed.length; i++) {
+            const standard = parsed[i];
+            if (!standard) continue;
+            frag.appendChild(this.createPlayingQueueItem(i, standard))
+        }
+        const loadFailed = queue.length - frag.childElementCount;
 
         replace ? this.playingQueue.replaceChildren(frag) : this.playingQueue.append(frag);
         if (this.playingBoard.classList.contains('hide')) {
@@ -63,15 +66,15 @@ export class QueueRender {
         }
 
         this.highlightCurrentPlaying(false);
-        if (cannotLoad > 0) createAlert(`${cannotLoad} 个文件无法加载`, 'warning');
+        if (loadFailed > 0) createAlert(`${loadFailed} 个文件无法加载`, 'warning');
     }
 
     public static highlightCurrentPlaying(scroll: boolean = true): void {
         // 高亮播放列表行
         const currentPlayingEle = this.playingQueue.querySelector(
             `[play-index='${QueueStatus.getCurrentIndex()}']`
-        ) as HTMLElement;
-        if (currentPlayingEle) {
+        );
+        if (currentPlayingEle instanceof HTMLElement) {
             this.playingBoard.querySelector('.queue-row.current')?.classList.remove('current');
             currentPlayingEle.classList.add('current');
 
@@ -83,6 +86,7 @@ export class QueueRender {
         // 高亮歌单行
         const currentPlaying = QueueStatus.getCurrentPlaying();
         if (!currentPlaying) return;
+
         const currentRow = document.getElementById(currentPlaying.id);
         if (currentRow) {
             this.folderContent.querySelector('.row.current')?.classList.remove('current', 'playing');

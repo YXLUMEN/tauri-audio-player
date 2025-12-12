@@ -1,82 +1,72 @@
 export default class SpectrumDiagram {
-    public audioContext: AudioContext | null;
-    private canvasContext: CanvasRenderingContext2D | null;
+    public audioContext: AudioContext | null = null;
+
+    private readonly canvas: HTMLCanvasElement;
+    private readonly canvasContext: CanvasRenderingContext2D;
+
     private cachedBarWidth: number;
     private cachedSliceWidth: number;
-    private analyser: AnalyserNode | null;
-    private source: MediaElementAudioSourceNode | null;
-    private isDrawing: boolean;
-    private lastDrawTime: number;
-    private currentMode: string;
+    private width: number;
+    private height: number;
+
+    private analyser: AnalyserNode | null = null;
+    private source: MediaElementAudioSourceNode | null = null;
+
+    private color: string;
+    private isDrawing: boolean = true;
+    private lastDrawTime: number = 0;
+    private drawInterval: number = 10;
+    private currentMode: string = 'bars';
+
     private bufferLength: number = 0;
     private dataArray: Uint8Array<ArrayBuffer> | null = null;
 
     public constructor(canvas: HTMLCanvasElement, width: number, height: number) {
-        this._canvas = canvas;
+        this.canvas = canvas;
         this.canvasContext = canvas.getContext('2d')!;
-        this._color = 'rgba(0,185,115,0.3)';
+        this.color = 'rgba(0,185,115,0.3)';
 
         this.cachedBarWidth = 0;
         this.cachedSliceWidth = 0;
 
-        this.audioContext = null;
-        this.analyser = null;
-        this.source = null;
-
-        this._width = width;
-        this._height = height;
-
-        this.isDrawing = true;
-        this.lastDrawTime = 0;
-        this._drawInterval = 10;
-
-        this.currentMode = 'bars';
+        this.width = width;
+        this.height = height;
 
         this.drawBars = this.drawBars.bind(this);
         this.drawLineGraph = this.drawLineGraph.bind(this);
     }
 
-    private _canvas: HTMLCanvasElement | null;
-
-    public get canvas(): HTMLCanvasElement | null {
-        return this._canvas;
+    public getCanvas(): HTMLCanvasElement | null {
+        return this.canvas;
     }
 
-    private _color: string;
-
-    public set color(value: string) {
-        this._color = value;
+    public setColor(value: string) {
+        this.color = value;
     }
 
-    private _width: number;
-
-    public set width(value: number) {
-        this._width = Math.max(0, value);
+    public setWidth(value: number) {
+        this.width = Math.max(0, value);
     }
 
-    private _height: number;
-
-    public set height(value: number) {
-        this._height = Math.max(0, value);
+    public setHeight(value: number) {
+        this.height = Math.max(0, value);
     }
 
-    private _drawInterval: number;
-
-    public set drawInterval(value: number) {
-        this._drawInterval = Math.max(0, value);
+    public setDrawInterval(value: number) {
+        if (!Number.isInteger(value)) throw new Error('Interval must be a integer');
+        this.drawInterval = Math.max(0, value);
     }
 
     public resizeCanvas(): void {
-        if (this._canvas) {
-            this._canvas.width = this._width;
-            this._canvas.height = this._height;
-        }
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
 
         this.setupStyles();
 
-        if (this.bufferLength) {
-            this.cachedBarWidth = (this._width / this.bufferLength) - 1;
-            this.cachedSliceWidth = this._width / this.bufferLength;
+        if (this.bufferLength > 0) {
+            const percent = this.width / this.bufferLength;
+            this.cachedBarWidth = percent - 1;
+            this.cachedSliceWidth = percent;
         }
     }
 
@@ -106,8 +96,9 @@ export default class SpectrumDiagram {
         this.bufferLength = this.analyser.frequencyBinCount;
         this.dataArray = new Uint8Array(this.bufferLength);
 
-        this.cachedBarWidth = (this._width / this.bufferLength) - 1;
-        this.cachedSliceWidth = this._width / this.bufferLength;
+        const percent = this.width / this.bufferLength;
+        this.cachedBarWidth = percent - 1;
+        this.cachedSliceWidth = percent;
 
         this.resizeCanvas();
     }
@@ -133,17 +124,15 @@ export default class SpectrumDiagram {
         this.analyser?.disconnect();
         this.audioContext?.close().catch(console.error);
 
-        this.canvasContext?.clearRect(0, 0, this._canvas?.width ?? this._width, this._canvas?.height ?? this._height);
-        this.canvasContext = null;
-        this._canvas = null;
+        this.canvasContext.clearRect(0, 0, this.canvas?.width ?? this.width, this.canvas?.height ?? this.height);
         this.dataArray = null;
     }
 
     private setupStyles(): void {
         // Cache styles
         if (!this.canvasContext) return;
-        this.canvasContext.fillStyle = this._color;
-        this.canvasContext.strokeStyle = this._color;
+        this.canvasContext.fillStyle = this.color;
+        this.canvasContext.strokeStyle = this.color;
         this.canvasContext.lineWidth = 6;
     }
 
@@ -152,21 +141,19 @@ export default class SpectrumDiagram {
         requestAnimationFrame(this.drawBars);
 
         const now = performance.now();
-        if (now - this.lastDrawTime < this._drawInterval) return;
+        if (now - this.lastDrawTime < this.drawInterval) return;
         if (!this.analyser || !this.dataArray || !this.canvasContext) return;
 
         this.analyser.getByteFrequencyData(this.dataArray);
 
-
-        const [width, height] = [this._width, this._height];
-        this.canvasContext.clearRect(0, 0, width, height);
+        this.canvasContext.clearRect(0, 0, this.width, this.height);
 
         let x = 0;
         const barWidth = this.cachedBarWidth;
 
         for (let i = 0; i < this.bufferLength; i++) {
             const barHeight = this.dataArray[i] * 1.5;
-            this.canvasContext.fillRect(x, height - barHeight, barWidth, barHeight);
+            this.canvasContext.fillRect(x, this.height - barHeight, barWidth, barHeight);
             x += barWidth + 1;
         }
         this.lastDrawTime = now;
@@ -177,20 +164,19 @@ export default class SpectrumDiagram {
         requestAnimationFrame(this.drawLineGraph);
 
         const now = performance.now();
-        if (now - this.lastDrawTime < this._drawInterval) return;
+        if (now - this.lastDrawTime < this.drawInterval) return;
         if (!this.analyser || !this.dataArray || !this.canvasContext) return;
 
         this.analyser.getByteFrequencyData(this.dataArray);
 
-        const [width, height] = [this._width, this._height];
-        this.canvasContext.clearRect(0, 0, width, height);
+        this.canvasContext.clearRect(0, 0, this.width, this.height);
         this.canvasContext.beginPath();
 
         let x = 0;
         const sliceWidth = this.cachedSliceWidth;
 
         for (let i = 0; i < this.bufferLength; i++) {
-            const y = height - (this.dataArray[i] / 255.0 * height);
+            const y = this.height - (this.dataArray[i] / 255.0 * this.height);
 
             i === 0 ? this.canvasContext.moveTo(x, y) : this.canvasContext.quadraticCurveTo((x - sliceWidth / 2), y, x, y);
             x += sliceWidth;

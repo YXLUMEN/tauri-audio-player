@@ -1,45 +1,49 @@
 import {AbsAudioModel} from "./audio_model";
-import {IAudioInfo, IFormatLyric, IStandardAudio, IVSMOptions} from "../types/audio";
+import {AudioInfo, IFormatLyric, StandardAudio, IVSMOptions} from "../types/audio";
 import baseFetch from "../http/post_methods";
 import {IAuthAble} from "../types/plugin";
 import {Result} from "../utils/Result";
 import {createAlert} from "../utils/front/alert";
 import {QueueStatus} from "../playing_queue/queue_status";
+import {IndexController} from "../index/index_controller";
+import {IndexRender} from "../index/index_render";
+import {getPlugin} from "./index";
+import {clamp} from "../utils/Math";
+import {AsyncResult} from "../utils/AsyncResult";
 
 export class VSM extends AbsAudioModel implements IAuthAble {
-    public static vsmCache: Array<IAudioInfo> = [];
+    private static readonly vsmCache: AudioInfo[] = [];
     private static readonly AUDIO_LISTS_URL: string = 'https://www.yangandxu.asia/api/asset/audio_lists';
     private static readonly PLAY_URL: string = 'https://www.yangandxu.asia/api/asset/play';
     private static readonly LYRIC_URL: string = 'https://www.yangandxu.asia/api/asset/lyrics';
     private static readonly AUTH_URL: string = 'https://www.yangandxu.asia/api/auth';
     private static readonly REFRESH_URL: string = 'https://www.yangandxu.asia/api/refresh';
-    public seq: number;
-    public imgIndex: number;
-    public maxCount: number;
+
+    public seq: number = 0;
+    public imgIndex: number = 0;
+    public maxCount: number = 0;
 
     private accessToken: string = '';
     private refreshToken: string = '';
 
     public constructor() {
         super();
+    }
 
-        this.seq = 0;
-        this.imgIndex = 0;
-        this.maxCount = 0;
-
-        this.transform = this.transform.bind(this);
+    public static getCache() {
+        return this.vsmCache;
     }
 
     public getPluginName(): string {
         return 'vsm'
     }
 
-    public async getAudioList(opts: IVSMOptions = {}): Promise<IAudioInfo[]> {
+    public async getAudioList(opts: IVSMOptions = {}): Promise<AudioInfo[]> {
         if (VSM.vsmCache.length > 0 && !opts.seq && !opts.search) {
             return VSM.vsmCache;
         }
 
-        const result = await baseFetch(VSM.AUDIO_LISTS_URL, {
+        const resp = baseFetch(VSM.AUDIO_LISTS_URL, {
             headers: {
                 'Authorization': `Bearer ${this.accessToken}`,
                 'Content-Type': 'application/json',
@@ -52,18 +56,22 @@ export class VSM extends AbsAudioModel implements IAuthAble {
             }),
         });
 
-        if (result.isErr()) return [];
+        const result = await AsyncResult.from(resp)
+            .map(resp => resp.json() as Promise<Record<string, any>>)
+            .mapErr(async error => {
+                console.error(`Error while fetch from vsm: ${error}`);
+                return null;
+            })
+            .unwrap();
 
         const optional = result.ok();
-        if (optional.isEmpty()) return [];
-
-        const json = await optional.get().json();
-        if (!json) {
+        if (optional.isEmpty()) {
             createAlert('未能获取播放列表', 'warning');
             return [];
         }
 
-        const status = json['status'];
+        const json = optional.get();
+        const status = Number(json['status']);
         if (status === 3103) {
             await this.refresh();
             return [];
@@ -73,14 +81,19 @@ export class VSM extends AbsAudioModel implements IAuthAble {
             return [];
         }
 
-        this.maxCount = json['item_counts'];
-        // @ts-ignore
-        const results = Object.values(json['audio_dict']).map(this.transform);
+        const maxCount = Number(json['maxCount']);
+        this.maxCount = Number.isSafeInteger(maxCount) ? maxCount : 0;
+
+        const infos = Object.values(json['audio_dict'])
+            .filter(raw => Array.isArray(raw))
+            .filter(arr => arr.every(item => typeof item === 'string'))
+            .map(arr => this.transform(arr));
+
         if (opts.search) {
-            return results;
+            return infos;
         }
 
-        VSM.vsmCache = VSM.vsmCache.concat(results);
+        VSM.vsmCache.push(...infos);
         return VSM.vsmCache;
     }
 
@@ -105,7 +118,7 @@ export class VSM extends AbsAudioModel implements IAuthAble {
         return Result.ok(await resp.json());
     }
 
-    public async parse(audioInfo: IAudioInfo): Promise<IStandardAudio> {
+    public async parse(audioInfo: AudioInfo): Promise<StandardAudio> {
         // @ts-ignore
         return {
             url: `${VSM.PLAY_URL}/${audioInfo.id}?token=${this.accessToken}`,
@@ -182,10 +195,10 @@ export class VSM extends AbsAudioModel implements IAuthAble {
     }
 
     public setSeq(num: number): void {
-        this.seq = Math.min(this.maxCount, Math.max(0, num));
+        this.seq = clamp(num, 0, this.maxCount);
     }
 
-    private transform(raw: Array<string>) {
+    private transform(raw: string[]): VsmAudioInfo {
         return {
             plugin: 'vsm',
             id: raw[4],
@@ -195,4 +208,33 @@ export class VSM extends AbsAudioModel implements IAuthAble {
             cover: this.getCover(),
         };
     }
+
+    public static async vsmAdd(): Promise<void> {
+        if (IndexController.getChosenFolder()?.getAttribute('plugin') !== 'vsm') return;
+
+        const vsm = getPlugin('vsm');
+        if (vsm instanceof VSM) {
+            vsm.setSeq(vsm.seq + 32);
+            if (vsm.seq < vsm.maxCount) {
+                await vsm.getAudioList({seq: vsm.seq});
+            }
+
+            await IndexRender.setDisplayFolder(VSM.vsmCache);
+            if (!vsm.isAll()) IndexRender.showContentTip('显示更多');
+            requestAnimationFrame(() => QueueStatus.mergePlayingQueue(IndexRender.displayedContent));
+        }
+    }
+
+    static {
+        this.vsmAdd = this.vsmAdd.bind(this);
+    }
+}
+
+interface VsmAudioInfo {
+    plugin: 'vsm';
+    id: string;
+    title: string;
+    album: string;
+    artist: string;
+    cover: string;
 }

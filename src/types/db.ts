@@ -1,4 +1,4 @@
-import {IStandardAudio} from "./audio";
+import {StandardAudio} from "./audio";
 
 export type CacheEnvelope<T> = {
     v: T | null;
@@ -23,4 +23,4 @@ export interface CacheDB {
     clear(): Promise<void>;
 }
 
-export type TSupplier = () => Promise<IStandardAudio | null>;
+export type TSupplier = () => Promise<StandardAudio | null>;

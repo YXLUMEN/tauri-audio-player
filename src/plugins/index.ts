@@ -15,7 +15,7 @@ function isAuthAble(plugin: unknown): plugin is IAuthAble {
         && typeof (plugin as IAuthAble).loadToken === 'function';
 }
 
-const loadedPlugins: { [key: string]: AbsAudioModel } = Object.create(null);
+const loadedPlugins: Record<string, AbsAudioModel> = Object.create(null);
 
 function getPlugin(type: string): AbsAudioModel | null {
     if (!type) return null;
