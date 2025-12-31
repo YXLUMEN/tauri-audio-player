@@ -21,6 +21,7 @@ export default async function baseFetch(url: string, opts: IBaseFetch = {}): Pro
         if (!response.ok && !options.ignore_err?.includes(status)) statusAlert(status);
         return Result.ok(response);
     } catch (error) {
+        console.error(error);
         if (error instanceof Error) {
             return Result.err(error);
         }

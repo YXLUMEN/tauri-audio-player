@@ -47,11 +47,12 @@ export async function initialize(): Promise<void> {
     Dsd.initialize();
     Search.initialize();
 
-    await IndexRender.renderCustomFolder();
-    await QueueHistory.loadHistory();
     await Shortcuts.initShortcuts();
     await initSettings();
     await initTray();
+
+    await IndexRender.renderCustomFolder();
+    await QueueHistory.loadHistory();
 
     await appWindow.once('save-before-close', saveOnClosed);
 }

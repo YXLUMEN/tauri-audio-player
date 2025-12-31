@@ -35,7 +35,7 @@ export class LyricRender {
     }
 
     public static formatLyrics(lyrics: IFormatLyric): void {
-        const {lyric, offset = 0} = lyrics || defaultLyrics;
+        const {lyric = defaultLyrics.lyric, offset = 0} = lyrics;
         if (!lyric) throw new Error('no lyrics found');
 
         LyricStatus.lyrArray = lyric;

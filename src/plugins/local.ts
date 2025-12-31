@@ -1,12 +1,12 @@
-import {VSM} from "./vsm";
+import {ART} from "./ART";
 import {AudioInfo, IFormatLyric, MusicMetadata, StandardAudio} from "../types/audio";
 import {convertFileSrc, invoke} from '@tauri-apps/api/core';
 import {ICacheAble} from "../types/plugin";
 import {MemoryLRU} from "../utils/collection/MemoryLRU";
 import {Result} from "../utils/Result";
-import {AbsAudioModel, getPlugin} from "./index";
+import {AudioModel, getPlugin} from "./index";
 
-export class Local extends AbsAudioModel implements ICacheAble {
+export class Local extends AudioModel implements ICacheAble {
     private static readonly pending = new Map<string, Promise<StandardAudio | null>>();
     private static readonly mem = new MemoryLRU<string, StandardAudio>(
         64,
@@ -96,8 +96,8 @@ export class Local extends AbsAudioModel implements ICacheAble {
             );
             return URL.createObjectURL(blob);
         } else {
-            const vsm = getPlugin('vsm');
-            return vsm instanceof VSM ? vsm.getCover() : '';
+            const plugin = getPlugin('art');
+            return plugin instanceof ART ? plugin.getCover() : '';
         }
     }
 

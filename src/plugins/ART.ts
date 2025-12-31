@@ -1,5 +1,5 @@
-import {AbsAudioModel} from "./audio_model";
-import {AudioInfo, IFormatLyric, StandardAudio, IVSMOptions} from "../types/audio";
+import {AudioModel} from "./audio_model";
+import {AudioInfo, IArtOptions, IFormatLyric, StandardAudio} from "../types/audio";
 import baseFetch from "../http/post_methods";
 import {IAuthAble} from "../types/plugin";
 import {Result} from "../utils/Result";
@@ -11,13 +11,13 @@ import {getPlugin} from "./index";
 import {clamp} from "../utils/Math";
 import {AsyncResult} from "../utils/AsyncResult";
 
-export class VSM extends AbsAudioModel implements IAuthAble {
-    private static readonly vsmCache: AudioInfo[] = [];
-    private static readonly AUDIO_LISTS_URL: string = 'https://www.yangandxu.asia/api/asset/audio_lists';
-    private static readonly PLAY_URL: string = 'https://www.yangandxu.asia/api/asset/play';
-    private static readonly LYRIC_URL: string = 'https://www.yangandxu.asia/api/asset/lyrics';
-    private static readonly AUTH_URL: string = 'https://www.yangandxu.asia/api/auth';
-    private static readonly REFRESH_URL: string = 'https://www.yangandxu.asia/api/refresh';
+export class ART extends AudioModel implements IAuthAble {
+    private static readonly cache: AudioInfo[] = [];
+    private static readonly AUDIO_LISTS_URL: string = 'https://arctic-red-tide.xyz/api/asset/audio_lists';
+    private static readonly PLAY_URL: string = 'https://arctic-red-tide.xyz/api/asset/play';
+    private static readonly LYRIC_URL: string = 'https://arctic-red-tide.xyz/api/asset/lyrics';
+    private static readonly AUTH_URL: string = 'https://arctic-red-tide.xyz/api/auth';
+    private static readonly REFRESH_URL: string = 'https://arctic-red-tide.xyz/api/refresh';
 
     public seq: number = 0;
     public imgIndex: number = 0;
@@ -31,19 +31,19 @@ export class VSM extends AbsAudioModel implements IAuthAble {
     }
 
     public static getCache() {
-        return this.vsmCache;
+        return this.cache;
     }
 
     public getPluginName(): string {
-        return 'vsm'
+        return 'art'
     }
 
-    public async getAudioList(opts: IVSMOptions = {}): Promise<AudioInfo[]> {
-        if (VSM.vsmCache.length > 0 && !opts.seq && !opts.search) {
-            return VSM.vsmCache;
+    public async getAudioList(opts: IArtOptions = {}): Promise<AudioInfo[]> {
+        if (ART.cache.length > 0 && !opts.seq && !opts.search) {
+            return ART.cache;
         }
 
-        const resp = baseFetch(VSM.AUDIO_LISTS_URL, {
+        const resp = baseFetch(ART.AUDIO_LISTS_URL, {
             headers: {
                 'Authorization': `Bearer ${this.accessToken}`,
                 'Content-Type': 'application/json',
@@ -59,7 +59,7 @@ export class VSM extends AbsAudioModel implements IAuthAble {
         const result = await AsyncResult.from(resp)
             .map(resp => resp.json() as Promise<Record<string, any>>)
             .mapErr(async error => {
-                console.error(`Error while fetch from vsm: ${error}`);
+                console.error(`Error while fetch from 'art': ${error}`);
                 return null;
             })
             .unwrap();
@@ -81,7 +81,7 @@ export class VSM extends AbsAudioModel implements IAuthAble {
             return [];
         }
 
-        const maxCount = Number(json['maxCount']);
+        const maxCount = Number(json['item_counts']);
         this.maxCount = Number.isSafeInteger(maxCount) ? maxCount : 0;
 
         const infos = Object.values(json['audio_dict'])
@@ -93,14 +93,14 @@ export class VSM extends AbsAudioModel implements IAuthAble {
             return infos;
         }
 
-        VSM.vsmCache.push(...infos);
-        return VSM.vsmCache;
+        ART.cache.push(...infos);
+        return ART.cache;
     }
 
     public override async getLyric(): Promise<Result<IFormatLyric | null, Error>> {
         const hash = QueueStatus.getCurrentPlaying()?.id;
         if (!hash) return Result.ok(null);
-        const result = await baseFetch(VSM.LYRIC_URL, {
+        const result = await baseFetch(ART.LYRIC_URL, {
             headers: {
                 'Authorization': `Bearer ${this.accessToken}`,
                 'Content-Type': 'application/json',
@@ -121,7 +121,7 @@ export class VSM extends AbsAudioModel implements IAuthAble {
     public async parse(audioInfo: AudioInfo): Promise<StandardAudio> {
         // @ts-ignore
         return {
-            url: `${VSM.PLAY_URL}/${audioInfo.id}?token=${this.accessToken}`,
+            url: `${ART.PLAY_URL}/${audioInfo.id}?token=${this.accessToken}`,
             ...audioInfo
         };
     }
@@ -136,12 +136,12 @@ export class VSM extends AbsAudioModel implements IAuthAble {
     }
 
     public async loadToken(): Promise<void> {
-        const access = localStorage.getItem('vsm-access-token');
+        const access = localStorage.getItem('art-access-token');
         if (access) {
             this.accessToken = access;
         }
 
-        const refresh = localStorage.getItem('vsm-refresh-token');
+        const refresh = localStorage.getItem('art-refresh-token');
         if (refresh) {
             this.refreshToken = refresh;
             return;
@@ -150,7 +150,7 @@ export class VSM extends AbsAudioModel implements IAuthAble {
     }
 
     public async login(payload: any): Promise<Result<Promise<boolean>, boolean>> {
-        const result = await baseFetch(VSM.AUTH_URL, {
+        const result = await baseFetch(ART.AUTH_URL, {
             body: JSON.stringify(payload),
         });
 
@@ -160,8 +160,8 @@ export class VSM extends AbsAudioModel implements IAuthAble {
                 this.accessToken = access_token;
                 this.refreshToken = refresh_token;
 
-                localStorage.setItem('vsm-access-token', access_token);
-                localStorage.setItem('vsm-refresh-token', refresh_token);
+                localStorage.setItem('art-access-token', access_token);
+                localStorage.setItem('art-refresh-token', refresh_token);
                 return true;
             })
             .mapErr(error => {
@@ -171,7 +171,7 @@ export class VSM extends AbsAudioModel implements IAuthAble {
     }
 
     public async refresh(): Promise<Result<Promise<boolean>, boolean>> {
-        const result = await baseFetch(VSM.REFRESH_URL, {
+        const result = await baseFetch(ART.REFRESH_URL, {
             body: JSON.stringify({refresh_token: this.refreshToken}),
         });
 
@@ -185,7 +185,7 @@ export class VSM extends AbsAudioModel implements IAuthAble {
 
                 const access_token = json['access_token'];
                 this.accessToken = access_token;
-                localStorage.setItem('vsm-access-token', access_token);
+                localStorage.setItem('art-access-token', access_token);
                 return true;
             })
             .mapErr(error => {
@@ -198,9 +198,9 @@ export class VSM extends AbsAudioModel implements IAuthAble {
         this.seq = clamp(num, 0, this.maxCount);
     }
 
-    private transform(raw: string[]): VsmAudioInfo {
+    private transform(raw: string[]): ArtAudioInfo {
         return {
-            plugin: 'vsm',
+            plugin: 'art',
             id: raw[4],
             title: raw[1],
             album: raw[2],
@@ -209,29 +209,25 @@ export class VSM extends AbsAudioModel implements IAuthAble {
         };
     }
 
-    public static async vsmAdd(): Promise<void> {
-        if (IndexController.getChosenFolder()?.getAttribute('plugin') !== 'vsm') return;
+    public static async artAdd(): Promise<void> {
+        if (IndexController.getChosenFolder()?.getAttribute('plugin') !== 'art') return;
 
-        const vsm = getPlugin('vsm');
-        if (vsm instanceof VSM) {
-            vsm.setSeq(vsm.seq + 32);
-            if (vsm.seq < vsm.maxCount) {
-                await vsm.getAudioList({seq: vsm.seq});
+        const plugin = getPlugin('art');
+        if (plugin instanceof ART) {
+            plugin.setSeq(plugin.seq + 32);
+            if (plugin.seq < plugin.maxCount) {
+                await plugin.getAudioList({seq: plugin.seq});
             }
 
-            await IndexRender.setDisplayFolder(VSM.vsmCache);
-            if (!vsm.isAll()) IndexRender.showContentTip('显示更多');
+            await IndexRender.setDisplayFolder(ART.cache);
+            if (!plugin.isAll()) IndexRender.showContentTip('显示更多');
             requestAnimationFrame(() => QueueStatus.mergePlayingQueue(IndexRender.displayedContent));
         }
     }
-
-    static {
-        this.vsmAdd = this.vsmAdd.bind(this);
-    }
 }
 
-interface VsmAudioInfo {
-    plugin: 'vsm';
+interface ArtAudioInfo {
+    plugin: 'art';
     id: string;
     title: string;
     album: string;

@@ -1,7 +1,7 @@
 import {IFormatLyric} from "../types/audio";
 import {IBaseFetch} from "../types/http";
 import {IConfirm} from "../types/base";
-import {createClean, deepFreeze} from "../utils/util";
+import {config, deepFreeze} from "../utils/util";
 
 export interface IFolderInfo {
     id: number;
@@ -15,12 +15,12 @@ export interface IShortCuts {
     code: string
 }
 
-export const defaultFolder: IFolderInfo = Object.freeze(createClean({
+export const defaultFolder: IFolderInfo = config({
     id: 1,
     name: '默认歌单',
     desc: '',
     cover: '/img/audio/cover/audio-2.webp'
-}));
+});
 
 export const defaultShortcuts: Readonly<IShortCuts[]> = deepFreeze([
     {action: 'toggle-play', code: 'Space'},
@@ -39,11 +39,11 @@ export const defaultShortcuts: Readonly<IShortCuts[]> = deepFreeze([
     {action: 'close-page', code: 'Escape'},
 ]);
 
-export const defaultLyrics: IFormatLyric = deepFreeze(createClean({
+export const defaultLyrics: IFormatLyric = config({
     lyric: [{text: "暂无歌词", time: 0.0}]
-}));
+});
 
-export const defaultConfirm: IConfirm = createClean({
+export const defaultConfirm: IConfirm = config({
     timeout: 0,
     flag: 'default',
     category: 'info',
@@ -52,7 +52,7 @@ export const defaultConfirm: IConfirm = createClean({
     animation: true,
 });
 
-export const defaultFetch: IBaseFetch = deepFreeze(createClean({
+export const defaultFetch: IBaseFetch = config({
     method: 'POST',
     body: '',
     headers: {
@@ -61,4 +61,4 @@ export const defaultFetch: IBaseFetch = deepFreeze(createClean({
     referrer: "about:client",
     cache: 'default',
     ignore_err: [],
-}));
+});

@@ -30,7 +30,7 @@ export function createClean<T>(obj: T): T {
 }
 
 export function createStatus<T>(obj: T): T {
-    return Object.preventExtensions(createClean(obj));
+    return Object.seal(createClean(obj));
 }
 
 export function config<T>(obj: T): T {

@@ -8,7 +8,7 @@ import {QueueRender} from "../playing_queue/queue_render";
 import {LyricStatus} from "../lyric/lyric_status";
 import {PlayerRender} from "../player/player_render";
 import {toggleSettings} from "./setting";
-import {VSM} from "../plugins";
+import {ART} from "../plugins";
 
 export class Shortcuts {
     private static readonly volumeToggle = document.getElementById('volume-toggle')! as HTMLInputElement;
@@ -34,7 +34,7 @@ export class Shortcuts {
             'toggle-playing-queue': PlayerRender.togglePlayingBoard,
             'toggle-settings': toggleSettings,
             'toggle-player': PlayerRender.togglePlayer,
-            'update-remote': VSM.vsmAdd,
+            'update-remote': ART.artAdd,
             'close-page': PlayerRender.closePage,
         }
 
@@ -78,7 +78,7 @@ export class Shortcuts {
             this.shortcuts.get(code)?.();
         }, 100);
 
-        document.addEventListener('keydown', event => {
+        window.addEventListener('keydown', event => {
             if (
                 event.key === 'F5' ||
                 (event.ctrlKey && event.key === 'r') ||

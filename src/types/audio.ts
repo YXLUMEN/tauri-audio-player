@@ -22,7 +22,7 @@ export interface StandardAudio extends AudioInfo {
     url: string;
 }
 
-export interface IVSMOptions {
+export interface IArtOptions {
     seq?: number;
     search?: string;
 }

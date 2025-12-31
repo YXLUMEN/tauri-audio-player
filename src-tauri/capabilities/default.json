@@ -22,7 +22,7 @@
       "identifier": "http:default",
       "allow": [
         {
-          "url": "https://www.yangandxu.asia/*"
+          "url": "https://arctic-red-tide.xyz/*"
         }
       ]
     }

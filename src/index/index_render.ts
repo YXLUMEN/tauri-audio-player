@@ -7,7 +7,7 @@ import {isEmpty} from "../utils/util";
 import {createAlert} from "../utils/front/alert";
 import {QueueStatus} from "../playing_queue/queue_status";
 import {IndexController} from "./index_controller";
-import {getPlugin, VSM} from "../plugins";
+import {getPlugin, ART} from "../plugins";
 
 export class IndexRender {
     private static readonly customFolderList = document.getElementById('custom-folder-list')!;
@@ -121,7 +121,7 @@ export class IndexRender {
         div.append(span);
 
         this.folderContent.append(div);
-        div.onclick = () => VSM.vsmAdd();
+        div.onclick = () => ART.artAdd();
     }
 
     public static async setDisplayFolder(array: AudioInfo[] | null, reRender: boolean = true) {

@@ -5,7 +5,4 @@ function main() {
         .catch(error => console.error(error))
 }
 
-//        .then(() => sleep(2000))
-//         .then(() => appWindow.close());
-
 main();

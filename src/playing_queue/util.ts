@@ -1,8 +1,8 @@
 import {AudioInfo} from "../types/audio";
 
 // 去除重复歌曲
-export function removeDuplicate(array: AudioInfo[]): AudioInfo[] | null {
-    if (array.length === 0) return null;
+export function removeDuplicate(array: AudioInfo[]): AudioInfo[] {
+    if (array.length === 0) return [];
 
     const merge = new Map<string, AudioInfo>();
     for (const item of array) {

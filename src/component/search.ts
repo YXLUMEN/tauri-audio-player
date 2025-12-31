@@ -19,9 +19,9 @@ export class Search {
         QueueRender.showLoading();
 
         switch (args[0]) {
-            case 'v':
-            case 'vsm':
-                result = await this.searchVsm(value);
+            case 'a':
+            case 'art':
+                result = await this.searchArt(value);
                 break;
             case 'f':
             case 'fa':
@@ -30,7 +30,7 @@ export class Search {
                 result = await this.searchLocal(value);
                 break;
             default:
-                result = await this.searchVsm(value);
+                result = await this.searchArt(value);
                 if (!result) result = [];
                 const local = await this.searchLocal(value);
                 result.push(...local);
@@ -93,8 +93,8 @@ export class Search {
         return matched;
     }
 
-    public static async searchVsm(arg: string): Promise<AudioInfo[] | null> {
-        const plugin = getPlugin('vsm');
+    public static async searchArt(arg: string): Promise<AudioInfo[] | null> {
+        const plugin = getPlugin('art');
         if (!plugin) return null;
 
         const result = await plugin.getAudioList({search: arg});

@@ -24,20 +24,19 @@ export async function updateApp(callable?: Function): Promise<number> {
             case 'Started':
                 contentLength = event.data.contentLength ?? 0;
                 console.log(`started downloading ${event.data.contentLength} bytes`);
-                if (callable) callable({done: false, contentLength});
+                callable?.({done: false, contentLength});
                 break;
             case 'Progress':
                 downloaded += event.data.chunkLength;
                 console.log(`downloaded ${downloaded} from ${contentLength}`);
-                if (callable) callable({done: false, downloaded});
+                callable?.({done: false, downloaded});
                 break;
             case 'Finished':
                 console.log('download finished');
-                if (callable) callable({done: true});
+                callable?.({done: true});
                 break;
         }
     });
-    callable = undefined;
 
     console.log('update installed');
     const restart = await createConfirm('更新完成, 是否立即重启软件', {flag: 'update', category: 'success'});

@@ -11,7 +11,7 @@ import {QueueStatus} from "../playing_queue/queue_status";
 import {QueueController} from "../playing_queue/queue_controller";
 import {IndexController} from "../index/index_controller";
 import {Shortcuts} from "./shortcuts";
-import {getPlugin, isAuthAble, VSM} from "../plugins";
+import {getPlugin, isAuthAble, ART} from "../plugins";
 import {PromisePool} from "../utils/collection/PromisePool";
 import {AudioInfo} from "../types/audio";
 
@@ -63,12 +63,12 @@ const clearCache = throttleTimeOut(async (event: MouseEvent) => {
             createAlert('已清除播放历史', 'success');
             break;
         }
-        case 'clean-vsm': {
-            VSM.getCache().length = 0;
-            const plugin = getPlugin('vsm');
-            if (plugin instanceof VSM) {
+        case 'clean-art': {
+            ART.getCache().length = 0;
+            const plugin = getPlugin('art');
+            if (plugin instanceof ART) {
                 plugin.seq = 0;
-                createAlert('已清除VSM缓存', 'success');
+                createAlert('已清除 Art网站 缓存', 'success');
             }
             break;
         }
