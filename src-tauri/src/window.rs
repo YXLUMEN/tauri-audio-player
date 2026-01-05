@@ -1,5 +1,5 @@
-use log::error;
 use std::sync::atomic::{AtomicBool, Ordering};
+use log::info;
 use tauri::{AppHandle, Emitter, Manager, Window, WindowEvent};
 
 pub fn show_window(app: &AppHandle) {
@@ -21,15 +21,14 @@ static CLOSE_FLAG: AtomicBool = AtomicBool::new(false);
 
 pub fn wait_saving(window: &Window, event: &WindowEvent) {
     if let WindowEvent::CloseRequested { api, .. } = event {
-        if CLOSE_FLAG.load(Ordering::Relaxed) {
+        if !CLOSE_FLAG.swap(true, Ordering::SeqCst) {
+            info!("Saving window to Saving state");
+            api.prevent_close();
+            let _ = window.emit("save_before_close", ());
             return;
         }
+        info!("prevent");
 
         api.prevent_close();
-
-        let _ = window
-            .emit("save-before-close", ())
-            .map_err(|e| error!("{}", e));
-        CLOSE_FLAG.store(true, Ordering::SeqCst);
     }
 }

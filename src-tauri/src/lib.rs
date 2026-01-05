@@ -4,7 +4,6 @@ mod window;
 
 use crate::audio::fetch_meta;
 use crate::file::calculate_hash;
-use log::{error};
 use crate::window::wait_saving;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -39,8 +38,5 @@ pub fn run() {
 
 #[tauri::command]
 async fn confirm_save_done(window: tauri::Window) {
-    window
-        .close()
-        .map_err(|e| error!("Error while shutdown app {}", e))
-        .unwrap();
+    let _ = window.destroy();
 }
