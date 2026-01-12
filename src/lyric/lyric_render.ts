@@ -9,7 +9,6 @@ import {LyricStatus} from "./lyric_status";
 
 export class LyricRender {
     private static readonly lyricContent = document.getElementById('lyric-ul')!;
-    private static readonly lyricOffset = document.getElementById('lyric-offset')!;
 
     private static createLyricRow(value: ILyric, offset: number): HTMLDivElement {
         const {time, text, ex = ''} = value;
@@ -40,8 +39,6 @@ export class LyricRender {
 
         LyricStatus.lyrArray = lyric;
         LyricStatus.lyricOffset = offset;
-
-        this.lyricOffset.textContent = offset ? offset.toFixed(1) : '';
 
         const frag = document.createDocumentFragment();
         lyric.forEach(row => frag.append(this.createLyricRow(row, offset)));
@@ -135,11 +132,11 @@ export class LyricRender {
 
     // 同步歌词
     public static syncLyric(currentTime: number): void {
-        const {currentLine, lyrArray, lyricOffset} = LyricStatus;
+        const {currentLine, lyrArray, lyricOffset, customLyricOffset} = LyricStatus;
 
         if (currentLine >= lyrArray.length || lyrArray.length <= 1) return;
 
-        const adjustedCurrentTime = currentTime + lyricOffset;
+        const adjustedCurrentTime = currentTime + lyricOffset + customLyricOffset;
         const lyrTime = lyrArray[currentLine].time;
 
         if (lyrTime * LyricStatus.SIGNIFICANT_LAG_RATIO <= adjustedCurrentTime) {

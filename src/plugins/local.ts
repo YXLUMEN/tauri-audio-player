@@ -108,8 +108,8 @@ export class Local extends AudioModel implements ICacheAble {
         coverUrl: string
     ): StandardAudio {
         return {
-            plugin: 'local',
             id,
+            plugin: 'local',
             title: metadata.title,
             artist: metadata.artist,
             album: metadata.album,

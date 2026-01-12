@@ -281,14 +281,16 @@ export class IndexController {
     }
 
     public static initialize() {
+        const ctrl = new AbortController();
         this.indexLeftPanel.addEventListener('click', event => {
             const folder = (event.target as HTMLElement).closest('.audio-folder');
             if (!folder) return;
 
+            ctrl.abort();
             document.getElementById('custom-folder-detail')!.classList.remove('hide');
             this.selectFolder(event);
             this.indexLeftPanel.addEventListener('click', this.selectFolder.bind(this));
-        }, {once: true});
+        }, {signal: ctrl.signal});
 
         document.getElementById('index-audio-control')!.addEventListener('click', this.handleIndexPlayController.bind(this));
 

@@ -178,8 +178,18 @@ export class ART extends AudioModel implements IAuthAble {
         return result
             .map(async resp => {
                 const json = await resp.json();
-                if (!json || json['status'] !== 1016) {
+                if (!json) {
                     createAlert('无法连接认证服务器', 'warning');
+                    return false;
+                }
+
+                if (json['status'] === 2013) {
+                    createAlert('Token 失效', 'warning');
+                    return false;
+                }
+
+                if (json['status'] !== 1016) {
+                    createAlert('认证失败', 'warning');
                     return false;
                 }
 
@@ -200,8 +210,8 @@ export class ART extends AudioModel implements IAuthAble {
 
     private transform(raw: string[]): ArtAudioInfo {
         return {
-            plugin: 'art',
             id: raw[4],
+            plugin: 'art',
             title: raw[1],
             album: raw[2],
             artist: raw[0],
@@ -227,8 +237,8 @@ export class ART extends AudioModel implements IAuthAble {
 }
 
 interface ArtAudioInfo {
-    plugin: 'art';
     id: string;
+    plugin: 'art';
     title: string;
     album: string;
     artist: string;

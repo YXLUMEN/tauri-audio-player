@@ -152,7 +152,7 @@ document.getElementById('apis-settings')!.addEventListener('click', async (event
         await plugin.login({key, psd});
     }
 
-    createAlert(`以设置 ${pluginName} API`, 'success');
+    createAlert(`已设置 "${pluginName}" API`, 'success');
 });
 
 // 本地文件播放

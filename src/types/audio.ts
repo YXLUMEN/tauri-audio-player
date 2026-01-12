@@ -7,11 +7,11 @@ export interface MusicMetadata {
 }
 
 export interface AudioInfo {
-    id: string; // 唯一标识,如hash,uuid
-    plugin: string; // 加载的插件
+    id: string;
+    plugin: string;
     url?: string; // 可以直接播放的链接
-    parent?: number; // 父文件夹
-    index?: number // 播放序列
+    parent?: number;
+    index?: number
 }
 
 export interface StandardAudio extends AudioInfo {

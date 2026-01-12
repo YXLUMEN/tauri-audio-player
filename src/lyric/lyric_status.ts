@@ -13,13 +13,18 @@ export class LyricStatus {
     private static readonly playerBox = document.getElementById('player-box')!;
     private static readonly lyricBox = document.getElementById('lyric-box')!;
     private static readonly lyricOffsetSetter = document.getElementById('set-lyric-offset')!;
+    private static readonly lyricOffsetDisplayer = document.getElementById('lyric-offset')!;
 
     public static readonly SIGNIFICANT_LAG_RATIO = 3;
 
     public static currentLine = 0;
     public static centralPos = 0;
     public static lineOffset = -50;
+
+    // 系统偏移量
     public static lyricOffset = 0;
+    public static customLyricOffset = 0;
+
     public static maxScrollHeight = 0;
     public static lyrArray: ILyric[] = [];
     public static syncLyricEnable = true;
@@ -88,10 +93,10 @@ export class LyricStatus {
             if (!target) return;
 
             const offset = target.alt;
-            if (offset) this.lyricOffset += Number(offset);
-            else this.lyricOffset = 0;
+            if (offset) this.customLyricOffset += Number(offset);
+            else this.customLyricOffset = 0;
 
-            this.lyricOffsetSetter.textContent = offset ? this.lyricOffset.toFixed(1) : '';
+            this.lyricOffsetDisplayer.textContent = offset ? this.customLyricOffset.toFixed(1) : '';
         });
     }
 

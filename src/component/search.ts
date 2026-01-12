@@ -23,10 +23,8 @@ export class Search {
             case 'art':
                 result = await this.searchArt(value);
                 break;
-            case 'f':
-            case 'fa':
-            case 'favor':
-            case 'favour':
+            case 'l':
+            case 'local':
                 result = await this.searchLocal(value);
                 break;
             default:

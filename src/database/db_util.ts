@@ -91,19 +91,10 @@ export async function deleteFolder(folderId: number): Promise<Result<null, strin
 }
 
 export async function collectAudio(parent: number, audioInfo: AudioInfo): Promise<void> {
-    audioInfo.parent = parent;
-    if (audioInfo.index) audioInfo.index = undefined;
+    const {index, ...obj} = audioInfo;
+    obj.parent = parent;
 
-    const result = await dbHelper.add(
-        'favor',
-        {
-            id: audioInfo.id,
-            plugin: audioInfo.plugin,
-            parent: parent,
-            url: audioInfo.url,
-        } satisfies AudioInfo
-    );
-
+    const result = await dbHelper.add('favor', obj);
     result
         .map(() => {
             createAlert('已收藏', 'success');
@@ -116,7 +107,7 @@ export async function collectAudio(parent: number, audioInfo: AudioInfo): Promis
         .mapErr(error => {
             let msg = '未知错误';
             if (error) {
-                if (error.name === 'ConstraintError') return createAlert('重复收藏', 'warning');
+                if (error.errorName === 'ConstraintError') return createAlert('重复收藏', 'warning');
                 msg = error.message;
             }
 
