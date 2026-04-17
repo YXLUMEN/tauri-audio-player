@@ -1,7 +1,7 @@
-import {initialize} from "./lib";
+import {run} from "./lib";
 
 function main() {
-    initialize()
+    run()
         .catch(error => console.error(error))
 }
 

@@ -746,6 +746,18 @@ svg, img {
     }
 }
 
+.drag-placeholder {
+    height: 0;
+    background-color: rgb(26 188 156 / 0.2);
+    border: 2px dashed #1abc9c;
+    pointer-events: none;
+}
+
+.dragging-item {
+    opacity: .5;
+    cursor: grab;
+}
+
 @keyframes rotate {
     from {
         transform: rotate(0deg);

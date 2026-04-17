@@ -4,6 +4,7 @@ import {createAlert} from "../utils/front/alert";
 import {PlayMode} from "../play/play_mode";
 import {QueueStatus} from "./queue_status";
 import {getPlugin} from "../plugins";
+import {DragDropManager} from "../utils/DragDropManager";
 
 export class QueueRender {
     private static readonly indexLoading = document.getElementById('index-loading')!;
@@ -11,6 +12,8 @@ export class QueueRender {
     private static readonly playingQueue = document.getElementById('playing-queue')!;
     private static readonly playingBoard = document.getElementById('playing-board-container')!;
     private static readonly folderContent = document.getElementById('folder-content')!;
+
+    private static dragDropManager: DragDropManager | null = null;
 
     private static createPlayingQueueItem(index: number, standardInfo: StandardAudio): HTMLDivElement {
         const row = document.createElement('div');
@@ -141,8 +144,38 @@ export class QueueRender {
             });
     }
 
+    public static initializeDragDrop(): void {
+        if (this.dragDropManager) {
+            this.dragDropManager.destroy();
+        }
+
+        this.dragDropManager = new DragDropManager(
+            this.playingQueue,
+            '.queue-row',
+            {
+                onDragStart: () => {
+                    return true;
+                },
+                onDragEnd: (fromIndex: number, toIndex: number) => {
+                    return QueueStatus.moveAudio(fromIndex, toIndex);
+                }
+            }
+        );
+
+        this.dragDropManager.initialize();
+    }
+
+    public static destroyDragDrop(): void {
+        if (this.dragDropManager) {
+            this.dragDropManager.destroy();
+            this.dragDropManager = null;
+        }
+    }
+
     static {
         this.highlightCurrentPlaying = this.highlightCurrentPlaying.bind(this);
+        this.initializeDragDrop = this.initializeDragDrop.bind(this);
+        this.destroyDragDrop = this.destroyDragDrop.bind(this);
     }
 }
 
