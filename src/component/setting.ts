@@ -11,7 +11,7 @@ import {QueueStatus} from "../playing_queue/queue_status";
 import {QueueController} from "../playing_queue/queue_controller";
 import {IndexController} from "../index/index_controller";
 import {Shortcuts} from "./shortcuts";
-import {getPlugin, isAuthAble, ART} from "../plugins";
+import {ART, getPlugin, isAuthAble} from "../plugins";
 import {PromisePool} from "../utils/collection/PromisePool";
 import {AudioInfo} from "../types/audio";
 
@@ -214,8 +214,9 @@ document.getElementById('select-local-audio')!.addEventListener('click', async (
     }
 });
 
+type KeyPair = { key: string, psd: string };
+
 export async function initSettings(): Promise<void> {
-    // 加载API密钥
     const apiSettings = document.getElementById('apis-settings')!;
     const allLabel = apiSettings.querySelectorAll('label');
 
@@ -223,7 +224,7 @@ export async function initSettings(): Promise<void> {
     for (const label of allLabel) {
         const pluginName = label.getAttribute('action');
         if (!pluginName) continue;
-        const result = await dbHelper.get<{ key: string, psd: string }>('auth', pluginName);
+        const result = await dbHelper.get<KeyPair>('auth', pluginName);
 
         if (result.isErr()) {
             errors++;
@@ -231,14 +232,14 @@ export async function initSettings(): Promise<void> {
             continue;
         }
 
-        const optional = result.ok();
-        if (optional.isEmpty()) continue;
+        const pair = result.unwrap();
+        if (!pair) continue;
 
-        const keyEle = label.querySelector('[name="api-key"]') as HTMLInputElement;
-        const psdEle = label.querySelector('[name="api-psd"]') as HTMLInputElement;
-        if (keyEle && psdEle) {
-            keyEle.value = optional.get().key;
-            psdEle.value = optional.get().psd;
+        const keyEle = label.querySelector('[name="api-key"]');
+        const psdEle = label.querySelector('[name="api-psd"]');
+        if (keyEle instanceof HTMLInputElement && psdEle instanceof HTMLInputElement) {
+            keyEle.value = pair.key;
+            psdEle.value = pair.psd;
         }
 
         const plugin = getPlugin(pluginName);

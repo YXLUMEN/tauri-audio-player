@@ -155,3 +155,50 @@ export async function clearPlayingQueueHistory(): Promise<void> {
     const store = tx.objectStore('playing_history');
     store.clear();
 }
+
+/**
+ * 更新收藏列表中音频的顺序
+ * @param folderId 歌单ID
+ * @param audioInfos 按新顺序排列的音频信息数组
+ */
+export async function updateFavorOrder(folderId: number, audioInfos: AudioInfo[]): Promise<Result<null, string>> {
+    const db = await dbHelper.init();
+    const {promise, resolve} = Promise.withResolvers<Result<null, string>>();
+
+    const tx = db.transaction('favor', 'readwrite');
+    const store = tx.objectStore('favor');
+    const parentIndex = store.index('parent');
+
+    // 删除该歌单下的所有收藏
+    const cursorRequest = parentIndex.openCursor(IDBKeyRange.only(folderId));
+    const keysToDelete: IDBValidKey[] = [];
+
+    cursorRequest.onsuccess = () => {
+        const cursor = cursorRequest.result;
+        if (cursor) {
+            keysToDelete.push(cursor.primaryKey);
+            cursor.continue();
+        } else {
+            // 删除完成后重新添加
+            for (const key of keysToDelete) {
+                store.delete(key);
+            }
+
+            // 按新顺序添加
+            for (const audio of audioInfos) {
+                const {index, ...obj} = audio;
+                obj.parent = folderId;
+                store.add(obj);
+            }
+        }
+    };
+
+    tx.oncomplete = () => resolve(Result.ok(null));
+    tx.onerror = () => resolve(Result.err(
+        tx.error === null ?
+            'Unknown error at "updateFavorOrder"' :
+            `Error at "updateFavorOrder" ${tx.error.name}:${tx.error.message}`
+    ));
+
+    return promise;
+}

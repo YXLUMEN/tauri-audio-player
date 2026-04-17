@@ -1,4 +1,4 @@
-import {ART} from "./ART";
+import {ART} from "./art";
 import {AudioInfo, IFormatLyric, MusicMetadata, StandardAudio} from "../types/audio";
 import {convertFileSrc, invoke} from '@tauri-apps/api/core';
 import {ICacheAble} from "../types/plugin";

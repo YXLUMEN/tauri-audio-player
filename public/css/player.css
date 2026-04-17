@@ -392,6 +392,10 @@
     }
 }
 
+.playing-queue .drag-placeholder {
+    width: 100%;
+}
+
 #pre-load {
     display: none;
 }

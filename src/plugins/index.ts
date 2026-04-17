@@ -1,4 +1,4 @@
-import {ART} from "./ART";
+import {ART} from "./art";
 import {AudioModel} from "./audio_model";
 import {Local} from "./local";
 import {IAuthAble, ICacheAble} from "../types/plugin";

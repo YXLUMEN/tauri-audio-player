@@ -7,7 +7,9 @@ import {isEmpty} from "../utils/util";
 import {createAlert} from "../utils/front/alert";
 import {QueueStatus} from "../playing_queue/queue_status";
 import {IndexController} from "./index_controller";
-import {getPlugin, ART} from "../plugins";
+import {ART, getPlugin} from "../plugins";
+import {DragDropManager} from "../utils/DragDropManager";
+import {updateFavorOrder} from "../database/db_util";
 
 export class IndexRender {
     private static readonly customFolderList = document.getElementById('custom-folder-list')!;
@@ -16,6 +18,8 @@ export class IndexRender {
 
     public static displayedContent: AudioInfo[] | null = [];
     public static wasMerge: boolean = false;
+
+    private static dragDropManager: DragDropManager | null = null;
 
     public static createFolderItem(folder: IFolderInfo): HTMLDivElement {
         const div = document.createElement("div");
@@ -128,6 +132,63 @@ export class IndexRender {
         this.displayedContent = array;
         if (!reRender) return;
         await this.renderFolderContent(this.displayedContent);
+    }
+
+    public static initializeDragDrop(): void {
+        if (this.dragDropManager) {
+            this.dragDropManager.destroy();
+        }
+
+        this.dragDropManager = new DragDropManager(
+            this.folderContent,
+            '.row',
+            {
+                onDragStart: (): boolean => {
+                    // 只有本地歌单（非远程插件歌单）才允许拖拽
+                    const chosenFolder = IndexController.getChosenFolder();
+                    if (!chosenFolder) return false;
+
+                    // 检查是否是远程插件歌单
+                    const plugin = chosenFolder.getAttribute('plugin');
+                    if (plugin) return false;
+
+
+                    return !!chosenFolder.getAttribute('folder_id');
+                },
+                onDragEnd: async (fromIndex: number, toIndex: number): Promise<void> => {
+                    if (!this.displayedContent || this.displayedContent.length === 0) return;
+
+                    // 更新内存中的数据顺序
+                    const audio = this.displayedContent.splice(fromIndex, 1)[0];
+                    this.displayedContent.splice(toIndex, 0, audio);
+
+                    // 重新渲染以更新索引
+                    await this.renderFolderContent(this.displayedContent);
+
+                    // 更新数据库中的顺序
+                    const chosenFolder = IndexController.getChosenFolder();
+                    if (!chosenFolder) return;
+
+                    const folderId = Number(chosenFolder.getAttribute('folder_id'));
+                    if (isNaN(folderId)) return;
+
+                    const result = await updateFavorOrder(folderId, this.displayedContent);
+                    result.mapErr(error => {
+                        console.error('更新收藏顺序失败:', error);
+                        createAlert('更新顺序失败', 'error');
+                    });
+                }
+            }
+        );
+
+        this.dragDropManager.initialize();
+    }
+
+    public static destroyDragDrop(): void {
+        if (this.dragDropManager) {
+            this.dragDropManager.destroy();
+            this.dragDropManager = null;
+        }
     }
 
     public static initialize() {

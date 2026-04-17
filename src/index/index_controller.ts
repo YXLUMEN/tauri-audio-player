@@ -19,6 +19,7 @@ import {PlayVolume} from "../play/play_volume";
 import {Shortcuts} from "../component/shortcuts";
 import {getPlugin} from "../plugins";
 
+
 export class IndexController {
     private static readonly folderContent = document.getElementById('folder-content')!;
     private static readonly choseFolderContent = document.getElementById('chose-folder-content')!;
@@ -188,6 +189,11 @@ export class IndexController {
         folderTitle.textContent = folder.getElementsByTagName('span')?.[0]?.textContent || '歌单';
 
         await IndexRender.setDisplayFolder(audios);
+
+        // 重新初始化拖拽功能（因为DOM已重新渲染）
+        IndexRender.destroyDragDrop();
+        IndexRender.initializeDragDrop();
+
         QueueRender.highlightCurrentPlaying();
         if (plugin && !getPlugin(plugin)?.isAll()) IndexRender.showContentTip('显示更多');
     }, 300);

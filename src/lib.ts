@@ -13,10 +13,11 @@ import {Dsd} from "./spectrum_diagram";
 import {QueueHistory} from "./playing_queue/queue_history";
 import {invoke} from "@tauri-apps/api/core";
 import {Search} from "./component/search";
+import {QueueRender} from "./playing_queue/queue_render";
 
 const appWindow: Window = new Window('main');
 
-export async function initialize(): Promise<void> {
+export async function run(): Promise<void> {
     document.getElementById('title-bar-minimize')!.onclick = () => appWindow.minimize();
     document.getElementById('title-bar-maximize')!.onclick = () => appWindow.toggleMaximize();
     document.getElementById('title-bar-close')!.onclick = () => {
@@ -48,10 +49,12 @@ export async function initialize(): Promise<void> {
     ContextMenu.initialize();
     IndexController.initialize();
     IndexRender.initialize();
+    IndexRender.initializeDragDrop();
     LyricStatus.initialize();
     PlayVolume.initialize();
     PlayerController.initialize();
     QueueController.initialize();
+    QueueRender.initializeDragDrop();
     Dsd.initialize();
     Search.initialize();
 

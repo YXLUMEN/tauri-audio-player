@@ -30,7 +30,7 @@ export class QueueStatus {
 
     public static setAudioIndex(index: number): void {
         if (!Number.isSafeInteger(index)) return;
-        this.playingIndex = clamp(index, 0, this.playingQueue.length);
+        this.playingIndex = clamp(index, 0, this.playingQueue.length - 1);
     }
 
     public static setAudioIndexUnclamp(index: number): void {
@@ -89,13 +89,32 @@ export class QueueStatus {
     }
 
     public static async moveAudio(from: number, to: number): Promise<void> {
-        if (from < 0 || from > this.playingQueue.length) return;
-        const toIndex = Math.max(0, Math.min(to, this.playingQueue.length));
+        if (from < 0 || from >= this.playingQueue.length) return;
+        if (to < 0 || to >= this.playingQueue.length) return;
+        if (from === to) return;
+
+        const toIndex = clamp(to, 0, this.playingQueue.length - 1);
+
+        // 调整播放索引
+        const currentIdx = this.playingIndex;
+        if (from === currentIdx) {
+            // 如果移动的是当前播放项，更新播放索引到新位置
+            this.setAudioIndexUnclamp(toIndex);
+        } else if (from < currentIdx && toIndex >= currentIdx) {
+            // 如果拖拽项在当前播放项之前，且目标位置在当前播放项之后或等于当前位置
+            // 当前播放项的索引需要减1
+            this.setAudioIndexUnclamp(currentIdx - 1);
+        } else if (from > currentIdx && toIndex <= currentIdx) {
+            // 如果拖拽项在当前播放项之后，且目标位置在当前播放项之前或等于当前位置
+            // 当前播放项的索引需要加1
+            this.setAudioIndexUnclamp(currentIdx + 1);
+        }
 
         const audio = this.playingQueue.splice(from, 1)[0];
         this.playingQueue.splice(toIndex, 0, audio);
 
         await QueueRender.renderPlayingQueue(this.playingQueue);
+        QueueRender.highlightCurrentPlaying(false);
     }
 
     public static async unshiftAudios(audios: AudioInfo[] | AudioInfo): Promise<void> {
