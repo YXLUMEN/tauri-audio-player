@@ -134,7 +134,7 @@ export class IndexRender {
         await this.renderFolderContent(this.displayedContent);
     }
 
-    public static initializeDragDrop(): void {
+    private static initializeDragDrop(): void {
         if (this.dragDropManager) {
             this.dragDropManager.destroy();
         }
@@ -194,5 +194,6 @@ export class IndexRender {
     public static initialize() {
         QueueStatus.getPlayer().addEventListener('play', () =>
             this.indexAudioControl.classList.remove('hide'), {once: true});
+        this.initializeDragDrop();
     }
 }

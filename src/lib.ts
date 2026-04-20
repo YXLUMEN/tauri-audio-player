@@ -49,12 +49,11 @@ export async function run(): Promise<void> {
     ContextMenu.initialize();
     IndexController.initialize();
     IndexRender.initialize();
-    IndexRender.initializeDragDrop();
     LyricStatus.initialize();
     PlayVolume.initialize();
     PlayerController.initialize();
     QueueController.initialize();
-    QueueRender.initializeDragDrop();
+    QueueRender.initialize();
     Dsd.initialize();
     Search.initialize();
 

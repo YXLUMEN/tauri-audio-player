@@ -144,7 +144,7 @@ export class QueueRender {
             });
     }
 
-    public static initializeDragDrop(): void {
+    public static initialize(): void {
         if (this.dragDropManager) {
             this.dragDropManager.destroy();
         }
@@ -174,7 +174,7 @@ export class QueueRender {
 
     static {
         this.highlightCurrentPlaying = this.highlightCurrentPlaying.bind(this);
-        this.initializeDragDrop = this.initializeDragDrop.bind(this);
+        this.initialize = this.initialize.bind(this);
         this.destroyDragDrop = this.destroyDragDrop.bind(this);
     }
 }

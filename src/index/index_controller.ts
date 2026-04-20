@@ -190,10 +190,6 @@ export class IndexController {
 
         await IndexRender.setDisplayFolder(audios);
 
-        // 重新初始化拖拽功能（因为DOM已重新渲染）
-        IndexRender.destroyDragDrop();
-        IndexRender.initializeDragDrop();
-
         QueueRender.highlightCurrentPlaying();
         if (plugin && !getPlugin(plugin)?.isAll()) IndexRender.showContentTip('显示更多');
     }, 300);
