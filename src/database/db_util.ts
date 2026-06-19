@@ -3,7 +3,7 @@ import {AudioInfo} from "../types/audio";
 import {IFolderInfo} from "../config/default";
 import {createAlert} from "../utils/front/alert";
 import {dbHelper} from "./db_init";
-import {IndexController} from "../index/index_controller";
+import {getChosenFolder} from "../index/index_controller.ts";
 
 export async function getFavorByFolder(folderId: number): Promise<Result<AudioInfo[], string>> {
     const db = await dbHelper.init();
@@ -99,15 +99,15 @@ export async function collectAudio(parent: number, audioInfo: AudioInfo): Promis
         .map(() => {
             createAlert('已收藏', 'success');
 
-            const chosenFolderId = IndexController.getChosenFolder()?.getAttribute('folder_id');
+            const chosenFolderId = getChosenFolder()?.getAttribute('folder_id');
             if (chosenFolderId && Number(chosenFolderId) === parent) {
-                IndexController.getChosenFolder()?.click();
+                getChosenFolder()?.click();
             }
         })
         .mapErr(error => {
             let msg = '未知错误';
             if (error) {
-                if (error.errorName === 'ConstraintError') return createAlert('重复收藏', 'warning');
+                if (error.name === 'ConstraintError') return createAlert('重复收藏', 'warning');
                 msg = error.message;
             }
 
@@ -136,7 +136,7 @@ export async function deCollectAudio(folderId: number, itemId: string): Promise<
 
         store.delete(request.result);
         createAlert('已取消收藏', 'success');
-        IndexController.getChosenFolder()?.click();
+        getChosenFolder()?.click();
         resolve(request.result);
     };
 

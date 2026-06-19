@@ -201,7 +201,7 @@ export class DragDropManager {
     }
 }
 
-interface DragDropCallbacks {
+export interface DragDropCallbacks {
     /** 拖拽开始时调用，返回是否允许拖拽 */
     onDragStart?: (index: number) => boolean;
     /** 拖拽结束时调用 */

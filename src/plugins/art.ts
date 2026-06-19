@@ -5,11 +5,11 @@ import {IAuthAble} from "../types/plugin";
 import {Result} from "../utils/Result";
 import {createAlert} from "../utils/front/alert";
 import {QueueStatus} from "../playing_queue/queue_status";
-import {IndexController} from "../index/index_controller";
-import {IndexRender} from "../index/index_render";
 import {getPlugin} from "./index";
 import {clamp} from "../utils/Math";
 import {AsyncResult} from "../utils/AsyncResult";
+import {getContent, setDisplayFolder, showContentTip} from "../index/index_render.ts";
+import {getChosenFolder} from "../index/index_controller.ts";
 
 export class ART extends AudioModel implements IAuthAble {
     private static readonly cache: AudioInfo[] = [];
@@ -220,7 +220,7 @@ export class ART extends AudioModel implements IAuthAble {
     }
 
     public static async artAdd(): Promise<void> {
-        if (IndexController.getChosenFolder()?.getAttribute('plugin') !== 'art') return;
+        if (getChosenFolder()?.getAttribute('plugin') !== 'art') return;
 
         const plugin = getPlugin('art');
         if (plugin instanceof ART) {
@@ -229,9 +229,9 @@ export class ART extends AudioModel implements IAuthAble {
                 await plugin.getAudioList({seq: plugin.seq});
             }
 
-            await IndexRender.setDisplayFolder(ART.cache);
-            if (!plugin.isAll()) IndexRender.showContentTip('显示更多');
-            requestAnimationFrame(() => QueueStatus.mergePlayingQueue(IndexRender.displayedContent));
+            await setDisplayFolder(ART.cache);
+            if (!plugin.isAll()) showContentTip('显示更多');
+            requestAnimationFrame(() => QueueStatus.mergePlayingQueue(getContent()));
         }
     }
 }

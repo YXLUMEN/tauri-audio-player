@@ -1,6 +1,5 @@
 import {Result} from "../utils/Result";
 import {StoreConfig} from "../types/store";
-import {DataBaseError} from "../types/errors";
 
 export class IndexedDBHelper {
     private db: IDBDatabase | null = null;
@@ -22,17 +21,19 @@ export class IndexedDBHelper {
 
         request.onupgradeneeded = () => {
             const db = request.result;
-            for (const store of this.stores) {
-                if (db.objectStoreNames.contains(store.name)) continue;
+            const tx = request.transaction!;
 
-                const objectStore = db.createObjectStore(store.name, {
-                    keyPath: store.keyPath,
-                    autoIncrement: store.autoIncrement,
-                });
+            for (const config of this.stores) {
+                if (!db.objectStoreNames.contains(config.name)) {
+                    this.createStore(db, config);
+                    continue;
+                }
 
-                store.indexes?.forEach(index => {
-                    objectStore.createIndex(index.name, index.keyPath, {unique: index.unique});
-                });
+                const oldStore = tx.objectStore(config.name);
+                if (this.isStoreOutdated(oldStore, config)) {
+                    db.deleteObjectStore(config.name);
+                    this.createStore(db, config);
+                }
             }
         };
 
@@ -46,29 +47,68 @@ export class IndexedDBHelper {
         return promise;
     }
 
-    public async add(storeName: string, data: object): Promise<Result<IDBValidKey, DataBaseError>> {
+    private createStore(db: IDBDatabase, config: StoreConfig) {
+        const objectStore = db.createObjectStore(config.name, {
+            keyPath: config.keyPath,
+            autoIncrement: config.autoIncrement,
+        });
+
+        config.indexes?.forEach(index => {
+            objectStore.createIndex(index.name, index.keyPath, {unique: index.unique});
+        });
+    }
+
+    private isStoreOutdated(oldStore: IDBObjectStore, config: StoreConfig): boolean {
+        if ((config.autoIncrement ?? false) !== oldStore.autoIncrement) return true;
+        if (!this.keyPathEquals(oldStore.keyPath, config.keyPath)) return true;
+
+        const existingIdx = Array.from(oldStore.indexNames);
+        const desiredIdx = config.indexes?.map(i => i.name) ?? [];
+
+        if (desiredIdx.some(n => !existingIdx.includes(n))) return true;
+        return existingIdx.some(n => !desiredIdx.includes(n));
+    }
+
+    public async add(storeName: string, data: object): Promise<Result<IDBValidKey, Error>> {
         const db = await this.init();
-        const {promise, resolve} = Promise.withResolvers<Result<IDBValidKey, DataBaseError>>();
+        const {promise, resolve} = Promise.withResolvers<Result<IDBValidKey, Error>>();
 
         const tx = db.transaction(storeName, 'readwrite');
         const store = tx.objectStore(storeName);
         const request = store.add(data);
         request.onsuccess = () => resolve(Result.ok(request.result));
-        request.onerror = () => resolve(Result.err(IndexedDBHelper.mapErr(request.error)));
+        request.onerror = () => resolve(this.mapErr(request.error));
 
         return promise;
     }
 
-    public async get<T>(storeName: string, key: IDBValidKey): Promise<Result<T, DataBaseError>> {
+    public async get<T>(storeName: string, key: IDBValidKey): Promise<Result<T, Error>> {
         const db = await this.init();
-        const {promise, resolve} = Promise.withResolvers<Result<T, DataBaseError>>();
+        const {promise, resolve} = Promise.withResolvers<Result<T, Error>>();
 
         const tx = db.transaction(storeName, 'readonly');
         const store = tx.objectStore(storeName);
         const request = store.get(key);
 
-        request.onsuccess = () => resolve(Result.ok(request.result ?? null));
-        request.onerror = () => resolve(Result.err(IndexedDBHelper.mapErr(request.error)));
+        request.onsuccess = () => {
+            if (!request.result) resolve(Result.err(new Error('No results')));
+            resolve(Result.ok(request.result));
+        }
+        request.onerror = () => resolve(this.mapErr(request.error));
+
+        return promise;
+    }
+
+    public async exist(storeName: string, key: IDBValidKey): Promise<Result<boolean, Error>> {
+        const db = await this.init();
+        const {promise, resolve} = Promise.withResolvers<Result<boolean, Error>>();
+
+        const tx = db.transaction(storeName, 'readonly');
+        const store = tx.objectStore(storeName);
+        const request = store.count(key);
+
+        request.onsuccess = () => resolve(Result.ok(request.result > 0));
+        request.onerror = () => resolve(this.mapErr(request.error));
 
         return promise;
     }
@@ -77,9 +117,9 @@ export class IndexedDBHelper {
         storeName: string,
         indexName: string,
         key: IDBValidKey
-    ): Promise<Result<T, DataBaseError>> {
+    ): Promise<Result<T, Error>> {
         const db = await this.init();
-        const {promise, resolve} = Promise.withResolvers<Result<T, DataBaseError>>();
+        const {promise, resolve} = Promise.withResolvers<Result<T, Error>>();
 
         const tx = db.transaction(storeName, 'readonly');
         const store = tx.objectStore(storeName);
@@ -87,65 +127,82 @@ export class IndexedDBHelper {
         const request = index.get(key);
 
         request.onsuccess = () => resolve(Result.ok(request.result ?? null));
-        request.onerror = () => resolve(Result.err(IndexedDBHelper.mapErr(request.error)));
+        request.onerror = () => resolve(this.mapErr(request.error));
 
         return promise;
     }
 
-    public async update(storeName: string, data: object): Promise<Result<IDBValidKey, DataBaseError>> {
+    public async update(storeName: string, data: object): Promise<Result<IDBValidKey, Error>> {
         const db = await this.init();
-        const {promise, resolve} = Promise.withResolvers<Result<IDBValidKey, DataBaseError>>();
+        const {promise, resolve} = Promise.withResolvers<Result<IDBValidKey, Error>>();
 
         const tx = db.transaction(storeName, 'readwrite');
         const store = tx.objectStore(storeName);
         const request = store.put(data);
         request.onsuccess = () => resolve(Result.ok(request.result));
-        request.onerror = () => resolve(Result.err(IndexedDBHelper.mapErr(request.error)));
+        request.onerror = () => resolve(this.mapErr(request.error));
 
         return promise;
     }
 
-    public async delete(storeName: string, key: IDBValidKey | IDBKeyRange): Promise<Result<boolean, DataBaseError>> {
+    public async delete(storeName: string, key: IDBValidKey | IDBKeyRange): Promise<Result<void, Error>> {
         const db = await this.init();
-        const {promise, resolve} = Promise.withResolvers<Result<boolean, DataBaseError>>();
+        const {promise, resolve} = Promise.withResolvers<Result<void, Error>>();
 
         const tx = db.transaction(storeName, 'readwrite');
         const store = tx.objectStore(storeName);
         const request = store.delete(key);
-        request.onsuccess = () => resolve(Result.ok(true));
-        request.onerror = () => resolve(Result.err(IndexedDBHelper.mapErr(request.error)));
+        request.onsuccess = () => resolve(Result.ok(undefined));
+        request.onerror = () => resolve(this.mapErr(request.error));
 
         return promise;
     }
 
-    public async clearStore(storeName: string): Promise<Result<null, DataBaseError>> {
+    public async clearStore(storeName: string): Promise<Result<null, Error>> {
         const db = await this.init();
-        const {promise, resolve} = Promise.withResolvers<Result<null, DataBaseError>>();
+        const {promise, resolve} = Promise.withResolvers<Result<null, Error>>();
 
         const tx = db.transaction(storeName, 'readwrite');
         const store = tx.objectStore(storeName);
         const request = store.clear();
         request.onsuccess = () => resolve(Result.ok(null));
-        request.onerror = () => resolve(Result.err(IndexedDBHelper.mapErr(request.error)));
+        request.onerror = () => resolve(this.mapErr(request.error));
 
         return promise;
     }
 
-    public async getAll<T>(storeName: string): Promise<Result<T[], DataBaseError>> {
+    public async getAll<T>(storeName: string): Promise<Result<T[], Error>> {
         const db = await this.init();
-        const {promise, resolve} = Promise.withResolvers<Result<T[], DataBaseError>>();
+        const {promise, resolve} = Promise.withResolvers<Result<T[], Error>>();
 
         const tx = db.transaction(storeName, 'readonly');
         const store = tx.objectStore(storeName);
         const request = store.getAll();
         request.onsuccess = () => resolve(Result.ok(request.result));
-        request.onerror = () => resolve(Result.err(IndexedDBHelper.mapErr(request.error)));
+        request.onerror = () => resolve(this.mapErr(request.error));
 
         return promise;
     }
 
-    public static mapErr(error: DOMException | null): DataBaseError {
-        if (!error) return new DataBaseError('Unknown error occurred.');
-        return new DataBaseError(`${error.name}:${error.message} because ${error.cause} at\n ${error.stack}`, error);
+    private mapErr(error: unknown): Result<never, Error> {
+        if (Error.isError(error)) return Result.err(error);
+        return Result.err(new Error('Unknown error occurred.'));
+    }
+
+    private keyPathEquals(
+        oldKey: string | string[] | null,
+        cKey: string | string[]
+    ): boolean {
+        if (oldKey === null) return false;
+
+        if (Array.isArray(oldKey) && typeof cKey === 'string') {
+            return oldKey.length === 1 && oldKey[0] === cKey;
+        }
+
+        if (Array.isArray(oldKey) && Array.isArray(cKey)) {
+            return oldKey.length === cKey.length
+                && oldKey.every((v, i) => v === cKey[i]);
+        }
+        return oldKey === cKey;
     }
 }

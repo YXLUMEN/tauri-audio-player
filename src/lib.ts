@@ -1,18 +1,12 @@
 import {Window} from '@tauri-apps/api/window';
 import {initSettings} from "./component/setting";
 import {initTray} from "./component/tray";
-import {ContextMenu} from "./component/context_menu";
-import {Shortcuts} from "./component/shortcuts";
-import {IndexController} from "./index/index_controller";
-import {IndexRender} from "./index/index_render";
 import {LyricStatus} from "./lyric/lyric_status";
 import {PlayVolume} from "./play/play_volume";
-import {PlayerController} from "./player/player_controller";
 import {QueueController} from "./playing_queue/queue_controller";
 import {Dsd} from "./spectrum_diagram";
 import {QueueHistory} from "./playing_queue/queue_history";
 import {invoke} from "@tauri-apps/api/core";
-import {Search} from "./component/search";
 import {QueueRender} from "./playing_queue/queue_render";
 
 const appWindow: Window = new Window('main');
@@ -46,22 +40,22 @@ export async function run(): Promise<void> {
 
     await checkUpdate();
 
-    ContextMenu.initialize();
-    IndexController.initialize();
-    IndexRender.initialize();
+    (await import('./component/context_menu.ts')).initialize();
+    (await import('./index/index_controller.ts')).initialize();
+    (await import('./index/index_render.ts')).initialize();
     LyricStatus.initialize();
     PlayVolume.initialize();
-    PlayerController.initialize();
+    (await import('./player/player_controller.ts')).initialize();
     QueueController.initialize();
     QueueRender.initialize();
     Dsd.initialize();
-    Search.initialize();
+    (await import('./component/search.ts')).initialize();
 
-    await Shortcuts.initShortcuts();
+    await (await import('./component/shortcuts.ts')).initialize();
     await initSettings();
     await initTray();
 
-    await IndexRender.renderCustomFolder();
+    await (await import('./index/index_render.ts')).renderCustomFolder();
     await QueueHistory.loadHistory();
 }
 

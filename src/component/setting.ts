@@ -9,8 +9,8 @@ import {open} from "@tauri-apps/plugin-dialog";
 import {QueueRender} from "../playing_queue/queue_render";
 import {QueueStatus} from "../playing_queue/queue_status";
 import {QueueController} from "../playing_queue/queue_controller";
-import {IndexController} from "../index/index_controller";
-import {Shortcuts} from "./shortcuts";
+import {choseFolderToCollect} from "../index/index_controller";
+import * as Shortcuts from "./shortcuts";
 import {ART, getPlugin, isAuthAble} from "../plugins";
 import {PromisePool} from "../utils/collection/PromisePool";
 import {AudioInfo} from "../types/audio";
@@ -21,7 +21,7 @@ document.getElementById('shortcuts-settings')!.addEventListener('click', (event:
     const target = (event.target as HTMLElement).closest('.key');
     if (!target) return;
 
-    Shortcuts.enableShortcut(false);
+    Shortcuts.setShortcut(false);
     target.classList.add('modifying');
 
     document.addEventListener('keydown', async (event) => {
@@ -40,7 +40,7 @@ document.getElementById('shortcuts-settings')!.addEventListener('click', (event:
         }
 
         target.classList.remove('modifying');
-        Shortcuts.enableShortcut(true);
+        Shortcuts.setShortcut(true);
     }, {once: true});
 });
 
@@ -193,7 +193,7 @@ document.getElementById('select-local-audio')!.addEventListener('click', async (
         await QueueController.switchAudio(index + 1);
 
         if (target.getAttribute('action') !== 'local-collect') return;
-        const result = await IndexController.choseFolderToCollect();
+        const result = await choseFolderToCollect();
         if (result.isErr()) {
             console.error(result.unwrapErr());
             return;

@@ -4,7 +4,7 @@ import {defineConfig} from "vite";
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
-export default defineConfig(async () => ({
+export default defineConfig({
     clearScreen: false,
     server: {
         port: 1420,
@@ -20,14 +20,14 @@ export default defineConfig(async () => ({
         watch: {
             ignored: ["**/src-tauri/**"],
         },
-        build: {
-            terserOptions: {
-                compress: {
-                    drop_console: true,
-                    drop_debugger: true,
-                    ecma: 2020
-                }
-            },
+    },
+    build: {
+        terserOptions: {
+            compress: {
+                drop_console: true,
+                drop_debugger: true,
+                ecma: 2025
+            }
         },
     },
     plugins: [
@@ -40,4 +40,4 @@ export default defineConfig(async () => ({
             },
         },
     ],
-}));
+});
