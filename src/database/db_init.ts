@@ -1,6 +1,6 @@
-import {IndexedDBHelper} from "./IndexedDBHelper";
+import {IndexedDBHelper} from "./IndexedDBHelper.ts";
 
-export const dbHelper = new IndexedDBHelper('audio_player', 4, [
+export const dbHelper = new IndexedDBHelper('audio_player', 1, [
     {
         // 歌单
         name: 'folder',
@@ -13,12 +13,12 @@ export const dbHelper = new IndexedDBHelper('audio_player', 4, [
     {
         // 收藏
         name: 'favor',
-        keyPath: 'index',
+        keyPath: null,
         autoIncrement: true,
         indexes: [
-            {name: 'id', keyPath: 'id', unique: false},
+            {name: 'uid', keyPath: 'id', unique: false},
             {name: 'parent', keyPath: 'parent', unique: false},
-            {name: 'parent_id_index', keyPath: ['parent', 'id'], unique: true}
+            {name: 'parent_uid_index', keyPath: ['parent', 'uid'], unique: true}
         ]
     },
     {
@@ -39,4 +39,8 @@ export const dbHelper = new IndexedDBHelper('audio_player', 4, [
         name: 'auth',
         keyPath: 'plugin'
     },
+    {
+        name: 'token',
+        keyPath: 'key'
+    }
 ]);

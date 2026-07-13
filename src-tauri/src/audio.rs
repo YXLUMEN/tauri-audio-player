@@ -8,7 +8,7 @@ use symphonia::core::probe::Hint;
 use symphonia::default;
 
 #[derive(Debug, Serialize, Default)]
-pub struct AudioMetadata {
+pub(crate) struct AudioMetadata {
     title: Option<String>,
     album: Option<String>,
     artist: Option<String>,

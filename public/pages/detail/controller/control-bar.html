@@ -1,0 +1,59 @@
+<section class="index-controls-bar">
+    <div class="index-control-tool">
+        <!-- 中间按钮 -->
+        <div class="center-button-container">
+            <!-- 播放模式 -->
+            <img data-compound="mode-icon"
+                 class="control-icon"
+                 src="/img/audio/ico/play_mode_0.svg"
+                 alt=""
+                 action="play-mode">
+            <!-- 上一首 -->
+            <img class="control-icon" src="/img/audio/ico/forward.svg" alt="" action="forward">
+            <!-- 暂停按钮 -->
+            <img data-compound="play-icon"
+                 class="control-icon play-pause"
+                 src="/img/audio/ico/play.svg"
+                 alt=""
+                 action="play-pause">
+            <!-- 下一首 -->
+            <img class="control-icon" src="/img/audio/ico/backward.svg" alt="" action="backward">
+            <!-- 音量调节 -->
+            <div data-compound="player-volume" class="volume-container">
+                <img class="control-icon" src="/img/audio/ico/volume.svg" alt="" action="volume">
+                <!-- 音量悬浮窗 -->
+                <label class="volume-popup">
+                    <input class="volume-toggle"
+                           id="i-volume-toggle"
+                           type="range" value="70" min="0" max="100" step="1"
+                           action="volume-toggle">
+                </label>
+            </div>
+        </div>
+
+        <!-- 进度条 -->
+        <div class="index-progress-bar">
+            <span data-compound="player-psg-render"
+                  class="time-text less"
+                  id="i-played-time">
+                00:00
+            </span>
+
+            <input data-compound="player-psg-render, player-psg-bar"
+                   class="progress-bar"
+                   id="i-progress-played"
+                   type="range" min="0" max="100" step="0.1"
+                   value="0"
+                   aria-label="播放进度"
+                   action="leap-audio">
+            <span data-compound="total-time"
+                  class="time-text less"
+                  id="i-total-time">00:00</span>
+        </div>
+    </div>
+
+    <div class="right-button-container">
+        <!-- 音频列表 -->
+        <img class="control-icon" src="/img/audio/ico/list.svg" alt="" action="show-playing-board">
+    </div>
+</section>

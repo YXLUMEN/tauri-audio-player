@@ -1,84 +1,85 @@
-import {Window} from '@tauri-apps/api/window';
-import {initSettings} from "./component/setting";
-import {initTray} from "./component/tray";
-import {LyricStatus} from "./lyric/lyric_status";
-import {PlayVolume} from "./play/play_volume";
-import {QueueController} from "./playing_queue/queue_controller";
-import {Dsd} from "./spectrum_diagram";
-import {QueueHistory} from "./playing_queue/queue_history";
+import {PageSplicer} from "./page/PageSplicer.ts";
+import {PageSplicerConfig} from "./page/PageSplicerConfig.ts";
+import {Window} from "@tauri-apps/api/window";
+import {CompoundSystem} from "./compound/CompoundSystem.ts";
+import {PageBuilder} from "./page/PageBuilder.ts";
+import {NavCompound} from "./compound/global/NavCompound.ts";
+import {PlayerSystem} from "./system/PlayerSystem.ts";
+import {AudioCompound} from "./compound/global/AudioCompound.ts";
+import {ContextmenuSystem} from "./system/ContextmenuSystem.ts";
+import {QueueSystem} from "./system/QueueSystem.ts";
+import {DetailSystem} from "./system/DetailSystem.ts";
+import {ShortcutSystem} from "./system/ShortcutSystem.ts";
+import {Tray} from "./system/Tray.ts";
+import {FolderSystem} from "./system/FolderSystem.ts";
+import {UiSystem} from "./system/UiSystem.ts";
+import {LyricSystem} from "./system/LyricSystem.ts";
+import {Parsers} from "./plugin/Parsers.ts";
 import {invoke} from "@tauri-apps/api/core";
-import {QueueRender} from "./playing_queue/queue_render";
+import {SettingsSystem} from "./system/SettingsSystem.ts";
+import {HistorySystem} from "./system/HistorySystem.ts";
 
-const appWindow: Window = new Window('main');
+const app: Window = new Window('main');
 
-export async function run(): Promise<void> {
-    document.getElementById('title-bar-minimize')!.onclick = () => appWindow.minimize();
-    document.getElementById('title-bar-maximize')!.onclick = () => appWindow.toggleMaximize();
-    document.getElementById('title-bar-close')!.onclick = () => {
-        if (localStorage.getItem('quit-to-tray') === null) {
-            appWindow.hide();
-        } else {
-            appWindow.close();
-        }
-    }
+export async function run() {
+    const ctrl = new AbortController();
+    preventEvents(ctrl.signal);
 
-    await appWindow.onResized(async () => {
-        const maximizeIco = document.getElementById('title-bar-maximize')!;
-        if (await appWindow.isMaximized()) {
-            maximizeIco.innerHTML = '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="16" height="16"><path d="M812.2 65H351.6c-78.3 0-142.5 61.1-147.7 138.1-77 5.1-138.1 69.4-138.1 147.7v460.6c0 81.6 66.4 148 148 148h460.6c78.3 0 142.5-61.1 147.7-138.1 77-5.1 138.1-69.4 138.1-147.7V213c0-81.6-66.4-148-148-148z m-45.8 746.3c0 50.7-41.3 92-92 92H213.8c-50.7 0-92-41.3-92-92V350.7c0-50.7 41.3-92 92-92h460.6c50.7 0 92 41.3 92 92v460.6z m137.8-137.7c0 47.3-35.8 86.3-81.8 91.4V350.7c0-81.6-66.4-148-148-148H260.2c5.1-45.9 44.2-81.8 91.4-81.8h460.6c50.7 0 92 41.3 92 92v460.7z" fill="#8a8a8a"></path></svg>';
-        } else {
-            maximizeIco.innerHTML = '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="16" height="16"><path d="M812.3 959.4H213.7c-81.6 0-148-66.4-148-148V212.9c0-81.6 66.4-148 148-148h598.5c81.6 0 148 66.4 148 148v598.5C960.3 893 893.9 959.4 812.3 959.4zM213.7 120.9c-50.7 0-92 41.3-92 92v598.5c0 50.7 41.3 92 92 92h598.5c50.7 0 92-41.3 92-92V212.9c0-50.7-41.3-92-92-92H213.7z" fill="#8a8a8a"></path></svg>';
-        }
-    });
+    const audio = new AudioCompound();
 
-    await appWindow.once('save_before_close', async () => {
-        await QueueHistory.savePlayingQueue();
+    await app.once('save_before_close', async () => {
+        await HistorySystem.saveAll(audio);
         await invoke('confirm_save_done');
     });
 
-    loadDefaults();
+    const splicerConfig: PageSplicerConfig = {
+        basePath: 'pages',
+        concurrency: 8,
+        fetchTimeout: 15_000,
+        maxRetries: 2,
+        deferTimeoutBase: 500,
+    };
 
-    await checkUpdate();
+    const splicer = new PageSplicer(splicerConfig);
+    const compound = new CompoundSystem();
+    const builder = new PageBuilder(compound);
 
-    (await import('./component/context_menu.ts')).initialize();
-    (await import('./index/index_controller.ts')).initialize();
-    (await import('./index/index_render.ts')).initialize();
-    LyricStatus.initialize();
-    PlayVolume.initialize();
-    (await import('./player/player_controller.ts')).initialize();
-    QueueController.initialize();
-    QueueRender.initialize();
-    Dsd.initialize();
-    (await import('./component/search.ts')).initialize();
+    builder.singleton('nav-bar', new NavCompound(app));
 
-    await (await import('./component/shortcuts.ts')).initialize();
-    await initSettings();
-    await initTray();
+    UiSystem.init();
+    ShortcutSystem.init(builder);
+    QueueSystem.init(builder, audio);
+    DetailSystem.init(builder, audio);
+    FolderSystem.init(builder);
+    PlayerSystem.init(builder, audio);
+    LyricSystem.init(builder, audio);
+    ContextmenuSystem.init(builder);
+    SettingsSystem.init(builder, audio);
+    await Tray.init();
+    await Parsers.loadAll();
 
-    await (await import('./index/index_render.ts')).renderCustomFolder();
-    await QueueHistory.loadHistory();
+    await splicer.bootstrap(document.body);
+    ctrl.abort();
+
+    await HistorySystem.load(audio);
+    document.addEventListener('keydown', event => {
+        if (event.code === 'KeyO') HistorySystem.saveAll(audio);
+    });
 }
 
-function loadDefaults() {
-    const shouldUpdate = localStorage.getItem('not-check-when-start');
-    if (shouldUpdate !== null) {
-        (document.getElementById('auto-check') as HTMLInputElement).checked = false;
-    }
+function preventEvents(signal: AbortSignal) {
+    document.addEventListener('keydown', ev => {
+        ev.preventDefault();
+        ev.stopPropagation();
+    }, {signal});
 
-    const quitToTray = localStorage.getItem('quit-to-tray');
-    if (quitToTray !== null) {
-        (document.getElementById('quit-to-tray') as HTMLInputElement).checked = false;
-    }
-}
+    document.addEventListener('contextmenu', ev => {
+        ev.preventDefault();
+        ev.stopPropagation();
+    }, {signal});
 
-async function checkUpdate() {
-    try {
-        const shouldUpdate = localStorage.getItem('not-check-when-start');
-        if (shouldUpdate !== null) return;
-
-        const mod = await import('./http/update');
-        await mod.updateApp();
-    } catch (e) {
-        console.error(e);
-    }
+    window.addEventListener('beforeunload', ev => {
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+    }, {signal});
 }

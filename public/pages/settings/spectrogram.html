@@ -1,0 +1,54 @@
+<section data-compound="dsd"
+         class="setting-context"
+         id="setting-context">
+    <div class="subtitle">频谱图设置</div>
+    <div class="setting-details table" id="fft-settings">
+        <span class="title-like">开启频谱图</span>
+        <div class="base-switch">
+            <label>
+                <input type="checkbox" name="toggle-fft" id="toggle-fft">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <span class="title-like">切换绘图模式</span>
+        <div>
+            <label class="base-checkbox">
+                <input type="radio" name="draw-mode" value="bars" checked>
+                <span class="checkmark"></span>
+                柱状图
+            </label>
+            <label class="base-checkbox">
+                <input type="radio" name="draw-mode" value="lines">
+                <span class="checkmark"></span>
+                曲线图
+            </label>
+        </div>
+
+        <span class="title-like">分辨率设置</span>
+        <label class="custom-input-label">
+            <input type="text" name="change-fftSize" placeholder="默认值: 256(128)" class="base-input"
+                   autocomplete="off">
+            <input type="button" name="change-fftSize-btn" value="确定" class="base-button">
+        </label>
+
+        <span class="title-like">刷新频率设置</span>
+        <label class="custom-input-label">
+            <input type="text" name="change-draw-interval" placeholder="默认值: 10" class="base-input"
+                   autocomplete="off">
+            <input type="button" name="change-draw-interval-btn" value="确定" class="base-button">
+        </label>
+
+        <span class="title-like">最低分贝</span>
+        <label class="custom-input-label">
+            <input type="text" name="min-decibels" placeholder="默认值: -100" class="base-input" autocomplete="off">
+            <input type="button" name="min-decibels-btn" value="确定" class="base-button">
+        </label>
+
+        <span class="title-like">最高分贝</span>
+        <label class="custom-input-label">
+            <input type="text" name="max-decibels" placeholder="默认值: -10" class="base-input" autocomplete="off">
+            <input type="button" name="max-decibels-btn" value="确定" class="base-button">
+        </label>
+    </div>
+</section>

@@ -1,0 +1,28 @@
+<section class="audio-folder-detail hide" id="custom-folder-detail">
+    <div class="search-box">
+        <label for="search-input"></label>
+        <input class="base-input search-input" id="search-input" type="text" autocomplete="off">
+        <div class="search-submit" id="search-submit"></div>
+    </div>
+    <!-- 歌单名称 -->
+    <div data-compound="detail-title" class="folder-info">
+        <img class="cover" id="folder-info-cover" src="/img/audio/cover/audio-4.webp" alt="">
+        <div class="title">
+            <div class="text" id="folder-info-title">开始</div>
+            <div data-compound="detail-add-all"
+                 class="base-button add-all"
+                 id="add-all">添加全部
+            </div>
+        </div>
+    </div>
+
+    <div class="folder-content-tags">
+        <div class="play">#</div>
+        <div class="modifiable title">标题</div>
+        <div class="modifiable album">专辑</div>
+    </div>
+
+    <div data-compound="detail-render, detail-select, highlight-folder-content, detail-drag-manager"
+         class="folder-content"
+         id="folder-content"></div>
+</section>

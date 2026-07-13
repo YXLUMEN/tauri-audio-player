@@ -1,15 +1,19 @@
-import {IBaseFetch} from "../types/http";
 import {fetch} from '@tauri-apps/plugin-http';
-import {defaultFetch} from "../config/default";
-import {ECategories} from "../types/base";
-import {createAlert} from "../utils/front/alert";
-import {Result} from "../utils/Result";
+import {AppFetch} from "../types/AppFetch.ts";
+import {Result} from "../util/Result.ts";
+import {AlertCategories} from "../types/AlertCategories.ts";
 
 
-export default async function baseFetch(url: string, opts: IBaseFetch = {}): Promise<Result<Response, Error>> {
+export default async function baseFetch(url: string, opts: AppFetch = {}): Promise<Result<Response, Error>> {
     try {
-        const options: IBaseFetch = {
-            ...defaultFetch,
+        const options: AppFetch = {
+            method: 'POST',
+            body: '',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            referrer: "about:client",
+            cache: 'default',
             ...opts
         };
 
@@ -30,7 +34,7 @@ export default async function baseFetch(url: string, opts: IBaseFetch = {}): Pro
 }
 
 // 默认的错误处理
-const errors: Map<number, [string, ECategories]> = new Map([
+const errors: Map<number, [string, AlertCategories]> = new Map([
     [400, ['不支持的请求', 'warning']],
     [401, ['您还没有登录', 'warning']],
     [404, ['访问资源不存在', 'warning']],
@@ -41,5 +45,5 @@ const errors: Map<number, [string, ECategories]> = new Map([
 
 function statusAlert(statusCode: number = 404) {
     const msg = errors.get(statusCode) ?? [`未知错误: ${statusCode}`, 'error'];
-    createAlert(msg[0], msg[1]);
+    alert(msg[0]);
 }

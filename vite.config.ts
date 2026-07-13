@@ -1,7 +1,7 @@
-// @ts-ignore
 import {defineConfig} from "vite";
+import {publicFileCount} from "./vite-plugin/vite-plugin-file-count";
 
-// @ts-expect-error process is a nodejs global
+// @ts-expect-error process is a node.js global
 const host = process.env.TAURI_DEV_HOST;
 
 export default defineConfig({
@@ -15,6 +15,7 @@ export default defineConfig({
                 protocol: "ws",
                 host,
                 port: 1421,
+                overlay: false,
             }
             : undefined,
         watch: {
@@ -30,14 +31,11 @@ export default defineConfig({
             }
         },
     },
+    define: {},
     plugins: [
-        {
-            name: 'inject-debug-script',
-            apply: 'serve',
-            transformIndexHtml(html: string) {
-                const tag = '<script src="debug/dev_toolkit.ts"></script>';
-                return html.replace('</head>', `  ${tag}\n</head>`);
-            },
-        },
+        publicFileCount({
+            dir: 'img/audio/cover',
+            defineKey: '__INNER_COVER_COUNT__',
+        })
     ],
 });

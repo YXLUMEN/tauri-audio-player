@@ -281,6 +281,7 @@ svg, img {
     width: 100%;
     height: 100%;
     overflow-y: auto;
+    overflow-x: hidden;
     gap: 2px;
 }
 
@@ -288,9 +289,14 @@ svg, img {
     & {
         display: flex;
         align-items: center;
+
         width: 100%;
         padding: 10px 0;
         border-radius: 8px;
+
+        cursor: pointer;
+        content-visibility: auto;
+        contain-intrinsic-size: auto 46px;
     }
 
     &.current {
@@ -306,7 +312,6 @@ svg, img {
         width: 24px;
         height: 24px;
         margin: 0 8px;
-        cursor: pointer;
         text-align: center;
         color: #7a7a7a;
     }
@@ -334,10 +339,6 @@ svg, img {
     .album {
         display: flex;
         flex: var(--album-width);
-    }
-
-    span {
-        cursor: pointer;
     }
 }
 
@@ -405,8 +406,8 @@ svg, img {
     }
 
     img {
-        width: 8cm;
-        height: 8cm;
+        width: 320px;
+        height: 290px;
         margin: 0 0 0 2cm;
         border-radius: 8px;
         cursor: pointer;
@@ -524,14 +525,18 @@ svg, img {
         position: fixed;
         flex-direction: column;
         align-items: center;
+
         top: calc(27% - 24px);
         left: 34%;
         width: 32%;
         height: 46%;
-        padding: 24px 0;
-        border-radius: 12px;
+        padding: 24px 16px;
+
+        border-radius: 6px;
+        box-sizing: border-box;
         box-shadow: #d5d5d5 1px 1px 5px;
         background-color: #fff;
+
         z-index: 6;
     }
 

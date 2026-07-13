@@ -1,0 +1,16 @@
+<section data-compound="player-audio-box"
+         class="audio-box"
+         id="audio-box">
+    <canvas data-compound="dsd-canvas" id="audio-canvas"></canvas>
+    <div class="audio-container">
+        <!-- 进度条 -->
+        <input data-compound="player-psg-render, player-psg-bar"
+               class="progress-bar player-progress-bar"
+               id="progress-played"
+               type="range" min="0" max="100" step="0.1"
+               value="0"
+               aria-label="播放进度">
+        <!-- 下排控制按钮 -->
+        <page name="../controller"></page>
+    </div>
+</section>

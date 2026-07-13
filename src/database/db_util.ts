@@ -1,20 +1,25 @@
-import {Result} from "../utils/Result";
-import {AudioInfo} from "../types/audio";
-import {IFolderInfo} from "../config/default";
-import {createAlert} from "../utils/front/alert";
-import {dbHelper} from "./db_init";
-import {getChosenFolder} from "../index/index_controller.ts";
+import {dbHelper} from "./db_init.ts";
+import {Result} from "../util/Result.ts";
+import {AudioInfos} from "../types/audio/AudioInfos.ts";
+import {createAlert} from "../util/alert.ts";
+import {AudioRecord} from "../types/audio/AudioRecord.ts";
+import {AudioInfoBuilder} from "../types/audio/AudioInfoBuilder.ts";
+import {FolderInfo} from "../types/FolderInfo.ts";
+import {FolderRecord} from "../types/FolderRecord.ts";
 
-export async function getFavorByFolder(folderId: number): Promise<Result<AudioInfo[], string>> {
+export async function getFolderContent(folderId: number): Promise<Result<AudioInfos[], string>> {
     const db = await dbHelper.init();
-    const {promise, resolve} = Promise.withResolvers<Result<AudioInfo[], string>>();
+    const {promise, resolve} = Promise.withResolvers<Result<AudioInfos[], string>>();
 
     const tx = db.transaction('favor', 'readonly');
     const store = tx.objectStore('favor');
     const index = store.index('parent');
-    const request = index.getAll(folderId);
+    const request: IDBRequest<AudioRecord[]> = index.getAll(folderId);
 
-    request.onsuccess = () => resolve(Result.ok(request.result));
+    request.onsuccess = () => resolve(Result.ok(request.result.map(item => {
+        return AudioInfos.from(item);
+    })));
+
     request.onerror = () => resolve(Result.err(
         request.error === null ?
             'Unknown error at "getFavorByFolder"' :
@@ -24,40 +29,36 @@ export async function getFavorByFolder(folderId: number): Promise<Result<AudioIn
     return promise;
 }
 
-export async function createFolder(folder: IFolderInfo): Promise<void> {
-    const result = await dbHelper.add(
-        'folder',
-        {
-            name: folder.name,
-            desc: folder.desc,
-            cover: folder.cover
-        }
-    );
+export async function createFolder(record: FolderRecord): Promise<void> {
+    const result = await dbHelper.add('folder', {
+        name: record.name,
+        desc: record.desc,
+        cover: record.cover
+    });
 
-    result
-        .map(() => createAlert('创建成功', 'success'))
-        .mapErr(error => {
-            let msg = '未知错误';
-            if (error) {
-                if (error.name === 'ConstraintError') return createAlert('歌单名称重复', 'warning');
-                msg = error.message;
-            }
-            console.error(`创建歌单时出错: ${msg}`);
-            createAlert('创建失败', 'error');
-        });
+    if (result.isErr()) {
+        const err = result.unwrapErr();
+        if (err.name === 'ConstraintError') {
+            createAlert('歌单名称重复', 'warning')
+            return;
+        }
+        console.error(`创建歌单时出错: ${err.message}`);
+        createAlert('创建失败', 'error');
+        return;
+    }
+
+    createAlert('创建成功', 'success')
 }
 
-export async function modifyFolder(folder: IFolderInfo): Promise<void> {
-    const result = await dbHelper.update('folder', folder);
-    result
-        .map(() => createAlert('修改成功', 'success'))
-        .mapErr(error => {
-            let msg = '未知错误';
-            if (error) msg = error.message;
-
-            console.error(`修改歌单出错: ${msg}`);
-            createAlert('修改失败', 'error');
-        });
+export async function modifyFolder(folder: FolderInfo): Promise<void> {
+    const result = await dbHelper.update('folder', folder.persistable());
+    if (result.isErr()) {
+        const err = result.unwrapErr();
+        console.error(`修改歌单出错: ${err.message}`);
+        createAlert('修改失败', 'error');
+        return;
+    }
+    createAlert('修改成功', 'success');
 }
 
 export async function deleteFolder(folderId: number): Promise<Result<null, string>> {
@@ -90,30 +91,80 @@ export async function deleteFolder(folderId: number): Promise<Result<null, strin
     return promise;
 }
 
-export async function collectAudio(parent: number, audioInfo: AudioInfo): Promise<void> {
-    const {index, ...obj} = audioInfo;
-    obj.parent = parent;
+export async function collectAudio(
+    parent: number,
+    info: AudioRecord
+): Promise<AudioInfos | void> {
+    const builder = new AudioInfoBuilder();
+    builder.from(info);
+    builder.parent(parent);
+    const inner = builder.build();
 
-    const result = await dbHelper.add('favor', obj);
-    result
-        .map(() => {
-            createAlert('已收藏', 'success');
+    const result = await dbHelper.add('favor', inner.persistable());
+    if (result.isErr()) {
+        const err = result.unwrapErr();
+        if (err.name === 'ConstraintError') {
+            createAlert('重复收藏', 'warning');
+            return;
+        }
 
-            const chosenFolderId = getChosenFolder()?.getAttribute('folder_id');
-            if (chosenFolderId && Number(chosenFolderId) === parent) {
-                getChosenFolder()?.click();
-            }
-        })
-        .mapErr(error => {
-            let msg = '未知错误';
-            if (error) {
-                if (error.name === 'ConstraintError') return createAlert('重复收藏', 'warning');
-                msg = error.message;
-            }
+        console.error(`收藏时出错: ${err.message}`);
+        createAlert('收藏失败', 'error');
+        return;
+    }
 
-            console.error(`收藏时出错: ${msg}`);
-            createAlert('收藏失败', 'error');
+    createAlert('已收藏', 'success');
+    return inner;
+}
+
+export async function collectBatch(
+    parent: number,
+    records: Iterable<AudioRecord>
+): Promise<AudioInfos[] | void> {
+    const inners = Iterator.from(records)
+        .map(record => {
+            const builder = new AudioInfoBuilder();
+            builder.from(record);
+            builder.parent(parent);
+            return builder.build();
         });
+
+    const db = await dbHelper.init();
+    const {promise, resolve} = Promise.withResolvers<Result<void, Error>>();
+
+    const tx = db.transaction('favor', 'readwrite');
+    const store = tx.objectStore('favor');
+
+    const succeed: AudioInfos[] = [];
+    const onerror = (e: Event) => {
+        if ((e.target as IDBRequest).error?.name === 'ConstraintError') {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    };
+
+    for (const inner of inners) {
+        const request = store.add(inner.persistable());
+        request.onsuccess = () => succeed.push(inner);
+        request.onerror = onerror;
+    }
+
+    tx.oncomplete = () => resolve(Result.ok(undefined));
+
+    tx.onerror = () => resolve(dbHelper.mapErr(tx.error));
+    tx.onabort = () =>
+        resolve(dbHelper.mapErr(tx.error ?? new Error('Transaction aborted')));
+
+    const result = await promise;
+
+    if (result.isErr()) {
+        console.error('收藏时出错', result.unwrapErr());
+        createAlert('收藏失败', 'error');
+        return;
+    }
+
+    createAlert('收藏完成', 'success');
+    return succeed;
 }
 
 export async function deCollectAudio(folderId: number, itemId: string): Promise<any> {
@@ -121,11 +172,11 @@ export async function deCollectAudio(folderId: number, itemId: string): Promise<
 
     const tx = db.transaction('favor', 'readwrite');
     const store = tx.objectStore('favor');
-    const index = store.index('parent_id_index');
+    const index = store.index('parent_uid_index');
 
     const request = index.getKey([folderId, itemId]);
 
-    const {promise, resolve, reject} = Promise.withResolvers();
+    const {promise, resolve} = Promise.withResolvers();
 
     request.onsuccess = () => {
         if (request.result == undefined) {
@@ -136,32 +187,39 @@ export async function deCollectAudio(folderId: number, itemId: string): Promise<
 
         store.delete(request.result);
         createAlert('已取消收藏', 'success');
-        getChosenFolder()?.click();
         resolve(request.result);
     };
 
     request.onerror = () => {
         console.error(`删除收藏时出错: ${request.error}`);
         createAlert('出现错误', 'error');
-        reject(request.error);
+        resolve(request.error);
     };
 
     return promise;
 }
 
 export async function clearPlayingQueueHistory(): Promise<void> {
-    const db = await dbHelper.init();
-    const tx = db.transaction('playing_history', 'readwrite');
-    const store = tx.objectStore('playing_history');
-    store.clear();
+    const result = await dbHelper.clearStore('playing_history');
+    if (result.isErr()) {
+        console.error('[History]', result.unwrapErr());
+    }
 }
 
 /**
  * 更新收藏列表中音频的顺序
  * @param folderId 歌单ID
- * @param audioInfos 按新顺序排列的音频信息数组
+ * @param records 按新顺序排列的音频信息数组
  */
-export async function updateFavorOrder(folderId: number, audioInfos: AudioInfo[]): Promise<Result<null, string>> {
+export async function updateFavorOrder(folderId: number, records: Iterable<AudioRecord>): Promise<Result<null, string>> {
+    const inners = Iterator.from(records)
+        .map(record => {
+            const builder = new AudioInfoBuilder();
+            builder.from(record);
+            builder.parent(folderId);
+            return builder.build().persistable();
+        })
+
     const db = await dbHelper.init();
     const {promise, resolve} = Promise.withResolvers<Result<null, string>>();
 
@@ -170,26 +228,18 @@ export async function updateFavorOrder(folderId: number, audioInfos: AudioInfo[]
     const parentIndex = store.index('parent');
 
     // 删除该歌单下的所有收藏
-    const cursorRequest = parentIndex.openCursor(IDBKeyRange.only(folderId));
-    const keysToDelete: IDBValidKey[] = [];
-
-    cursorRequest.onsuccess = () => {
-        const cursor = cursorRequest.result;
+    // maybe sortOrder
+    const request = parentIndex.openCursor(IDBKeyRange.only(folderId));
+    request.onsuccess = () => {
+        const cursor = request.result;
         if (cursor) {
-            keysToDelete.push(cursor.primaryKey);
+            cursor.delete();
             cursor.continue();
-        } else {
-            // 删除完成后重新添加
-            for (const key of keysToDelete) {
-                store.delete(key);
-            }
-
-            // 按新顺序添加
-            for (const audio of audioInfos) {
-                const {index, ...obj} = audio;
-                obj.parent = folderId;
-                store.add(obj);
-            }
+            return;
+        }
+        // 按新顺序添加
+        for (const record of inners) {
+            store.add(record);
         }
     };
 

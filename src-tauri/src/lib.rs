@@ -1,9 +1,11 @@
 mod audio;
 mod file;
+mod tray;
 mod window;
 
 use crate::audio::fetch_meta;
 use crate::file::calculate_hash;
+use crate::tray::create_tray;
 use crate::window::wait_saving;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -24,6 +26,7 @@ pub fn run() {
                         .build(),
                 )?;
             }
+            let _ = create_tray(app.handle());
             Ok(())
         })
         .on_window_event(wait_saving)

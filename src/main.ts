@@ -1,8 +1,7 @@
-import {run} from "./lib";
+import {run} from "./lib.ts";
 
 function main() {
-    run()
-        .catch(error => console.error(error))
+    void run();
 }
 
 main();

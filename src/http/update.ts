@@ -1,10 +1,12 @@
 import {check} from '@tauri-apps/plugin-updater';
 import {relaunch} from '@tauri-apps/plugin-process';
-import {createConfirm, playSound} from "../utils/front/alert";
+import {createConfirm, playSound} from "../util/alert.ts";
 
-export async function updateApp(callable?: Function): Promise<number> {
+type UpdateResult = 'NoUpdate' | 'UserCancel' | 'Updated' | 'UpdatedAndReboot';
+
+export async function updateApp(callable?: Function): Promise<UpdateResult> {
     const update = await check();
-    if (!update) return 0;
+    if (!update) return 'NoUpdate';
 
     console.log(`found update ${update.version} from ${update.date} with notes ${update.body}`);
 
@@ -14,7 +16,7 @@ export async function updateApp(callable?: Function): Promise<number> {
 
     await playSound('audio/successful_hit.wav');
     const shouldUpdate = await createConfirm(`发现新版本: ${update.version}`);
-    if (!shouldUpdate) return 1;
+    if (!shouldUpdate) return 'UserCancel';
 
     let downloaded = 0;
     let contentLength = 0;
@@ -42,9 +44,9 @@ export async function updateApp(callable?: Function): Promise<number> {
     const restart = await createConfirm('更新完成, 是否立即重启软件', {flag: 'update', category: 'success'});
     if (!restart) {
         updateIco.classList.add('hide');
-        return 2;
+        return 'Updated';
     }
 
     await relaunch();
-    return 3;
+    return 'UpdatedAndReboot';
 }

@@ -1,19 +1,17 @@
-use std::sync::atomic::{AtomicBool, Ordering};
 use log::info;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, Emitter, Manager, Window, WindowEvent};
 
 pub fn show_window(app: &AppHandle) {
     let main = app.get_webview_window("main");
     if let Some(main) = main {
-        main.unminimize().expect("Sorry, can't unminimize window");
-        main.set_focus().expect("Sorry, can't focus window");
+        let _ = main.show();
+        let _ = main.unminimize();
+        let _ = main.set_focus();
     } else {
-        app.webview_windows()
-            .values()
-            .next()
-            .expect("Sorry, no window found")
-            .set_focus()
-            .expect("Can't Bring Window to Focus");
+        if let Some(window) = app.webview_windows().values().next() {
+            let _ = window.set_focus();
+        }
     }
 }
 

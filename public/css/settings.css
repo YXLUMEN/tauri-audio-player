@@ -98,7 +98,12 @@
 
     .key.modifying {
         border: 1px #1abc9c solid;
-        box-shadow: 0 0 8px rgba(26, 188, 156, 0.2);
+        box-shadow: 0 0 8px rgb(26 188 156 / 0.2);
+    }
+
+    .key.custom {
+        border: 1px #1a79bc solid;
+        box-shadow: 0 0 8px rgb(26 121 188 / 0.2);
     }
 
     .key:hover {

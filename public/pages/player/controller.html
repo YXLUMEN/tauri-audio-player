@@ -1,0 +1,47 @@
+<section data-compound="player-controller-btn" class="player-controls">
+    <!-- 播放时长 -->
+    <div class="time-container">
+        <span data-compound="player-psg-render"
+              class="time-text"
+              id="played-time">00:00</span>&nbsp;/&nbsp;
+        <span data-compound="total-time"
+              class="time-text"
+              id="audio-time">00:00</span>
+    </div>
+    <!-- 中间按钮 -->
+    <div class="center-button-container">
+        <!-- 播放模式 -->
+        <img data-compound="mode-icon"
+             class="control-icon"
+             src="/img/audio/ico/play_mode_0.svg"
+             alt=""
+             action="play-mode">
+        <!-- 上一首 -->
+        <img class="control-icon" src="/img/audio/ico/forward.svg" alt="" action="forward">
+        <!-- 暂停按钮 -->
+        <img data-compound="play-icon"
+             class="control-icon play-pause"
+             src="/img/audio/ico/play.svg"
+             alt=""
+             action="play-pause">
+        <!-- 下一首 -->
+        <img class="control-icon" src="/img/audio/ico/backward.svg" alt="" action="backward">
+        <!-- 音量调节 -->
+        <div data-compound="player-volume" class="volume-container">
+            <img class="control-icon" src="/img/audio/ico/volume.svg" alt="" action="volume">
+            <!-- 音量悬浮窗 -->
+            <label class="volume-popup">
+                <input class="volume-toggle"
+                       id="volume-toggle"
+                       type="range" value="70" min="0" max="100" step="1">
+            </label>
+        </div>
+    </div>
+    <div class="right-button-container">
+        <!-- 显示歌词 -->
+        <img id="lyric" class="control-icon" src="/img/audio/ico/lyric.svg" alt="" action="lyric">
+        <!-- 音频列表 -->
+        <img id="show-playing-board" class="control-icon" src="/img/audio/ico/list.svg" alt=""
+             action="show-playing-board">
+    </div>
+</section>
