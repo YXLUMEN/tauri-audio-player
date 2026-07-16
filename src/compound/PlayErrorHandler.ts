@@ -12,7 +12,7 @@ import {backoffDelay} from "../util/Math.ts";
 export class PlayErrorHandler {
     private readonly maxRetries = 5;
     private readonly resetMs = 10_000;
-    private readonly throttleMs = 6000;
+    private readonly throttleMs = 1000;
 
     private readonly queue: QueueCompound;
     private readonly audio: HTMLAudioElement;
@@ -88,6 +88,7 @@ export class PlayErrorHandler {
 
         // 终止当前任务
         this.abort();
+        const signal = this.ctrl.signal;
         this.pendingHash = hash;
 
         try {
@@ -102,8 +103,8 @@ export class PlayErrorHandler {
             const index = this.queue.index();
 
             // 重载一次
-            if (await this.reloadAudio(index)) return;
-            if (this.isAbort(hash)) return;
+            if (await this.reloadAudio(index, signal)) return;
+            if (this.isAbort(signal, hash)) return;
 
             // 离线挂起, 上线重载
             if (!navigator.onLine) {
@@ -112,30 +113,30 @@ export class PlayErrorHandler {
                     this.touchAlert();
                 }
 
-                const online = await this.waitOnline(this.ctrl.signal);
-                if (this.isAbort(hash)) return;
+                const online = await this.waitOnline(signal);
+                if (this.isAbort(signal, hash)) return;
 
                 if (!online) {
-                    this.scheduleRetry(hash);
+                    this.scheduleRetry(signal, hash);
                     return;
                 }
 
-                if (await this.reloadAudio(index)) return;
-                if (this.isAbort(hash)) return;
+                if (await this.reloadAudio(index, signal)) return;
+                if (this.isAbort(signal, hash)) return;
             }
 
             // 刷新 Token / 插件状态
             const plugin = Parsers.get(current.plugin);
             if (!plugin) {
-                this.scheduleRetry(hash);
+                this.scheduleRetry(signal, hash);
                 return;
             }
 
             const refreshed = await plugin.reload();
-            if (this.isAbort(hash)) return;
+            if (this.isAbort(signal, hash)) return;
 
-            if (refreshed && await this.reloadAudio(index)) return;
-            if (this.isAbort(hash)) return;
+            if (refreshed && await this.reloadAudio(index, signal)) return;
+            if (this.isAbort(signal, hash)) return;
 
             // 尝试重新验证
             if (this.retryCount >= this.maxRetries) {
@@ -146,17 +147,17 @@ export class PlayErrorHandler {
                 }
 
                 const keyPair = result.unwrap();
-                if (!keyPair || this.isAbort(hash)) return;
+                if (!keyPair || this.isAbort(signal, hash)) return;
 
                 const logged = await plugin.reAuth(keyPair.key, keyPair.psd);
-                if (!logged || this.isAbort(hash)) return;
+                if (!logged || this.isAbort(signal, hash)) return;
 
-                if (await this.reloadAudio(index)) return;
-                if (this.isAbort(hash)) return;
+                if (await this.reloadAudio(index, signal)) return;
+                if (this.isAbort(signal, hash)) return;
             }
 
             // 下一次重试
-            this.scheduleRetry(hash);
+            this.scheduleRetry(signal, hash);
         } catch (err) {
             let msg = '未知错误';
             if (Error.isError(err)) msg = err.message;
@@ -165,17 +166,19 @@ export class PlayErrorHandler {
             createAlert(`第 ${this.retryCount} 次重试失败: ${msg}`, 'warning');
             console.error(err);
 
-            this.scheduleRetry(hash);
+            this.scheduleRetry(signal, hash);
         } finally {
             if (this.pendingHash === hash) this.pendingHash = null;
         }
     }
 
-    private async reloadAudio(index: number): Promise<boolean> {
+    private async reloadAudio(index: number, limiter: AbortSignal): Promise<boolean> {
+        if (limiter.aborted) return false;
+
         const lastPlayed = this.audio.currentTime;
         const play = !this.audio.paused;
 
-        const wait = this.waitLoadResult();
+        const wait = this.waitLoadResult(limiter);
         appEvent.emit(new SwitchAudio(index, true, play));
 
         const ok = await wait;
@@ -189,7 +192,7 @@ export class PlayErrorHandler {
         return true;
     }
 
-    private waitLoadResult(timeout: number = 30_000): Promise<boolean> {
+    private waitLoadResult(limiter: AbortSignal, timeout: number = 30_000): Promise<boolean> {
         const {promise, resolve} = Promise.withResolvers<boolean>();
         const ctrl = new AbortController();
         const signal = ctrl.signal;
@@ -203,19 +206,20 @@ export class PlayErrorHandler {
 
         const timer = setTimeout(() => settle(false), timeout);
 
+        limiter.addEventListener('abort', () => settle(false), {once: true, signal});
         this.audio.addEventListener('canplay', () => settle(true), {once: true, signal});
         this.audio.addEventListener('error', () => settle(false), {once: true, signal});
 
         return promise;
     }
 
-    private scheduleRetry(hash: number): void {
+    private scheduleRetry(limiter: AbortSignal, hash: number): void {
         clearTimeout(this.timerId);
-        const delay = Math.max(backoffDelay(this.retryCount - 1), this.throttleMs);
+        const delay = backoffDelay(this.retryCount - 1, this.throttleMs);
 
-        this.timerId = window.setTimeout(() => {
+        this.timerId = setTimeout(() => {
             this.timerId = undefined;
-            if (this.isStale(hash)) return;
+            if (this.isAbort(limiter, hash)) return;
             void this.retry();
         }, delay);
     }
@@ -226,9 +230,9 @@ export class PlayErrorHandler {
         return this.getHash(current, this.queue.index());
     }
 
-    private waitOnline(signal: AbortSignal, timeout = 3E4): Promise<boolean> {
+    private waitOnline(limiter: AbortSignal, timeout = 3E4): Promise<boolean> {
         if (navigator.onLine) return Promise.resolve(true);
-        if (signal.aborted) return Promise.resolve(false);
+        if (limiter.aborted) return Promise.resolve(false);
 
         const {promise, resolve} = Promise.withResolvers<boolean>();
 
@@ -238,8 +242,9 @@ export class PlayErrorHandler {
             resolve(false);
         }, timeout);
 
-        signal.addEventListener('abort', () => {
+        limiter.addEventListener('abort', () => {
             clearTimeout(timer);
+            ctrl.abort();
             resolve(false);
         }, {once: true, signal: ctrl.signal});
 
@@ -252,8 +257,8 @@ export class PlayErrorHandler {
         return promise;
     }
 
-    private isAbort(hash: number) {
-        return this.ctrl.signal.aborted || this.isStale(hash);
+    private isAbort(signal: AbortSignal, hash: number) {
+        return signal.aborted || this.isStale(hash);
     }
 
     private isStale(hash: number): boolean {
