@@ -1,6 +1,6 @@
 import {ActionType} from "./ActionType.ts";
 import {appEvent} from "../../event/EventBus.ts";
-import {SwitchAudio} from "../../event/SwitchAudio.ts";
+import {SwitchAudio} from "../../event/queue/SwitchAudio.ts";
 import {QueueSystem} from "../../system/QueueSystem.ts";
 import {createAlert, createConfirm} from "../../util/alert.ts";
 import {collectAudio, deCollectAudio, deleteFolder, modifyFolder} from "../../database/db_util.ts";

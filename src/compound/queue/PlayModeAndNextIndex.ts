@@ -1,7 +1,7 @@
 import {appEvent} from "../../event/EventBus.ts";
-import {SwitchAudio} from "../../event/SwitchAudio.ts";
+import {SwitchAudio} from "../../event/queue/SwitchAudio.ts";
 import {QueueCompound} from "./QueueCompound.ts";
-import {PlayModeChange} from "../../event/PlayModeChange.ts";
+import {PlayModeChange} from "../../event/queue/PlayModeChange.ts";
 import {generateUniqueRandomNumbers} from "../../util/random.ts";
 
 export class PlayModeAndNextIndex {

@@ -1,10 +1,10 @@
-import {AudioInfos} from "../../types/audio/AudioInfos.ts";
+import {AudioInfos} from "../../audio/AudioInfos.ts";
 import {FormatLyric} from "../../types/Lyric.ts";
-import {StandardAudio} from "../../types/audio/StandardAudio.ts";
+import {StandardAudio} from "../../audio/StandardAudio.ts";
 import {ParserPlugin} from "../ParserPlugin.ts";
 import {MemoryLRU} from "../../util/MemoryLRU.ts";
 import {convertFileSrc, invoke} from "@tauri-apps/api/core";
-import {AudioMeta} from "../../types/audio/AudioMeta.ts";
+import {AudioMeta} from "../../audio/AudioMeta.ts";
 import {randomCover} from "../../util/random.ts";
 
 export class LocalParser extends ParserPlugin {

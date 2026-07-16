@@ -1,5 +1,6 @@
 import {AudioInfos} from "./AudioInfos.ts";
-import {stringHashCode} from "../../util/hash.ts";
+import {stringHashCode} from "../util/hash.ts";
+import {StandardRecord} from "./AudioRecord.ts";
 
 export class StandardAudio extends AudioInfos {
     public static readonly DEFAULT = new StandardAudio(
@@ -26,13 +27,25 @@ export class StandardAudio extends AudioInfos {
         album: string,
         artist: string,
         cover: string,
-        parent?: number,
     ) {
-        super(id, plugin, url, parent);
+        super(id, plugin, url);
         this.title = title;
         this.album = album;
         this.artist = artist;
         this.cover = cover;
+    }
+
+    public persistable(parent?: number): StandardRecord {
+        return {
+            parent,
+            uid: this.uid,
+            plugin: this.plugin,
+            url: this.url,
+            title: this.title,
+            album: this.album,
+            artist: this.artist,
+            cover: this.cover,
+        };
     }
 
     protected override genHashCode(): number {

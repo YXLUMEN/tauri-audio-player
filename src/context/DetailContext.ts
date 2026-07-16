@@ -1,4 +1,4 @@
-import {AudioInfos} from "../types/audio/AudioInfos.ts";
+import {AudioInfos} from "../audio/AudioInfos.ts";
 
 
 export class DetailContext {

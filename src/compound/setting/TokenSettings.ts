@@ -75,7 +75,7 @@ export class TokenSettings extends BaseCompound {
         const pair = result.unwrap();
         if (!pair) return;
 
-        await instance.load();
+        await instance.init();
         return {
             label,
             plugin: pair.plugin,
@@ -128,7 +128,7 @@ export class TokenSettings extends BaseCompound {
     }
 }
 
-type KeyPair = {
+export type KeyPair = {
     plugin: string;
     key: string;
     psd: string;

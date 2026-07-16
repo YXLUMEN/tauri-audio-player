@@ -1,4 +1,4 @@
-import {StandardAudio} from "../types/audio/StandardAudio.ts";
+import {StandardAudio} from "../audio/StandardAudio.ts";
 
 export class AudioTitleChange extends Event {
     public readonly standard: StandardAudio;

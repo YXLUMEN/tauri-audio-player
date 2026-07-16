@@ -1,11 +1,10 @@
 import {dbHelper} from "./db_init.ts";
 import {Result} from "../util/Result.ts";
-import {AudioInfos} from "../types/audio/AudioInfos.ts";
+import {AudioInfos} from "../audio/AudioInfos.ts";
 import {createAlert} from "../util/alert.ts";
-import {AudioRecord} from "../types/audio/AudioRecord.ts";
-import {AudioInfoBuilder} from "../types/audio/AudioInfoBuilder.ts";
-import {FolderInfo} from "../types/FolderInfo.ts";
+import {AudioRecord} from "../audio/AudioRecord.ts";
 import {FolderRecord} from "../types/FolderRecord.ts";
+import {Parsers} from "../plugin/Parsers.ts";
 
 export async function getFolderContent(folderId: number): Promise<Result<AudioInfos[], string>> {
     const db = await dbHelper.init();
@@ -16,8 +15,9 @@ export async function getFolderContent(folderId: number): Promise<Result<AudioIn
     const index = store.index('parent');
     const request: IDBRequest<AudioRecord[]> = index.getAll(folderId);
 
-    request.onsuccess = () => resolve(Result.ok(request.result.map(item => {
-        return AudioInfos.from(item);
+    request.onsuccess = () => resolve(Result.ok(request.result.map(record => {
+        const plugin = Parsers.get(record.plugin) ?? Parsers.LOCAL;
+        return plugin.recover(record);
     })));
 
     request.onerror = () => resolve(Result.err(
@@ -29,12 +29,8 @@ export async function getFolderContent(folderId: number): Promise<Result<AudioIn
     return promise;
 }
 
-export async function createFolder(record: FolderRecord): Promise<void> {
-    const result = await dbHelper.add('folder', {
-        name: record.name,
-        desc: record.desc,
-        cover: record.cover
-    });
+export async function createFolder(name: string, desc: string, cover: string): Promise<void> {
+    const result = await dbHelper.add('folder', {name, desc, cover});
 
     if (result.isErr()) {
         const err = result.unwrapErr();
@@ -50,8 +46,8 @@ export async function createFolder(record: FolderRecord): Promise<void> {
     createAlert('创建成功', 'success')
 }
 
-export async function modifyFolder(folder: FolderInfo): Promise<void> {
-    const result = await dbHelper.update('folder', folder.persistable());
+export async function modifyFolder(folder: FolderRecord): Promise<void> {
+    const result = await dbHelper.update('folder', folder);
     if (result.isErr()) {
         const err = result.unwrapErr();
         console.error(`修改歌单出错: ${err.message}`);
@@ -61,9 +57,9 @@ export async function modifyFolder(folder: FolderInfo): Promise<void> {
     createAlert('修改成功', 'success');
 }
 
-export async function deleteFolder(folderId: number): Promise<Result<null, string>> {
+export async function deleteFolder(folderId: number): Promise<Result<null, Error>> {
     const db = await dbHelper.init();
-    const {promise, resolve} = Promise.withResolvers<Result<null, string>>();
+    const {promise, resolve} = Promise.withResolvers<Result<null, Error>>();
 
     const tx = db.transaction(['folder', 'favor'], 'readwrite');
     const folderStore = tx.objectStore('folder');
@@ -82,25 +78,20 @@ export async function deleteFolder(folderId: number): Promise<Result<null, strin
     }
 
     tx.oncomplete = () => resolve(Result.ok(null));
-    tx.onerror = () => resolve(Result.err(
-        tx.error === null ?
-            'Unknown error at "deleteFolder"' :
-            `Err at "deleteFolder" ${tx.error.name}:${tx.error.message} at\n ${tx.error.stack}`
-    ));
+    tx.onerror = () => resolve(dbHelper.mapErr(tx.error));
 
     return promise;
 }
 
 export async function collectAudio(
     parent: number,
-    info: AudioRecord
+    item: AudioInfos
 ): Promise<AudioInfos | void> {
-    const builder = new AudioInfoBuilder();
-    builder.from(info);
-    builder.parent(parent);
-    const inner = builder.build();
+    const record = item.persistable(parent);
+    const plugin = Parsers.get(item.plugin);
+    plugin?.modify(record);
 
-    const result = await dbHelper.add('favor', inner.persistable());
+    const result = await dbHelper.add('favor', record);
     if (result.isErr()) {
         const err = result.unwrapErr();
         if (err.name === 'ConstraintError') {
@@ -114,19 +105,19 @@ export async function collectAudio(
     }
 
     createAlert('已收藏', 'success');
-    return inner;
+    return item;
 }
 
 export async function collectBatch(
     parent: number,
-    records: Iterable<AudioRecord>
+    items: Iterable<AudioInfos>
 ): Promise<AudioInfos[] | void> {
-    const inners = Iterator.from(records)
-        .map(record => {
-            const builder = new AudioInfoBuilder();
-            builder.from(record);
-            builder.parent(parent);
-            return builder.build();
+    const records = Iterator.from(items)
+        .map(item => {
+            const record = item.persistable(parent);
+            const plugin = Parsers.get(item.plugin);
+            plugin?.modify(record);
+            return {record, item};
         });
 
     const db = await dbHelper.init();
@@ -143,9 +134,9 @@ export async function collectBatch(
         }
     };
 
-    for (const inner of inners) {
-        const request = store.add(inner.persistable());
-        request.onsuccess = () => succeed.push(inner);
+    for (const record of records) {
+        const request = store.add(record.record);
+        request.onsuccess = () => succeed.push(record.item);
         request.onerror = onerror;
     }
 
@@ -167,33 +158,33 @@ export async function collectBatch(
     return succeed;
 }
 
-export async function deCollectAudio(folderId: number, itemId: string): Promise<any> {
+export async function deCollectAudio(parent: number, itemId: string): Promise<any> {
     const db = await dbHelper.init();
+    const {promise, resolve} = Promise.withResolvers<Result<number, Error>>();
 
     const tx = db.transaction('favor', 'readwrite');
     const store = tx.objectStore('favor');
     const index = store.index('parent_uid_index');
 
-    const request = index.getKey([folderId, itemId]);
-
-    const {promise, resolve} = Promise.withResolvers();
+    const request = index.getKey([parent, itemId]);
 
     request.onsuccess = () => {
-        if (request.result == undefined) {
+        const key = request.result as number | undefined;
+        if (key == undefined) {
             createAlert('未找到要取消的收藏项', 'info');
-            resolve(null);
+            resolve(Result.ok(-1));
             return;
         }
 
-        store.delete(request.result);
+        store.delete(key);
         createAlert('已取消收藏', 'success');
-        resolve(request.result);
+        resolve(Result.ok(key));
     };
 
     request.onerror = () => {
         console.error(`删除收藏时出错: ${request.error}`);
         createAlert('出现错误', 'error');
-        resolve(request.error);
+        resolve(dbHelper.mapErr(tx.error));
     };
 
     return promise;
@@ -208,20 +199,20 @@ export async function clearPlayingQueueHistory(): Promise<void> {
 
 /**
  * 更新收藏列表中音频的顺序
- * @param folderId 歌单ID
- * @param records 按新顺序排列的音频信息数组
+ * @param parent 歌单ID
+ * @param items 按新顺序排列的音频信息数组
  */
-export async function updateFavorOrder(folderId: number, records: Iterable<AudioRecord>): Promise<Result<null, string>> {
-    const inners = Iterator.from(records)
-        .map(record => {
-            const builder = new AudioInfoBuilder();
-            builder.from(record);
-            builder.parent(folderId);
-            return builder.build().persistable();
-        })
+export async function updateFavorOrder(parent: number, items: Iterable<AudioInfos>): Promise<Result<void, Error>> {
+    const records = Iterator.from(items)
+        .map(item => {
+            const record = item.persistable(parent);
+            const plugin = Parsers.get(item.plugin);
+            plugin?.modify(record);
+            return record;
+        });
 
     const db = await dbHelper.init();
-    const {promise, resolve} = Promise.withResolvers<Result<null, string>>();
+    const {promise, resolve} = Promise.withResolvers<Result<void, Error>>();
 
     const tx = db.transaction('favor', 'readwrite');
     const store = tx.objectStore('favor');
@@ -229,26 +220,25 @@ export async function updateFavorOrder(folderId: number, records: Iterable<Audio
 
     // 删除该歌单下的所有收藏
     // maybe sortOrder
-    const request = parentIndex.openCursor(IDBKeyRange.only(folderId));
+    const request = parentIndex.openCursor(IDBKeyRange.only(parent));
+    const keys: number[] = [];
     request.onsuccess = () => {
         const cursor = request.result;
         if (cursor) {
+            keys.push(cursor.primaryKey as number);
             cursor.delete();
             cursor.continue();
             return;
         }
-        // 按新顺序添加
-        for (const record of inners) {
-            store.add(record);
-        }
+
+        records.forEach((record, index) => {
+            const key = keys[index] ?? undefined;
+            store.add(record, key);
+        });
     };
 
-    tx.oncomplete = () => resolve(Result.ok(null));
-    tx.onerror = () => resolve(Result.err(
-        tx.error === null ?
-            'Unknown error at "updateFavorOrder"' :
-            `Error at "updateFavorOrder" ${tx.error.name}:${tx.error.message}`
-    ));
+    tx.oncomplete = () => resolve(Result.ok(undefined));
+    tx.onerror = () => resolve(dbHelper.mapErr(tx.error));
 
     return promise;
 }

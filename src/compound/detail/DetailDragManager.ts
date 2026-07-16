@@ -26,11 +26,12 @@ export class DetailDragManager extends BaseCompound {
                 const folder = FolderSystem.ACCESSOR.getChosenId();
                 if (folder === null) return;
 
-                updateFavorOrder(folder, this.context.displayed())
-                    .then(result => result.mapErr(err => {
-                        console.error('更新收藏顺序失败:', err);
+                updateFavorOrder(folder, this.context.displayed()).then(result => {
+                    if (result.isErr()) {
+                        console.error('更新收藏顺序失败:', result.unwrapErr());
                         createAlert('更新顺序失败', 'error');
-                    }));
+                    }
+                });
             }
         };
 

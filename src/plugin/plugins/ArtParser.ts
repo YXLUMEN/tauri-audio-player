@@ -1,6 +1,6 @@
-import {AudioInfos} from "../../types/audio/AudioInfos.ts";
+import {AudioInfos} from "../../audio/AudioInfos.ts";
 import {FormatLyric} from "../../types/Lyric.ts";
-import {StandardAudio} from "../../types/audio/StandardAudio.ts";
+import {StandardAudio} from "../../audio/StandardAudio.ts";
 import {ParserPlugin} from "../ParserPlugin.ts";
 import baseFetch from "../../http/post_methods.ts";
 import {createAlert} from "../../util/alert.ts";
@@ -9,6 +9,8 @@ import {clamp} from "../../util/Math.ts";
 import {ArtAuth} from "../../http/ArtAuth.ts";
 import {appEvent} from "../../event/EventBus.ts";
 import {DetailChange} from "../../event/detail/DetailChange.ts";
+import {StandardInfoBuilder} from "../../audio/StandardInfoBuilder.ts";
+import {AudioRecord, StandardRecord} from "../../audio/AudioRecord.ts";
 
 export class ArtParser extends ParserPlugin {
     private static readonly AUDIO_LISTS_URL: string = 'https://arctic-red-tide.xyz/api/asset/audio_lists';
@@ -23,17 +25,13 @@ export class ArtParser extends ParserPlugin {
     private refresh: boolean = false;
     private searchString: string = '';
 
-    public parse(info: StandardAudio): Promise<StandardAudio | null> {
-        return Promise.resolve(new StandardAudio(
-            info.uid,
-            this.name,
-            this.resolveUrl(info.uid),
-            info.title,
-            info.album,
-            info.artist,
-            info.cover,
-            info.parent
-        ));
+    public parse(item: AudioInfos): Promise<StandardAudio | null> {
+        const builder = new StandardInfoBuilder();
+        builder
+            .from(item)
+            .plugin(this.name)
+            .url(this.resolveUrl(item.uid));
+        return Promise.resolve(builder.build());
     }
 
     public async audios(): Promise<AudioInfos[] | StandardAudio[] | null> {
@@ -183,12 +181,32 @@ export class ArtParser extends ParserPlugin {
         return Promise.resolve();
     }
 
-    public async reAuth(key: string, psd: string): Promise<void> {
-        await this.auth.login(key, psd);
+    public reload(): Promise<boolean> {
+        return this.auth.refresh();
     }
 
-    public load(): Promise<void> {
+    public reAuth(key: string, psd: string): Promise<boolean> {
+        return this.auth.login(key, psd);
+    }
+
+    public init(): Promise<void> {
         return this.auth.loadToken();
+    }
+
+    public modify(record: AudioRecord): AudioRecord {
+        record.url = undefined;
+        return record;
+    }
+
+    public recover(record: StandardRecord): AudioInfos {
+        return new StandardInfoBuilder()
+            .from(record)
+            .plugin(this.name)
+            .title(record.title)
+            .album(record.album)
+            .artist(record.artist)
+            .cover(record.cover)
+            .build();
     }
 }
 

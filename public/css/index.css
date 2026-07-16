@@ -157,8 +157,13 @@ svg, img {
         color: #fff;
     }
 
+    .small-cover {
+        pointer-events: none;
+    }
+
     span {
         padding: 6px;
+        pointer-events: none;
     }
 }
 

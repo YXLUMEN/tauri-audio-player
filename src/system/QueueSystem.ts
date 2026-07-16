@@ -11,8 +11,9 @@ import {PlayQueueBoard} from "../compound/queue/PlayQueueBoard.ts";
 import {UiSystem} from "./UiSystem.ts";
 import {PlayModeAndNextIndex} from "../compound/queue/PlayModeAndNextIndex.ts";
 import {appEvent} from "../event/EventBus.ts";
-import {HighlightCurrent} from "../event/HighlightCurrent.ts";
+import {HighlightCurrent} from "../event/queue/HighlightCurrent.ts";
 import {QueueBoardTitle} from "../compound/queue/QueueBoardTitle.ts";
+import {PlayErrorHandler} from "../compound/PlayErrorHandler.ts";
 
 export class QueueSystem {
     public static QUEUE: QueueCompound;
@@ -22,7 +23,8 @@ export class QueueSystem {
 
     public static init(builder: PageBuilder, compound: AudioCompound): void {
         this.QUEUE = new QueueCompound(compound.audio);
-        this.CONTROLLER = new ControllerCompound(compound.audio, this.QUEUE);
+        const errorHandler = new PlayErrorHandler(compound, this.QUEUE);
+        this.CONTROLLER = new ControllerCompound(compound.audio, this.QUEUE, errorHandler);
         this.MODE = new PlayModeAndNextIndex(compound.audio, this.QUEUE);
         this.BOARD = new PlayQueueBoard();
 

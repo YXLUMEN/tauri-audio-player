@@ -20,7 +20,7 @@ export class CreateFolder extends BaseCompound {
             return;
         }
 
-        await createFolder(folder);
+        await createFolder(folder.name, folder.desc, folder.cover);
         appEvent.emit(new CustomFolderChange());
     }
 

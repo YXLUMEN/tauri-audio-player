@@ -1,5 +1,5 @@
 import {BaseCompound} from "../BaseCompound.ts";
-import {SwitchAudio} from "../../event/SwitchAudio.ts";
+import {SwitchAudio} from "../../event/queue/SwitchAudio.ts";
 import {DragDropManager} from "../../util/DragDropManager.ts";
 import {QueueCompound} from "../queue/QueueCompound.ts";
 import {appEvent} from "../../event/EventBus.ts";

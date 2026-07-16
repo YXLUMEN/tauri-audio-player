@@ -10,4 +10,8 @@ export class DetailAccessor {
     public displayed() {
         return this.context.displayed();
     }
+
+    public needMerge() {
+        this.context.queueMerged = false;
+    }
 }

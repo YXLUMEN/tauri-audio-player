@@ -7,7 +7,6 @@ import {DetailTitle} from "../compound/detail/DetailTitle.ts";
 import {DetailPlayController} from "../compound/detail/DetailPlayController.ts";
 import {DetailAudioCover} from "../compound/detail/DetailAudioCover.ts";
 import {DetailRender} from "../compound/detail/DetailRender.ts";
-import {appEvent} from "../event/EventBus.ts";
 import {DetailControllerTitle} from "../compound/detail/DetailControllerTitle.ts";
 import {DetailDragManager} from "../compound/detail/DetailDragManager.ts";
 import {DetailAccessor} from "../compound/detail/DetailAccessor.ts";
@@ -30,8 +29,6 @@ export class DetailSystem {
         builder.singleton('detail-controller-title', new DetailControllerTitle());
         builder.singleton('detail-drag-manager', new DetailDragManager(context));
         builder.singleton('detail-add-all', new DetailAddAll(context));
-
-        appEvent.on('folder:chosen', () => context.queueMerged = false);
 
         Object.freeze(this);
     }

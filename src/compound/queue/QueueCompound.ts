@@ -1,9 +1,9 @@
-import {AudioInfos} from "../../types/audio/AudioInfos.ts";
+import {AudioInfos} from "../../audio/AudioInfos.ts";
 import {clamp} from "../../util/Math.ts";
-import {SwitchAudio} from "../../event/SwitchAudio.ts";
-import {PlayingQueueChange} from "../../event/PlayingQueueChange.ts";
+import {SwitchAudio} from "../../event/queue/SwitchAudio.ts";
+import {PlayingQueueChange} from "../../event/queue/PlayingQueueChange.ts";
 import {appEvent} from "../../event/EventBus.ts";
-import {HighlightCurrent} from "../../event/HighlightCurrent.ts";
+import {HighlightCurrent} from "../../event/queue/HighlightCurrent.ts";
 
 export class QueueCompound {
     private readonly audio: HTMLAudioElement;
@@ -62,14 +62,14 @@ export class QueueCompound {
 
     public add(audio: AudioInfos): void {
         this.queue.push(audio);
-        this.emit(false);
+        this.emit(true, [audio]);
     }
 
     public push(audios: AudioInfos[]): void {
         for (const audio of audios) {
             this.queue.push(audio);
         }
-        this.emit(false);
+        this.emit(true, audios);
     }
 
     public insert(at: number, ...audios: AudioInfos[]): void {
@@ -132,8 +132,8 @@ export class QueueCompound {
         return this.queue.values();
     }
 
-    private emit(replace: boolean = true): void {
-        appEvent.emit(new PlayingQueueChange(this.queue, replace));
+    private emit(append: boolean = false, array: AudioInfos[] = this.queue): void {
+        appEvent.emit(new PlayingQueueChange(array, append));
     }
 
     public static removeDuplicateInplace(array: AudioInfos[]): void {

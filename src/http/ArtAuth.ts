@@ -27,6 +27,7 @@ export class ArtAuth {
             if (key) this.refreshToken = key.value;
             return;
         }
+        await this.refresh();
     }
 
     public async login(key: string, psd: string): Promise<boolean> {

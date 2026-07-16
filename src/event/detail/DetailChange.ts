@@ -1,4 +1,4 @@
-import {AudioInfos} from "../../types/audio/AudioInfos.ts";
+import {AudioInfos} from "../../audio/AudioInfos.ts";
 
 export class DetailChange extends Event {
     public readonly detailContent: AudioInfos[] | null;

@@ -1,6 +1,6 @@
 import {BaseCompound} from "../BaseCompound.ts";
-import {AudioInfos} from "../../types/audio/AudioInfos.ts";
-import {StandardAudio} from "../../types/audio/StandardAudio.ts";
+import {AudioInfos} from "../../audio/AudioInfos.ts";
+import {StandardAudio} from "../../audio/StandardAudio.ts";
 import {Parsers} from "../../plugin/Parsers.ts";
 import {appEvent} from "../../event/EventBus.ts";
 import {DetailContext} from "../../context/DetailContext.ts";
@@ -9,7 +9,7 @@ import {DetailChange} from "../../event/detail/DetailChange.ts";
 import {DetailAppend} from "../../event/detail/DetailAppend.ts";
 import {DetailRemove} from "../../event/detail/DetailRemove.ts";
 import {DetailMove} from "../../event/detail/DetailMove.ts";
-import {HighlightCurrent} from "../../event/HighlightCurrent.ts";
+import {HighlightCurrent} from "../../event/queue/HighlightCurrent.ts";
 
 export class DetailRender extends BaseCompound {
     private readonly context: DetailContext;
@@ -48,13 +48,14 @@ export class DetailRender extends BaseCompound {
         if (!this.container) return;
 
         const content = this.context.displayed();
+        const start = content.length;
         content.push(...event.infos);
 
-        const frag = await this.createAll(event.infos, content.length - 1);
+        const frag = await this.createAll(event.infos, start);
         this.container.append(frag);
     }
 
-    private async remove(event: DetailRemove) {
+    private remove(event: DetailRemove) {
         if (!this.container) return;
 
         const displayed = this.context.displayed();
@@ -82,7 +83,7 @@ export class DetailRender extends BaseCompound {
         }
     }
 
-    private async move(event: DetailMove) {
+    private move(event: DetailMove) {
         if (!this.container) return;
 
         const container = this.container;

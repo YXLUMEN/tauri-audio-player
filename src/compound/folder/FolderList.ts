@@ -1,14 +1,15 @@
 import {BaseCompound} from "../BaseCompound.ts";
 import {FolderContext} from "../../context/FolderContext.ts";
-import {AudioInfos} from "../../types/audio/AudioInfos.ts";
+import {AudioInfos} from "../../audio/AudioInfos.ts";
 import {getFolderContent} from "../../database/db_util.ts";
 import {Parsers} from "../../plugin/Parsers.ts";
 import {randomCover} from "../../util/random.ts";
 import {appEvent} from "../../event/EventBus.ts";
 import {RenderChosenFolderTitle} from "../../event/RenderChosenFolderTitle.ts";
 import {DetailChange} from "../../event/detail/DetailChange.ts";
-import {FolderChosen} from "../../event/FolderChosen.ts";
 import {FolderRecord} from "../../types/FolderRecord.ts";
+import {DetailSystem} from "../../system/DetailSystem.ts";
+import {ToggleLoading} from "../../event/queue/ToggleLoading.ts";
 
 export class FolderList extends BaseCompound {
     private readonly context: FolderContext;
@@ -17,20 +18,23 @@ export class FolderList extends BaseCompound {
     public constructor(context: FolderContext) {
         super(true);
         this.context = context;
-        this.selectFolder = this.selectFolder.bind(this);
     }
 
     private async selectFolder(event: PointerEvent): Promise<void> {
         if (!this.panel) return;
 
-        const folder = (event.target as HTMLElement).closest('.audio-folder') as HTMLElement;
-        if (!folder || folder === this.context.chosen) return;
+        const folder = event.target;
+        if (folder === this.context.chosen || !(folder instanceof HTMLElement)) return;
+
+        const isFolder = folder.classList.contains('audio-folder');
+        if (!isFolder) return;
 
         this.panel.querySelector('.audio-folder.current')?.classList.remove('current');
         folder.classList.add('current');
 
         this.context.chosen = folder;
-        appEvent.emit(new FolderChosen());
+        DetailSystem.ACCESSOR.needMerge();
+        appEvent.emit(new ToggleLoading(true));
 
         let audios: AudioInfos[] | null;
         const plugin = folder.getAttribute('plugin');
@@ -59,15 +63,19 @@ export class FolderList extends BaseCompound {
         this.panel = target;
 
         const ctrl = new AbortController();
+        const callback = (event: PointerEvent) =>
+            this.selectFolder(event)
+                .finally(() => appEvent.emit(new ToggleLoading(false)));
+
         target.addEventListener('click', async event => {
             const folder = (event.target as HTMLElement).closest('.audio-folder');
             if (!folder) return;
 
             ctrl.abort();
-            await this.selectFolder(event);
+            await callback(event);
             document.getElementById('custom-folder-detail')?.classList.remove('hide');
 
-            target.addEventListener('click', this.selectFolder);
+            target.addEventListener('click', callback);
         }, {signal: ctrl.signal});
 
         return Promise.resolve();

@@ -1,6 +1,7 @@
-import {AudioInfos} from "../types/audio/AudioInfos.ts";
-import {StandardAudio} from "../types/audio/StandardAudio.ts";
+import {AudioInfos} from "../audio/AudioInfos.ts";
+import {StandardAudio} from "../audio/StandardAudio.ts";
 import {FormatLyric} from "../types/Lyric.ts";
+import {AudioRecord} from "../audio/AudioRecord.ts";
 
 export abstract class ParserPlugin {
     public readonly name: string;
@@ -9,7 +10,7 @@ export abstract class ParserPlugin {
         this.name = name;
     }
 
-    public abstract parse(info: AudioInfos): Promise<StandardAudio | null>;
+    public abstract parse(item: AudioInfos): Promise<StandardAudio | null>;
 
     public abstract audios(): Promise<AudioInfos[] | StandardAudio[] | null>;
 
@@ -17,15 +18,27 @@ export abstract class ParserPlugin {
 
     public abstract isAll(): boolean;
 
-    public load(): Promise<void> {
+    public init(): Promise<void> {
         return Promise.resolve();
     }
 
-    public reAuth(_key: string, _psd: string) {
-        return Promise.resolve();
+    public reload(): Promise<boolean> {
+        return Promise.resolve(true);
+    }
+
+    public reAuth(_key: string, _psd: string): Promise<boolean> {
+        return Promise.resolve(true);
     }
 
     public clearCache(): Promise<void> {
         return Promise.resolve();
+    }
+
+    public modify(record: AudioRecord) {
+        return record;
+    }
+
+    public recover(record: AudioRecord) {
+        return new AudioInfos(record.uid, record.plugin, record.url);
     }
 }

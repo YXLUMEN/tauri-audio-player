@@ -62,9 +62,6 @@ export async function run() {
     ctrl.abort();
 
     await HistorySystem.load(audio);
-    document.addEventListener('keydown', event => {
-        if (event.code === 'KeyO') HistorySystem.saveAll(audio);
-    });
 }
 
 function preventEvents(signal: AbortSignal) {

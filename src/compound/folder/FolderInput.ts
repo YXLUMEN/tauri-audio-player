@@ -29,7 +29,7 @@ export class FolderInput extends BaseCompound {
             return null;
         }
 
-        let originId: number;
+        let originId: number | undefined;
         if (!chosenFolder) {
             this.name.value = '';
             this.desc.value = '';
@@ -89,7 +89,7 @@ export class FolderInput extends BaseCompound {
             const name = this.name!.value.trim();
             if (action === 'submit' && name !== '') {
                 resolve(new FolderInfo(
-                    originId,
+                    originId!,
                     name,
                     this.desc!.value,
                     this.cover!.src,

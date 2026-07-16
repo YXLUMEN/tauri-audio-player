@@ -1,10 +1,10 @@
 import {BaseCompound} from "../BaseCompound.ts";
-import {PlayingQueueChange} from "../../event/PlayingQueueChange.ts";
-import {StandardAudio} from "../../types/audio/StandardAudio.ts";
+import {PlayingQueueChange} from "../../event/queue/PlayingQueueChange.ts";
+import {StandardAudio} from "../../audio/StandardAudio.ts";
 import {appEvent} from "../../event/EventBus.ts";
-import {HighlightCurrent} from "../../event/HighlightCurrent.ts";
+import {HighlightCurrent} from "../../event/queue/HighlightCurrent.ts";
 import {PromisePool} from "../../util/PromisePool.ts";
-import {AudioInfos} from "../../types/audio/AudioInfos.ts";
+import {AudioInfos} from "../../audio/AudioInfos.ts";
 import {ParserPlugin} from "../../plugin/ParserPlugin.ts";
 import {Parsers} from "../../plugin/Parsers.ts";
 import {QueueCompound} from "./QueueCompound.ts";
@@ -24,6 +24,7 @@ export class QueueRenderCompound extends BaseCompound {
 
         const queue = event.queue;
         if (queue.length === 0) {
+            if (event.append) return;
             this.queue.replaceChildren();
             return;
         }
@@ -40,6 +41,7 @@ export class QueueRenderCompound extends BaseCompound {
         }
 
         let loadFailed = 0;
+        const start = event.append ? this.queue.childElementCount : 0;
         const parsed = await Promise.allSettled(tasks);
         for (let i = 0; i < parsed.length; i++) {
             let standard: StandardAudio;
@@ -55,13 +57,13 @@ export class QueueRenderCompound extends BaseCompound {
                 standard = result.value;
             }
 
-            frag.appendChild(this.createPlayingQueueItem(i, standard));
+            frag.appendChild(this.createPlayingQueueItem(i + start, standard));
         }
 
-        if (event.replace) {
-            this.queue.replaceChildren(frag);
-        } else {
+        if (event.append) {
             this.queue.append(frag);
+        } else {
+            this.queue.replaceChildren(frag);
         }
 
         appEvent.emit(new HighlightCurrent());

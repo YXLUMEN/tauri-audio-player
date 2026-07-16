@@ -1,5 +1,5 @@
 import {BaseCompound} from "../BaseCompound.ts";
-import {PlayModeChange} from "../../event/PlayModeChange.ts";
+import {PlayModeChange} from "../../event/queue/PlayModeChange.ts";
 import {appEvent} from "../../event/EventBus.ts";
 
 export class ModeIconCompound extends BaseCompound {

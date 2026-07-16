@@ -2,10 +2,9 @@ import {AudioRecord} from "./AudioRecord.ts";
 import {AudioInfos} from "./AudioInfos.ts";
 
 export class AudioInfoBuilder {
-    private _uid?: string;
-    private _plugin?: string;
-    private _url?: string
-    private _parent?: number;
+    protected _uid?: string;
+    protected _plugin?: string;
+    protected _url?: string
 
     public uid(uid: string) {
         this._uid = uid;
@@ -22,19 +21,10 @@ export class AudioInfoBuilder {
         return this;
     }
 
-    public parent(parentId: number) {
-        if (parentId < 0 || !Number.isSafeInteger(parentId)) {
-            throw new Error(`Invalid parent folder id: ${parentId}`);
-        }
-        this._parent = parentId;
-        return this;
-    }
-
     public from(info: AudioRecord): this {
         this._uid = info.uid;
         this._plugin = info.plugin;
         this._url = info.url;
-        this._parent = info.parent;
         return this;
     }
 
@@ -49,8 +39,7 @@ export class AudioInfoBuilder {
         return new AudioInfos(
             this._uid,
             this._plugin,
-            this._url,
-            this._parent,
+            this._url
         );
     }
 }

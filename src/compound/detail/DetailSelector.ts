@@ -2,7 +2,7 @@ import {BaseCompound} from "../BaseCompound.ts";
 import {DetailContext} from "../../context/DetailContext.ts";
 import {QueueSystem} from "../../system/QueueSystem.ts";
 import {appEvent} from "../../event/EventBus.ts";
-import {SwitchAudio} from "../../event/SwitchAudio.ts";
+import {SwitchAudio} from "../../event/queue/SwitchAudio.ts";
 
 export class DetailSelector extends BaseCompound {
     private readonly context: DetailContext;

@@ -1,22 +1,26 @@
 import {QueueCompound} from "./QueueCompound.ts";
 import {appEvent} from "../../event/EventBus.ts";
-import {ToggleLoading} from "../../event/ToggleLoading.ts";
-import {HighlightCurrent} from "../../event/HighlightCurrent.ts";
-import {StandardAudio} from "../../types/audio/StandardAudio.ts";
+import {ToggleLoading} from "../../event/queue/ToggleLoading.ts";
+import {HighlightCurrent} from "../../event/queue/HighlightCurrent.ts";
+import {StandardAudio} from "../../audio/StandardAudio.ts";
 import {AudioTitleChange} from "../../event/AudioTitleChange.ts";
-import {SwitchAudio} from "../../event/SwitchAudio.ts";
+import {SwitchAudio} from "../../event/queue/SwitchAudio.ts";
 import {CoverLoaded} from "../../event/CoverLoaded.ts";
 import {Parsers} from "../../plugin/Parsers.ts";
+import {PlayErrorHandler} from "../PlayErrorHandler.ts";
+import {createAlert} from "../../util/alert.ts";
 
 export class ControllerCompound {
     private readonly audio: HTMLAudioElement;
     private readonly queue: QueueCompound;
+    private readonly errorHandler: PlayErrorHandler;
     private readonly preload: HTMLImageElement;
     private loadCtrl: AbortController | null = null;
 
-    public constructor(audio: HTMLAudioElement, queue: QueueCompound) {
+    public constructor(audio: HTMLAudioElement, queue: QueueCompound, errorHandler: PlayErrorHandler) {
         this.audio = audio;
         this.queue = queue;
+        this.errorHandler = errorHandler;
 
         this.preload = new Image();
         this.preload.decoding = 'async';
@@ -120,9 +124,17 @@ export class ControllerCompound {
 
     private catchErr(err: unknown) {
         if (Error.isError(err)) {
-            if (err.name === 'AbortError') {
-                this.togglePause(true);
-                return;
+            switch (err.name) {
+                case 'AbortError':
+                    this.togglePause(true);
+                    return;
+                case 'NotAllowedError':
+                    this.errorHandler.abort();
+                    console.warn('播放被阻止');
+                    break;
+                case 'NotSupportedError':
+                    this.errorHandler.abort();
+                    createAlert('不支持的音频源', 'warning');
             }
         }
 

@@ -1,36 +1,30 @@
-import {Comparable} from "../Comparable.ts";
-import {stringHashCode} from "../../util/hash.ts";
+import {Comparable} from "../types/Comparable.ts";
+import {stringHashCode} from "../util/hash.ts";
 import {AudioRecord} from "./AudioRecord.ts";
 
-export class AudioInfos implements AudioRecord, Comparable {
+export class AudioInfos implements Comparable {
     public readonly uid: string;
     public readonly plugin: string;
     public readonly url?: string; // 可以直接播放的链接
-    public readonly parent?: number; // 文件夹 id
+
     private hashCache: number | null = null;
 
     public constructor(
         uid: string,
         plugin: string,
         url?: string,
-        parent?: number,
     ) {
         this.uid = uid;
         this.plugin = plugin;
         this.url = url;
-        this.parent = parent;
     }
 
-    public static from(info: AudioRecord) {
-        return new AudioInfos(info.uid, info.plugin, info.url, info.parent);
-    }
-
-    public persistable(): AudioRecord {
+    public persistable(parent?: number): AudioRecord {
         return {
+            parent,
             uid: this.uid,
             plugin: this.plugin,
             url: this.url,
-            parent: this.parent,
         };
     }
 
