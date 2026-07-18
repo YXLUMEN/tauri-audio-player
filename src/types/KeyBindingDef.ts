@@ -1,4 +1,4 @@
-import {ActionKey} from "../builtin/ShortcutAction.ts";
+import {ActionKey} from "../builtin/ActionKey.ts";
 
 export interface KeyBindingDef {
     readonly key: string;

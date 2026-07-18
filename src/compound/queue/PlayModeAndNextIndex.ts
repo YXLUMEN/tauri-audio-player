@@ -59,13 +59,15 @@ export class PlayModeAndNextIndex {
 
         // 顺序播放
         if (this.playMode === 3) {
-            return Math.min(current, max);
+            return Math.min(current + 1, max);
         }
 
-        throw new RangeError('未知的播放模式');
+        console.warn('未知的播放模式', this.playMode);
+        this.playMode = 0;
+        return current;
     }
 
-    // 以后改成分批生成+原地洗牌就行
+    // 以后改成分批生成+原地洗牌+基础偏移就行
     private nextRandom(dir: number): number {
         const len = this.randomList.length;
         if (len === 0) return 0; // 始终返回可能的有效索引

@@ -6,14 +6,14 @@ import {QueueRenderCompound} from "../compound/queue/QueueRenderCompound.ts";
 import {LoadingUi} from "../compound/queue/LoadingUi.ts";
 import {PlayerPlayQueue} from "../compound/player/PlayerPlayQueue.ts";
 import {ShortcutSystem} from "./ShortcutSystem.ts";
-import {ShortcutAction} from "../builtin/ShortcutAction.ts";
 import {PlayQueueBoard} from "../compound/queue/PlayQueueBoard.ts";
 import {UiSystem} from "./UiSystem.ts";
 import {PlayModeAndNextIndex} from "../compound/queue/PlayModeAndNextIndex.ts";
 import {appEvent} from "../event/EventBus.ts";
 import {HighlightCurrent} from "../event/queue/HighlightCurrent.ts";
 import {QueueBoardTitle} from "../compound/queue/QueueBoardTitle.ts";
-import {PlayErrorHandler} from "../compound/PlayErrorHandler.ts";
+import {PlayErrorHandler} from "../compound/queue/PlayErrorHandler.ts";
+import {ActionKey} from "../builtin/ActionKey.ts";
 
 export class QueueSystem {
     public static QUEUE: QueueCompound;
@@ -35,12 +35,12 @@ export class QueueSystem {
         builder.singleton('playing-board-title', new QueueBoardTitle(this.QUEUE));
 
         const dispatcher = ShortcutSystem.DISPATCHER;
-        dispatcher.register(ShortcutAction.PauseAndPlay, () => this.CONTROLLER.togglePause());
-        dispatcher.register(ShortcutAction.QueueShowBoard, () => this.BOARD.toggleBoard());
-        dispatcher.register(ShortcutAction.QueueForward, this.MODE.playNext);
-        dispatcher.register(ShortcutAction.QueueBackward, this.MODE.playPrev);
-        dispatcher.register(ShortcutAction.PlayerPlayMode, this.MODE.switchMode);
-        dispatcher.register(ShortcutAction.QueueHighlightCurrent, () => appEvent.emit(new HighlightCurrent(true)));
+        dispatcher.register(ActionKey.PauseAndPlay, () => this.CONTROLLER.togglePause());
+        dispatcher.register(ActionKey.QueueShowBoard, () => this.BOARD.toggleBoard());
+        dispatcher.register(ActionKey.QueueForward, this.MODE.playNext);
+        dispatcher.register(ActionKey.QueueBackward, this.MODE.playPrev);
+        dispatcher.register(ActionKey.PlayerPlayMode, this.MODE.switchMode);
+        dispatcher.register(ActionKey.QueueHighlightCurrent, () => appEvent.emit(new HighlightCurrent(true)));
 
         UiSystem.CLOSE_PAGE.register({
             priority: 1,

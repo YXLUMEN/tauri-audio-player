@@ -22,30 +22,30 @@ export class Contextmenu extends BaseCompound {
         if (!chosen) return;
         this.actionDispatcher.dispatch(action, this.type, chosen)
             .catch(err => console.error(err));
-        this.type = 0;
+        this.type = ActionType.None;
     }
 
     private chosenElement(target: HTMLElement) {
-        this.type = 0;
+        this.type = ActionType.None;
         if (!this.menu) return;
 
         const row = target.closest('.row');
         if (row && row.isConnected) {
-            this.type = 1;
+            this.type = ActionType.Row;
             this.menu.querySelector('.menu.for-row')?.classList.add('show');
             return row;
         }
 
         const queueRow = target.closest('.queue-row');
         if (queueRow && queueRow.isConnected) {
-            this.type = 2;
+            this.type = ActionType.QueueRow;
             this.menu.querySelector('.menu.for-queue-row')?.classList.add('show');
             return queueRow;
         }
 
         const folder = target.closest('.audio-folder');
         if (folder && folder.isConnected) {
-            this.type = 3;
+            this.type = ActionType.Folder;
             this.menu.querySelector('.menu.for-folder')?.classList.add('show');
             return folder;
         }

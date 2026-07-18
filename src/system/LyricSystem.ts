@@ -7,9 +7,9 @@ import {LyricLoader} from "../compound/lyric/LyricLoader.ts";
 import {LyricTitle} from "../compound/lyric/LyricTitle.ts";
 import {LyricOffset} from "../compound/lyric/LyricOffset.ts";
 import {ShortcutSystem} from "./ShortcutSystem.ts";
-import {ShortcutAction} from "../builtin/ShortcutAction.ts";
 import {appEvent} from "../event/EventBus.ts";
 import {ToggleLyric} from "../event/ToggleLyric.ts";
+import {ActionKey} from "../builtin/ActionKey.ts";
 
 export class LyricSystem {
     public static init(builder: PageBuilder, audio: AudioCompound) {
@@ -23,6 +23,6 @@ export class LyricSystem {
         builder.singleton('lyric-title', new LyricTitle());
         builder.singleton('lyric-offset', new LyricOffset(context));
 
-        ShortcutSystem.DISPATCHER.register(ShortcutAction.PlayerShowLyric, () => appEvent.emit(new ToggleLyric()));
+        ShortcutSystem.DISPATCHER.register(ActionKey.PlayerShowLyric, () => appEvent.emit(new ToggleLyric()));
     }
 }

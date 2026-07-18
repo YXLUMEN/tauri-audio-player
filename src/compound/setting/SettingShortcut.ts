@@ -3,6 +3,7 @@ import {createAlert} from "../../util/alert.ts";
 import {dbHelper} from "../../database/db_init.ts";
 import {ShortcutSystem} from "../../system/ShortcutSystem.ts";
 import {CustomKeyBinding} from "../../types/KeyBindingDef.ts";
+import {ActionKey} from "../../builtin/ActionKey.ts";
 
 export class SettingShortcut extends BaseCompound {
     private pendingAbort: AbortController | null = null;
@@ -18,7 +19,7 @@ export class SettingShortcut extends BaseCompound {
 
         const target = (event.target as HTMLElement).closest('.key');
         if (!target) return;
-        const action = target.getAttribute('data-action');
+        const action = target.getAttribute('data-action') as ActionKey | null;
         if (!action) return;
 
         const ctrl = new AbortController();
@@ -67,7 +68,7 @@ export class SettingShortcut extends BaseCompound {
         const target = (event.target as HTMLElement).closest('.key');
         if (!target) return;
 
-        const action = target.getAttribute('data-action');
+        const action = target.getAttribute('data-action') as ActionKey | null;
         if (!action) return;
 
         const origin = ShortcutSystem.REGISTER.getDefault(action);

@@ -1,13 +1,13 @@
-import {AudioCompound} from "./global/AudioCompound.ts";
-import {QueueCompound} from "./queue/QueueCompound.ts";
-import {createAlert} from "../util/alert.ts";
-import {AudioInfos} from "../audio/AudioInfos.ts";
-import {Parsers} from "../plugin/Parsers.ts";
-import {dbHelper} from "../database/db_init.ts";
-import {KeyPair} from "./setting/TokenSettings.ts";
-import {appEvent} from "../event/EventBus.ts";
-import {SwitchAudio} from "../event/queue/SwitchAudio.ts";
-import {backoffDelay} from "../util/Math.ts";
+import {AudioCompound} from "../global/AudioCompound.ts";
+import {QueueCompound} from "./QueueCompound.ts";
+import {createAlert} from "../../util/alert.ts";
+import {AudioInfos} from "../../audio/AudioInfos.ts";
+import {Parsers} from "../../plugin/Parsers.ts";
+import {dbHelper} from "../../database/db_init.ts";
+import {KeyPair} from "../setting/TokenSettings.ts";
+import {appEvent} from "../../event/EventBus.ts";
+import {SwitchAudio} from "../../event/queue/SwitchAudio.ts";
+import {backoffDelay} from "../../util/Math.ts";
 
 export class PlayErrorHandler {
     private readonly maxRetries = 5;

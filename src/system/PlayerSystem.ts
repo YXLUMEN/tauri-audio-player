@@ -8,13 +8,13 @@ import {PlayerAudioBox} from "../compound/player/PlayerAudioBox.ts";
 import {PlayIconCompound} from "../compound/player/PlayIconCompound.ts";
 import {ModeIconCompound} from "../compound/player/ModeIconCompound.ts";
 import {ShortcutSystem} from "./ShortcutSystem.ts";
-import {ShortcutAction} from "../builtin/ShortcutAction.ts";
 import {PlayerVolume} from "../compound/player/PlayerVolume.ts";
 import {PlayerControllerBtn} from "../compound/player/PlayerControllerBtn.ts";
 import {PlayerTitle} from "../compound/player/PlayerTitle.ts";
 import {AudioTotalTimeRender} from "../compound/player/AudioTotalTimeRender.ts";
 import {QueueSystem} from "./QueueSystem.ts";
 import {UiSystem} from "./UiSystem.ts";
+import {ActionKey} from "../builtin/ActionKey.ts";
 
 export class PlayerSystem {
     public static BACKGROUND: PlayerBackground;
@@ -40,10 +40,10 @@ export class PlayerSystem {
         builder.singleton('total-time', new AudioTotalTimeRender(context));
 
         const dispatcher = ShortcutSystem.DISPATCHER;
-        dispatcher.register(ShortcutAction.PlayerBoardShow, () => background.togglePlayer());
-        dispatcher.register(ShortcutAction.PlayerVolumeIncrease, () => volume.addVolume(0.2));
-        dispatcher.register(ShortcutAction.PlayerVolumeDecrease, () => volume.addVolume(-0.2));
-        dispatcher.register(ShortcutAction.PlayerVolumeMute, () => volume.toggleMuted());
+        dispatcher.register(ActionKey.PlayerBoardShow, () => background.togglePlayer());
+        dispatcher.register(ActionKey.PlayerVolumeIncrease, () => volume.addVolume(0.2));
+        dispatcher.register(ActionKey.PlayerVolumeDecrease, () => volume.addVolume(-0.2));
+        dispatcher.register(ActionKey.PlayerVolumeMute, () => volume.toggleMuted());
 
         UiSystem.CLOSE_PAGE.register({
             priority: 0,

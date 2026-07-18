@@ -1,11 +1,11 @@
 // vite-plugin-file-count.ts
-import type {Plugin} from 'vite'
-import fs from 'node:fs'
-import path from 'node:path'
+import type {Plugin} from 'vite';
+import fs from 'node:fs';
+import path from 'node:path';
 
 interface Options {
     dir: string
-    defineKey?: string
+    defineKey: string
 }
 
 export function publicFileCount(options: Options): Plugin {
@@ -23,7 +23,7 @@ export function publicFileCount(options: Options): Plugin {
                 console.warn(`[public-file-count] 目录不存在: ${targetPath}`);
             }
 
-            config.define![defineKey] = JSON.stringify(count)
+            config.define![defineKey] = JSON.stringify(count);
         },
     }
 }

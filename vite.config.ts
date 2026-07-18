@@ -1,5 +1,6 @@
 import {defineConfig} from "vite";
 import {publicFileCount} from "./vite-plugin/vite-plugin-file-count";
+import InlineEnum from 'unplugin-inline-enum/vite';
 
 // @ts-expect-error process is a node.js global
 const host = process.env.TAURI_DEV_HOST;
@@ -23,6 +24,7 @@ export default defineConfig({
         },
     },
     build: {
+        minify: 'terser',
         terserOptions: {
             compress: {
                 drop_console: true,
@@ -36,6 +38,7 @@ export default defineConfig({
         publicFileCount({
             dir: 'img/audio/cover',
             defineKey: '__INNER_COVER_COUNT__',
-        })
+        }),
+        InlineEnum()
     ],
 });

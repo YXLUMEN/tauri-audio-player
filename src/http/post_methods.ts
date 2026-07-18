@@ -4,7 +4,7 @@ import {Result} from "../util/Result.ts";
 import {AlertCategories} from "../types/AlertCategories.ts";
 
 
-export default async function baseFetch(url: string, opts: AppFetch = {}): Promise<Result<Response, Error>> {
+export default async function baseFetch(url: string, opts?: AppFetch): Promise<Result<Response, Error>> {
     try {
         const options: AppFetch = {
             method: 'POST',
@@ -24,10 +24,10 @@ export default async function baseFetch(url: string, opts: AppFetch = {}): Promi
 
         if (!response.ok && !options.ignore_err?.includes(status)) statusAlert(status);
         return Result.ok(response);
-    } catch (error) {
-        console.error(error);
-        if (error instanceof Error) {
-            return Result.err(error);
+    } catch (err) {
+        console.error(err);
+        if (Error.isError(err)) {
+            return Result.err(err);
         }
         return Result.err(new Error('Fail while fetching resource'));
     }

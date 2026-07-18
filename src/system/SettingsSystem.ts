@@ -1,7 +1,6 @@
 import {PageBuilder} from "../page/PageBuilder.ts";
 import {SettingsPage} from "../compound/setting/SettingsPage.ts";
 import {ShortcutSystem} from "./ShortcutSystem.ts";
-import {ShortcutAction} from "../builtin/ShortcutAction.ts";
 import {UiSystem} from "./UiSystem.ts";
 import {SelectLocalAudio} from "../compound/setting/SelectLocalAudio.ts";
 import {Dsd} from "../compound/setting/dsd.ts";
@@ -11,6 +10,7 @@ import {SettingShortcut} from "../compound/setting/SettingShortcut.ts";
 import {OtherSettings} from "../compound/setting/OtherSettings.ts";
 import {TokenSettings} from "../compound/setting/TokenSettings.ts";
 import {CleanCache} from "../compound/setting/CleanCache.ts";
+import {ActionKey} from "../builtin/ActionKey.ts";
 
 export class SettingsSystem {
     public static PAGE: SettingsPage;
@@ -29,7 +29,7 @@ export class SettingsSystem {
         builder.singleton('token-settings', new TokenSettings());
         builder.singleton('settings-clean-cache', new CleanCache());
 
-        ShortcutSystem.DISPATCHER.register(ShortcutAction.SettingShow, this.PAGE.toggle);
+        ShortcutSystem.DISPATCHER.register(ActionKey.SettingShow, this.PAGE.toggle);
         UiSystem.CLOSE_PAGE.register({
             priority: 2,
             close: this.PAGE.close

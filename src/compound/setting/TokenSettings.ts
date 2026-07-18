@@ -94,7 +94,7 @@ export class TokenSettings extends BaseCompound {
         for (const label of allLabel) {
             const plugin = label.getAttribute('data-plugin');
             if (!plugin) continue;
-            tasks.push(pool.submit(this.loadPlugin, plugin, label));
+            tasks.push(pool.submit(this.loadPlugin, plugin, label as HTMLElement));
         }
 
         let errors = 0;

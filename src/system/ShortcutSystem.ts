@@ -2,11 +2,11 @@ import {ShortcutGuard} from "../compound/shortchut/ShortcutGuard.ts";
 import {ShortcutRegistry} from "../compound/shortchut/ShortcutRegistry.ts";
 import {DefaultShortcuts} from "../builtin/DefaultShortcuts.ts";
 import {ShortcutDispatcher} from "../compound/shortchut/ShortcutDispatcher.ts";
-import {ShortcutAction} from "../builtin/ShortcutAction.ts";
 import {UiSystem} from "./UiSystem.ts";
 import {Parsers} from "../plugin/Parsers.ts";
 import {PageBuilder} from "../page/PageBuilder.ts";
 import {LoadCustomShortcut} from "../compound/shortchut/LoadCustomShortcut.ts";
+import {ActionKey} from "../builtin/ActionKey.ts";
 
 export class ShortcutSystem {
     public static GUARD: ShortcutGuard;
@@ -25,7 +25,7 @@ export class ShortcutSystem {
     }
 
     private static builtin() {
-        this.DISPATCHER.register(ShortcutAction.CloseCurrentPage, UiSystem.CLOSE_PAGE.close);
-        this.DISPATCHER.register(ShortcutAction.UpdateRemoteArt, () => Parsers.ART.loadMore());
+        this.DISPATCHER.register(ActionKey.CloseCurrentPage, UiSystem.CLOSE_PAGE.close);
+        this.DISPATCHER.register(ActionKey.UpdateRemoteArt, () => Parsers.ART.loadMore());
     }
 }

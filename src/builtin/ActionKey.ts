@@ -1,0 +1,16 @@
+export const enum ActionKey {
+    PauseAndPlay = 'queue.pause',
+    QueueForward = 'queue.forward',
+    QueueBackward = 'queue.backward',
+    QueueHighlightCurrent = 'queue.highlight',
+    QueueShowBoard = 'queue.show',
+    PlayerVolumeIncrease = 'player.volume.increase',
+    PlayerVolumeDecrease = 'player.volume.decrease',
+    PlayerVolumeMute = 'player.volume.mute',
+    PlayerPlayMode = 'player.mode',
+    PlayerShowLyric = 'player.lyric.show',
+    PlayerBoardShow = 'player.show',
+    CloseCurrentPage = 'ui.close',
+    SettingShow = 'setting.show',
+    UpdateRemoteArt = 'queue.remote.art.update',
+}

@@ -1,5 +1,5 @@
-import {ActionKey} from "../../builtin/ShortcutAction.ts";
 import {CustomKeyBinding, KeyBindingDef} from "../../types/KeyBindingDef.ts";
+import {ActionKey} from "../../builtin/ActionKey.ts";
 
 export class ShortcutRegistry {
     private readonly actions: Map<ActionKey, string> = new Map();

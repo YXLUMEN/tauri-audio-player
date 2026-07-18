@@ -7,7 +7,7 @@ import {AudioTitleChange} from "../../event/AudioTitleChange.ts";
 import {SwitchAudio} from "../../event/queue/SwitchAudio.ts";
 import {CoverLoaded} from "../../event/CoverLoaded.ts";
 import {Parsers} from "../../plugin/Parsers.ts";
-import {PlayErrorHandler} from "../PlayErrorHandler.ts";
+import {PlayErrorHandler} from "./PlayErrorHandler.ts";
 import {createAlert} from "../../util/alert.ts";
 
 export class ControllerCompound {

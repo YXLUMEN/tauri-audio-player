@@ -1,8 +1,8 @@
 import {Consumer} from "../../types/types.ts";
 import {ShortcutRegistry} from "./ShortcutRegistry.ts";
 import {ShortcutGuard} from "./ShortcutGuard.ts";
-import {ActionKey} from "../../builtin/ShortcutAction.ts";
 import {CallDisposable} from "../../types/CallDisposable.ts";
+import {ActionKey} from "../../builtin/ActionKey.ts";
 
 export class ShortcutDispatcher {
     private readonly guard: ShortcutGuard;
