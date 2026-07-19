@@ -2,6 +2,7 @@ import {BaseCompound} from "../BaseCompound.ts";
 import {LyricContext} from "../../context/LyricContext.ts";
 import {Consumer} from "../../types/types.ts";
 import {debounce} from "../../util/util.ts";
+import {clamp} from "../../util/Math.ts";
 
 export class LyricScroll extends BaseCompound {
     private readonly context: LyricContext;
@@ -24,12 +25,16 @@ export class LyricScroll extends BaseCompound {
 
         this.context.syncLyricEnable = false;
 
-        const currentTransformValue = Number(this.lyricContent.style.transform.match(/-?\d+/)?.[0] || -40);
-        let deltaLine = event.deltaY > 0 ? 2 : -2 * this.context.lineOffset + currentTransformValue;
+        const value = this.lyricContent.style.getPropertyValue('--lyric-scroll') ?? 0;
+        let currentY = Number(value);
+        if (!Number.isFinite(currentY)) {
+            currentY = 0;
+        }
 
-        deltaLine = Math.max(Math.min(deltaLine, 0), this.context.maxScrollHeight);
+        let deltaLine = (event.deltaY > 0 ? 2 : -2) * this.context.lineOffset + currentY;
+        deltaLine = clamp(deltaLine, this.context.maxScrollHeight, 0);
 
-        this.lyricContent.style.transform = `translateY(${deltaLine}px)`;
+        this.lyricContent.style.setProperty('--lyric-scroll', deltaLine.toString());
         this.enableScrollLyric();
     }
 
@@ -38,13 +43,13 @@ export class LyricScroll extends BaseCompound {
 
         target.addEventListener('wheel', this.wheelRollingLyrics, {passive: true});
 
-        this.lyricContent.addEventListener('click', (event) => {
+        this.lyricContent.addEventListener('click', event => {
             if (this.context.lyrArray.length <= 1) return;
             const target = (event.target as HTMLElement).closest('.text');
             if (!target) return;
 
             const leap = Number(target.getAttribute('time'));
-            if (isNaN(leap)) return;
+            if (!Number.isFinite(leap)) return;
             this.context.audio.currentTime = leap;
         });
 

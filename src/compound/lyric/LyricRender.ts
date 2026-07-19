@@ -77,7 +77,8 @@ export class LyricRender extends BaseCompound {
         allLyricRows[currentLine]?.classList.add('highlight-line');
 
         if (syncLyricEnable && currentLine > centralPos) {
-            this.lyricContent.style.transform = `translateY(${(currentLine - centralPos) * lineOffset}px)`
+            const scroll = (currentLine - centralPos) * lineOffset;
+            this.lyricContent.style.setProperty('--lyric-scroll', scroll.toString());
         }
     }
 
@@ -100,7 +101,7 @@ export class LyricRender extends BaseCompound {
         }
 
         if (lyrArray[1]?.time >= currentTime) {
-            if (syncLyricEnable) this.lyricContent.style.transform = 'translateY(0)';
+            if (syncLyricEnable) this.lyricContent.style.setProperty('--lyric-scroll', '0');
             this.context.currentLine = 0;
             this.highlightLine();
             return;
@@ -114,7 +115,7 @@ export class LyricRender extends BaseCompound {
             if (currentLyricTime <= currentTime && currentTime < nextLyricTime) {
                 this.context.currentLine = i;
                 if (syncLyricEnable && i < centralPos * 2) {
-                    this.lyricContent.style.transform = 'translateY(0)';
+                    this.lyricContent.style.setProperty('--lyric-scroll', '0');
                 }
                 break;
             }
@@ -150,7 +151,7 @@ export class LyricRender extends BaseCompound {
     private resetLyricPos(): void {
         if (this.lyricContent) {
             this.lyricContent.querySelector('.highlight-line')?.setAttribute('class', '');
-            this.lyricContent.style.transform = 'translateY(0)';
+            this.lyricContent.style.setProperty('--lyric-scroll', '0');
         }
 
         this.context.currentLine = 0;
@@ -172,7 +173,7 @@ export class LyricRender extends BaseCompound {
         divText.appendChild(exSpan);
 
         const timeSpan = document.createElement('span');
-        timeSpan.textContent = transTime(time + offset);
+        timeSpan.textContent = transTime(time - offset);
         timeSpan.classList.add('time');
 
         item.append(divText, timeSpan);

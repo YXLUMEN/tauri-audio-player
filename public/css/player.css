@@ -127,6 +127,7 @@
 
 .lyric-content {
     & {
+        --lyric-scroll: 0;
         position: relative;
         display: flex;
         flex-direction: column;
@@ -136,6 +137,7 @@
         user-select: none;
         gap: 25px;
         transition: transform 200ms ease-in-out;
+        transform: translateY(calc(var(--lyric-scroll) * 1px));
     }
 
     .lyric-item {
@@ -143,6 +145,8 @@
         height: 25px;
         line-height: 25px;
         opacity: .4;
+        content-visibility: auto;
+        contain-intrinsic-size: auto 25px;
     }
 
     .time {

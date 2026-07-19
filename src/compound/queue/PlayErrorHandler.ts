@@ -60,6 +60,11 @@ export class PlayErrorHandler {
                 createAlert('音频解码失败', 'warning');
                 return;
             case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                const current = this.queue.current();
+                if (current?.plugin === 'art') {
+                    void this.retry();
+                    return;
+                }
                 this.abort();
                 createAlert('音频源失效', 'warning');
                 return;
