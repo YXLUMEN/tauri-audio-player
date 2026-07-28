@@ -11,12 +11,14 @@ import {DetailControllerTitle} from "../compound/detail/DetailControllerTitle.ts
 import {DetailDragManager} from "../compound/detail/DetailDragManager.ts";
 import {DetailAccessor} from "../compound/detail/DetailAccessor.ts";
 import {DetailAddAll} from "../compound/detail/DetailAddAll.ts";
+import {QueueSystem} from "./QueueSystem.ts";
+import {FolderSystem} from "./FolderSystem.ts";
 
 export class DetailSystem {
     public static ACCESSOR: DetailAccessor;
 
     public static init(builder: PageBuilder, audio: AudioCompound) {
-        const context = new DetailContext(audio.audio);
+        const context = new DetailContext(audio, QueueSystem.QUEUE);
 
         this.ACCESSOR = new DetailAccessor(context);
 
@@ -27,7 +29,7 @@ export class DetailSystem {
         builder.singleton('detail-title', new DetailTitle());
         builder.singleton('detail-cover', new DetailAudioCover(context));
         builder.singleton('detail-controller-title', new DetailControllerTitle());
-        builder.singleton('detail-drag-manager', new DetailDragManager(context));
+        builder.singleton('detail-drag-manager', new DetailDragManager(context, FolderSystem.ACCESSOR));
         builder.singleton('detail-add-all', new DetailAddAll(context));
 
         Object.freeze(this);

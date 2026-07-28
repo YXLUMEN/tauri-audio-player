@@ -1,6 +1,7 @@
 import {check} from '@tauri-apps/plugin-updater';
 import {relaunch} from '@tauri-apps/plugin-process';
 import {createConfirm, playSound} from "../util/alert.ts";
+import {AlertCategories} from "../types/AlertCategories.ts";
 
 type UpdateResult = 'NoUpdate' | 'UserCancel' | 'Updated' | 'UpdatedAndReboot';
 
@@ -41,7 +42,10 @@ export async function updateApp(callable?: Function): Promise<UpdateResult> {
     });
 
     console.log('update installed');
-    const restart = await createConfirm('更新完成, 是否立即重启软件', {flag: 'update', category: 'success'});
+    const restart = await createConfirm('更新完成, 是否立即重启软件', {
+        flag: 'update',
+        category: AlertCategories.SUCCESS
+    });
     if (!restart) {
         updateIco.classList.add('hide');
         return 'Updated';

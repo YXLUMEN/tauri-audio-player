@@ -4,6 +4,7 @@ import {dbHelper} from "../../database/db_init.ts";
 import {ShortcutSystem} from "../../system/ShortcutSystem.ts";
 import {CustomKeyBinding} from "../../types/KeyBindingDef.ts";
 import {ActionKey} from "../../builtin/ActionKey.ts";
+import {AlertCategories} from "../../types/AlertCategories.ts";
 
 export class SettingShortcut extends BaseCompound {
     private pendingAbort: AbortController | null = null;
@@ -46,14 +47,14 @@ export class SettingShortcut extends BaseCompound {
 
             const key = ShortcutSystem.REGISTER.toLookupKey(event);
             if (ShortcutSystem.REGISTER.isConflict(key)) {
-                createAlert('按键重复', 'warning');
+                createAlert('按键重复', AlertCategories.WARN);
                 ctrl.abort();
                 return;
             }
 
             const ok = ShortcutSystem.REGISTER.override(key, action);
             if (!ok) {
-                createAlert('未发现此操作', 'warning');
+                createAlert('未发现此操作', AlertCategories.WARN);
                 ctrl.abort();
                 return;
             }
@@ -80,7 +81,7 @@ export class SettingShortcut extends BaseCompound {
 
         const result = await dbHelper.delete('shortcuts', action);
         if (result.isErr()) {
-            createAlert(`重置时出现错误`, 'warning');
+            createAlert(`重置时出现错误`, AlertCategories.WARN);
             console.error(result.unwrapErr());
         }
     }

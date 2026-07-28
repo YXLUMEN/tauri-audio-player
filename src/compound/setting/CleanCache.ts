@@ -3,6 +3,7 @@ import {throttlePromise} from "../../util/util.ts";
 import {createAlert, createConfirm} from "../../util/alert.ts";
 import {clearPlayingQueueHistory} from "../../database/db_util.ts";
 import {Parsers} from "../../plugin/Parsers.ts";
+import {AlertCategories} from "../../types/AlertCategories.ts";
 
 export class CleanCache extends BaseCompound {
     public constructor() {
@@ -22,13 +23,13 @@ export class CleanCache extends BaseCompound {
                     for (const entry of Parsers.iter()) {
                         await entry[1].clearCache();
                     }
-                    createAlert('已清理解析缓存', 'success');
+                    createAlert('已清理解析缓存', AlertCategories.SUCCESS);
                     return;
                 }
                 case 'clean-history': {
                     localStorage.removeItem('playing');
                     void clearPlayingQueueHistory();
-                    createAlert('已清除播放历史', 'success');
+                    createAlert('已清除播放历史', AlertCategories.SUCCESS);
                     return;
                 }
             }

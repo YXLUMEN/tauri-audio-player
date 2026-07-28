@@ -11,6 +11,7 @@ import {appEvent} from "../../event/EventBus.ts";
 import {DetailChange} from "../../event/detail/DetailChange.ts";
 import {StandardInfoBuilder} from "../../audio/StandardInfoBuilder.ts";
 import {AudioRecord, StandardRecord} from "../../audio/AudioRecord.ts";
+import {AlertCategories} from "../../types/AlertCategories.ts";
 
 export class ArtParser extends ParserPlugin {
     private static readonly AUDIO_LISTS_URL: string = 'https://arctic-red-tide.xyz/api/asset/audio_lists';
@@ -61,7 +62,7 @@ export class ArtParser extends ParserPlugin {
             .unwrap();
 
         if (json == null) {
-            createAlert('未能获取播放列表', 'warning');
+            createAlert('未能获取播放列表', AlertCategories.WARN);
             return null;
         }
 

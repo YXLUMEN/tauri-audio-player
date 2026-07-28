@@ -5,6 +5,7 @@ import {createAlert} from "../util/alert.ts";
 import {AudioRecord} from "../audio/AudioRecord.ts";
 import {FolderRecord} from "../types/FolderRecord.ts";
 import {Parsers} from "../plugin/Parsers.ts";
+import {AlertCategories} from "../types/AlertCategories.ts";
 
 export async function getFolderContent(folderId: number): Promise<Result<AudioInfos[], string>> {
     const db = await dbHelper.init();
@@ -35,15 +36,15 @@ export async function createFolder(name: string, desc: string, cover: string): P
     if (result.isErr()) {
         const err = result.unwrapErr();
         if (err.name === 'ConstraintError') {
-            createAlert('歌单名称重复', 'warning')
+            createAlert('歌单名称重复', AlertCategories.WARN)
             return;
         }
         console.error(`创建歌单时出错: ${err.message}`);
-        createAlert('创建失败', 'error');
+        createAlert('创建失败', AlertCategories.ERROR);
         return;
     }
 
-    createAlert('创建成功', 'success')
+    createAlert('创建成功', AlertCategories.SUCCESS)
 }
 
 export async function modifyFolder(folder: FolderRecord): Promise<void> {
@@ -51,10 +52,10 @@ export async function modifyFolder(folder: FolderRecord): Promise<void> {
     if (result.isErr()) {
         const err = result.unwrapErr();
         console.error(`修改歌单出错: ${err.message}`);
-        createAlert('修改失败', 'error');
+        createAlert('修改失败', AlertCategories.ERROR);
         return;
     }
-    createAlert('修改成功', 'success');
+    createAlert('修改成功', AlertCategories.SUCCESS);
 }
 
 export async function deleteFolder(folderId: number): Promise<Result<null, Error>> {
@@ -95,16 +96,16 @@ export async function collectAudio(
     if (result.isErr()) {
         const err = result.unwrapErr();
         if (err.name === 'ConstraintError') {
-            createAlert('重复收藏', 'warning');
+            createAlert('重复收藏', AlertCategories.WARN);
             return;
         }
 
         console.error(`收藏时出错: ${err.message}`);
-        createAlert('收藏失败', 'error');
+        createAlert('收藏失败', AlertCategories.ERROR);
         return;
     }
 
-    createAlert('已收藏', 'success');
+    createAlert('已收藏', AlertCategories.SUCCESS);
     return item;
 }
 
@@ -150,11 +151,11 @@ export async function collectBatch(
 
     if (result.isErr()) {
         console.error('收藏时出错', result.unwrapErr());
-        createAlert('收藏失败', 'error');
+        createAlert('收藏失败', AlertCategories.ERROR);
         return;
     }
 
-    createAlert('收藏完成', 'success');
+    createAlert('收藏完成', AlertCategories.SUCCESS);
     return succeed;
 }
 
@@ -171,19 +172,19 @@ export async function deCollectAudio(parent: number, itemId: string): Promise<an
     request.onsuccess = () => {
         const key = request.result as number | undefined;
         if (key == undefined) {
-            createAlert('未找到要取消的收藏项', 'info');
+            createAlert('未找到要取消的收藏项', AlertCategories.INFO);
             resolve(Result.ok(-1));
             return;
         }
 
         store.delete(key);
-        createAlert('已取消收藏', 'success');
+        createAlert('已取消收藏', AlertCategories.SUCCESS);
         resolve(Result.ok(key));
     };
 
     request.onerror = () => {
         console.error(`删除收藏时出错: ${request.error}`);
-        createAlert('出现错误', 'error');
+        createAlert('出现错误', AlertCategories.ERROR);
         resolve(dbHelper.mapErr(tx.error));
     };
 

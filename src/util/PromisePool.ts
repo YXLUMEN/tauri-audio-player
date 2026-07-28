@@ -1,7 +1,8 @@
-export class PromisePool {
-    private readonly activeTasks: Set<Promise<unknown>> = new Set();
+export class PromisePool<T = void> implements AsyncDisposable {
+    private readonly activeTasks: Set<Promise<T>> = new Set();
+    private queue: Promise<T>[] | null = null;
 
-    private readonly maxConcurrentTasks: number = 8;
+    private readonly maxTasks: number = 8;
     private readonly ctrl: AbortController = new AbortController();
 
     private defaultTimeout: number = 0;
@@ -10,7 +11,7 @@ export class PromisePool {
         if (!Number.isInteger(maxConcurrentTasks) || maxConcurrentTasks < 1) {
             throw new Error('maxConcurrentTasks must be a positive integer');
         }
-        this.maxConcurrentTasks = maxConcurrentTasks;
+        this.maxTasks = maxConcurrentTasks;
     }
 
     /**
@@ -18,7 +19,7 @@ export class PromisePool {
      * @returns {Promise} 包装后的任务Promise
      * @throws {Error} 如果池已被abort
      */
-    public async submit<T, U extends unknown[]>(
+    public async submit<U extends unknown[]>(
         callback: (...args: U) => T | PromiseLike<T>,
         ...args: U
     ): Promise<Awaited<T>> {
@@ -26,22 +27,51 @@ export class PromisePool {
             throw new Error("Pool aborted");
         }
 
-        while (this.activeTasks.size >= this.maxConcurrentTasks) {
-            await Promise.race(this.activeTasks);
-            if (this.ctrl.signal.aborted) {
-                throw new Error("Pool aborted");
+        while (this.activeTasks.size >= this.maxTasks) {
+            this.shouldAbort();
+            try {
+                await Promise.race(this.activeTasks);
+            } catch (_) {
             }
+            this.shouldAbort();
         }
 
         return this.executeTask(callback, ...args);
     }
 
-    private executeTask<T, U extends unknown[]>(
+    /**
+     * 推入任务队列,使用 "join" 方法等待所有结果返回
+     * @see {join}
+     * */
+    public spawn<U extends unknown[]>(
+        callback: (...args: U) => T | PromiseLike<T>,
+        ...args: U
+    ): void {
+        const feature = this.submit(callback, ...args);
+        if (!this.queue) this.queue = [];
+        this.queue.push(feature);
+    }
+
+    public join(): Promise<PromiseSettledResult<T>[]> {
+        if (this.queue === null) return Promise.resolve([]);
+        const current = this.queue;
+        this.queue = null;
+        return Promise.allSettled(current);
+    }
+
+    private shouldAbort() {
+        const signal = this.ctrl.signal;
+        if (!signal.aborted) return;
+        if (signal.reason === 'soft') return;
+
+        throw new Error("Pool aborted");
+    }
+
+    private executeTask<U extends unknown[]>(
         callback: (...args: U) => T | PromiseLike<T>,
         ...args: U
     ): Promise<Awaited<T>> {
         const rawPromise = Promise.try(callback, ...args);
-        // 使用包装函数将 rawPromise 与 timeout 和 abort 机制结合
         const wrappedPromise = this.withTimeoutAndAbort(rawPromise)
             .finally(() => this.activeTasks.delete(wrappedPromise));
         this.activeTasks.add(wrappedPromise);
@@ -102,16 +132,20 @@ export class PromisePool {
      * 全局中断池中任务.后续提交将立即报错,且所有包装中的任务会因abort而reject.
      * 注意: 对于已启动的异步操作,若内部不支持abort则不能真正取消其执行.
      */
-    public abort() {
+    public abort(wait: boolean = true) {
         if (this.ctrl.signal.aborted) return;
-        this.ctrl.abort();
+        this.ctrl.abort(wait ? 'soft' : 'hard');
+    }
+
+    public taskCounts() {
+        return this.queue === null ? this.activeCount() : this.queue.length;
     }
 
     /**
      * 获取当前活跃的任务数
      * @returns {number}
      */
-    public get activeTaskCount(): number {
+    public activeCount(): number {
         return this.activeTasks.size;
     }
 
@@ -119,11 +153,20 @@ export class PromisePool {
      * 获取并发上限
      * @returns {number}
      */
-    public getMaxConcurrentTasks(): number {
-        return this.maxConcurrentTasks;
+    public getMaxTasks(): number {
+        return this.maxTasks;
     }
 
     public signal() {
         return this.ctrl.signal;
+    }
+
+    public async [Symbol.asyncDispose](): Promise<void> {
+        if (this.queue) {
+            await Promise.allSettled(this.queue);
+            this.queue.length = 0;
+        }
+        await Promise.allSettled(this.activeTasks);
+        this.activeTasks.clear();
     }
 }

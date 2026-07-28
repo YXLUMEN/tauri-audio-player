@@ -6,6 +6,8 @@ import {FolderList} from "../compound/folder/FolderList.ts";
 import {CreateFolder} from "../compound/folder/CreateFolder.ts";
 import {CustomFolderRender} from "../compound/folder/CustomFolderRender.ts";
 import {FolderAccessor} from "../compound/folder/FolderAccessor.ts";
+import {QueueBoardTitle} from "../compound/queue/QueueBoardTitle.ts";
+import {QueueSystem} from "./QueueSystem.ts";
 
 export class FolderSystem {
     public static ACCESSOR: FolderAccessor;
@@ -24,6 +26,7 @@ export class FolderSystem {
         builder.singleton('detail-folder-input', this.INPUT);
         builder.singleton('create-folder', new CreateFolder(this.INPUT));
         builder.singleton('custom-folder-render', new CustomFolderRender(context));
+        builder.singleton('playing-board-title', new QueueBoardTitle(QueueSystem.QUEUE, this.POPUP));
 
         Object.freeze(this);
     }

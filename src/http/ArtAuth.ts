@@ -2,6 +2,7 @@ import {Pair} from "../types/types.ts";
 import {dbHelper} from "../database/db_init.ts";
 import baseFetch from "./post_methods.ts";
 import {createAlert} from "../util/alert.ts";
+import {AlertCategories} from "../types/AlertCategories.ts";
 
 export class ArtAuth {
     private static readonly AUTH_URL: string = 'https://arctic-red-tide.xyz/api/auth';
@@ -62,17 +63,17 @@ export class ArtAuth {
 
         const json = await result.unwrap().json();
         if (!json) {
-            createAlert('无法连接认证服务器', 'warning');
+            createAlert('无法连接认证服务器', AlertCategories.WARN);
             return false;
         }
 
         if (json['status'] === 2013) {
-            createAlert('Token 失效', 'warning');
+            createAlert('Token 失效', AlertCategories.WARN);
             return false;
         }
 
         if (json['status'] !== 1016) {
-            createAlert('认证失败', 'warning');
+            createAlert('认证失败', AlertCategories.WARN);
             return false;
         }
 

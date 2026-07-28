@@ -1,16 +1,39 @@
 import {ActionType} from "./ActionType.ts";
 import {appEvent} from "../../event/EventBus.ts";
 import {SwitchAudio} from "../../event/queue/SwitchAudio.ts";
-import {QueueSystem} from "../../system/QueueSystem.ts";
 import {createAlert, createConfirm} from "../../util/alert.ts";
 import {collectAudio, deCollectAudio, deleteFolder, modifyFolder} from "../../database/db_util.ts";
 import {CustomFolderChange} from "../../event/CustomFolderChange.ts";
-import {DetailSystem} from "../../system/DetailSystem.ts";
-import {FolderSystem} from "../../system/FolderSystem.ts";
 import {DetailAppend} from "../../event/detail/DetailAppend.ts";
 import {DetailRemove} from "../../event/detail/DetailRemove.ts";
+import {AlertCategories} from "../../types/AlertCategories.ts";
+import {QueueCompound} from "../queue/QueueCompound.ts";
+import {DetailAccessor} from "../detail/DetailAccessor.ts";
+import {FolderChosenPopup} from "../folder/FolderChosenPopup.ts";
+import {FolderAccessor} from "../folder/FolderAccessor.ts";
+import {FolderInput} from "../folder/FolderInput.ts";
 
 export class MenuActionDispatcher {
+    private readonly queue: QueueCompound;
+    private readonly detail: DetailAccessor;
+    private readonly folder: FolderAccessor;
+    private readonly popup: FolderChosenPopup;
+    private readonly input: FolderInput;
+
+    public constructor(
+        queue: QueueCompound,
+        detail: DetailAccessor,
+        popup: FolderChosenPopup,
+        folder: FolderAccessor,
+        input: FolderInput
+    ) {
+        this.queue = queue;
+        this.detail = detail;
+        this.popup = popup;
+        this.folder = folder;
+        this.input = input;
+    }
+
     public async dispatch(action: string, type: ActionType, element: Element) {
         switch (type) {
             case ActionType.Row:
@@ -35,41 +58,41 @@ export class MenuActionDispatcher {
                 break;
             }
             case 'add-to-queue': {
-                const info = DetailSystem.ACCESSOR.displayed()[index];
+                const info = this.detail.displayed()[index];
                 if (!info) return;
 
-                QueueSystem.QUEUE.add(info);
-                createAlert('已添加至队列', 'success');
+                this.queue.add(info);
+                createAlert('已添加至队列', AlertCategories.SUCCESS);
                 break;
             }
             case 'next-play': {
-                const info = DetailSystem.ACCESSOR.displayed()[index];
+                const info = this.detail.displayed()[index];
                 if (!info) return;
 
-                QueueSystem.QUEUE.insert(QueueSystem.QUEUE.index() + 1, info);
-                createAlert('将在下一曲播放', 'success');
+                this.queue.insert(this.queue.index() + 1, info);
+                createAlert('将在下一曲播放', AlertCategories.SUCCESS);
                 break;
             }
             case 'collect': {
-                const folder = await FolderSystem.POPUP.select();
-                const info = DetailSystem.ACCESSOR.displayed()[index];
+                const folder = await this.popup.select();
+                const info = this.detail.displayed()[index];
 
                 if (!folder || !info) break;
                 const inner = await collectAudio(folder, info);
                 if (!inner) return;
 
-                if (FolderSystem.ACCESSOR.isId(folder)) {
+                if (this.folder.isId(folder)) {
                     appEvent.emit(new DetailAppend(inner));
                 }
                 break;
             }
             case 'de-collect': {
-                const folder = FolderSystem.ACCESSOR.getChosen();
+                const folder = this.folder.getChosen();
                 if (folder?.getAttribute('plugin')) return;
 
                 const folderId = folder?.getAttribute('data-folder-id');
                 if (!folder) {
-                    createAlert('不是合法的文件夹', 'warning');
+                    createAlert('不是合法的文件夹', AlertCategories.WARN);
                     return;
                 }
 
@@ -93,25 +116,25 @@ export class MenuActionDispatcher {
                 appEvent.emit(new SwitchAudio(index));
                 break;
             case 'next-play':
-                QueueSystem.QUEUE.move(index, QueueSystem.QUEUE.index());
+                this.queue.move(index, this.queue.index());
                 break;
             case 'de-play':
-                QueueSystem.QUEUE.remove(index);
+                this.queue.remove(index);
                 break;
             case 'collect': {
-                const folder = await FolderSystem.POPUP.select();
+                const folder = await this.popup.select();
                 if (!folder) return;
 
-                const info = QueueSystem.QUEUE.at(index);
+                const info = this.queue.at(index);
                 if (!info) {
-                    createAlert('无效的选项', 'warning');
+                    createAlert('无效的选项', AlertCategories.WARN);
                     return;
                 }
 
                 const inner = await collectAudio(folder, info);
                 if (!inner) return;
 
-                if (FolderSystem.ACCESSOR.isId(folder)) {
+                if (this.folder.isId(folder)) {
                     appEvent.emit(new DetailAppend(inner));
                 }
             }
@@ -124,7 +147,7 @@ export class MenuActionDispatcher {
         if (!Number.isSafeInteger(id)) return;
 
         if (action === 'mod-folder') {
-            const folder = await FolderSystem.INPUT.inputFolderInfos(id);
+            const folder = await this.input.inputFolderInfos(id);
             if (!folder) return;
             await modifyFolder(folder);
         } else if (action === 'delete-folder') {

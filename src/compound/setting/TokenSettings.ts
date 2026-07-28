@@ -4,6 +4,7 @@ import {createAlert} from "../../util/alert.ts";
 import {Parsers} from "../../plugin/Parsers.ts";
 import {PromisePool} from "../../util/PromisePool.ts";
 import {clamp} from "../../util/Math.ts";
+import {AlertCategories} from "../../types/AlertCategories.ts";
 
 export class TokenSettings extends BaseCompound {
     private pending = false;
@@ -47,7 +48,7 @@ export class TokenSettings extends BaseCompound {
         if (result.isErr()) {
             const err = result.unwrapErr();
             console.error(err);
-            createAlert(`设置失败: ${err.message}`, 'error');
+            createAlert(`设置失败: ${err.message}`, AlertCategories.ERROR);
             this.pending = false;
             return;
         }
@@ -59,7 +60,7 @@ export class TokenSettings extends BaseCompound {
         }
 
         await instance.reAuth(key, psd);
-        createAlert(`已设置 "${plugin}" API`, 'success');
+        createAlert(`已设置 "${plugin}" API`, AlertCategories.SUCCESS);
         this.pending = false;
     }
 
@@ -88,17 +89,16 @@ export class TokenSettings extends BaseCompound {
         const allLabel = target.querySelectorAll('[data-plugin]');
         if (allLabel.length === 0) return;
 
-        const tasks: Promise<PairWithLabel | void>[] = [];
-        const pool = new PromisePool(clamp(allLabel.length, 1, 6));
+        const pool = new PromisePool<PairWithLabel | void>(clamp(allLabel.length, 1, 6));
 
         for (const label of allLabel) {
             const plugin = label.getAttribute('data-plugin');
             if (!plugin) continue;
-            tasks.push(pool.submit(this.loadPlugin, plugin, label as HTMLElement));
+            pool.spawn(this.loadPlugin, plugin, label as HTMLElement);
         }
 
         let errors = 0;
-        const results = await Promise.allSettled(tasks);
+        const results = await pool.join();
         for (const result of results) {
             if (result.status === 'rejected') {
                 errors++;
@@ -118,7 +118,7 @@ export class TokenSettings extends BaseCompound {
         }
 
         if (errors > 0) {
-            createAlert(`加载密钥失败 ${errors}/${allLabel.length}`, 'warning');
+            createAlert(`加载密钥失败 ${errors}/${allLabel.length}`, AlertCategories.WARN);
         }
     }
 

@@ -144,18 +144,20 @@ export class DetailRender extends BaseCompound {
             return frag;
         }
 
-        const pool = new PromisePool(8);
-        const tasks: Promise<StandardAudio | null>[] = new Array(infos.length);
+        const pool = new PromisePool<StandardAudio | null>(8);
+        const tasks: Promise<StandardAudio | null>[] = new Array(infos.length).fill(null);
 
         for (let i = 0; i < infos.length; i++) {
             tasks[i] = pool.submit(this.parse, infos[i]);
         }
 
-        const results = await Promise.all(tasks);
+        const results = await Promise.allSettled(tasks);
         for (let i = 0; i < results.length; i++) {
-            const standard = results[i];
-            if (!standard) continue;
-            frag.append(this.createItem(start + i, standard));
+            const result = results[i];
+            if (!result) continue;
+
+            const standard = result.status === 'fulfilled' ? result.value : StandardAudio.DEFAULT;
+            frag.append(this.createItem(start + i, standard ?? StandardAudio.DEFAULT));
         }
 
         return frag;
@@ -174,7 +176,6 @@ export class DetailRender extends BaseCompound {
 
         const play = document.createElement('div');
         play.classList.add('play-icon');
-
         play.textContent = index.toString();
 
         const cover = document.createElement('img');

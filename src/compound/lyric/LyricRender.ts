@@ -5,17 +5,19 @@ import {transTime} from "../../util/Math.ts";
 import {appEvent} from "../../event/EventBus.ts";
 import {ForceUpdateProgressBar} from "../../event/ForceUpdateProgressBar.ts";
 import {debounce} from "../../util/util.ts";
-import {PlayerSystem} from "../../system/PlayerSystem.ts";
 import {LoadLyric} from "../../event/LoadLyric.ts";
+import {PlayerBackground} from "../player/PlayerBackground.ts";
 
 export class LyricRender extends BaseCompound {
     private readonly context: LyricContext;
+    private readonly background: PlayerBackground;
 
     private lyricContent: HTMLElement | null = null;
 
-    public constructor(context: LyricContext) {
+    public constructor(context: LyricContext, background: PlayerBackground) {
         super();
         this.context = context;
+        this.background = background;
 
         this.syncLyric = this.syncLyric.bind(this);
         context.audio.addEventListener('timeupdate', this.syncLyric);
@@ -126,7 +128,7 @@ export class LyricRender extends BaseCompound {
     }, 100);
 
     private syncLyric(event: Event): void {
-        if (!PlayerSystem.BACKGROUND.lyricDisplaying()) return;
+        if (!this.background.lyricDisplaying()) return;
 
         const currentTime = (event.target as HTMLAudioElement).currentTime;
         if (!Number.isFinite(currentTime)) return;

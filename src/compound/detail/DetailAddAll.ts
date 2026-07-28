@@ -1,8 +1,8 @@
 import {BaseCompound} from "../BaseCompound.ts";
 import {DetailContext} from "../../context/DetailContext.ts";
 import {throttleTimeOut} from "../../util/util.ts";
-import {QueueSystem} from "../../system/QueueSystem.ts";
 import {createAlert} from "../../util/alert.ts";
+import {AlertCategories} from "../../types/AlertCategories.ts";
 
 export class DetailAddAll extends BaseCompound {
     private readonly context: DetailContext;
@@ -14,8 +14,8 @@ export class DetailAddAll extends BaseCompound {
 
     public mount(target: HTMLElement): Promise<void> {
         const onClick = throttleTimeOut(() => {
-            QueueSystem.QUEUE.push(this.context.displayed());
-            createAlert('已添加到播放列表', 'success');
+            this.context.queue.push(this.context.displayed());
+            createAlert('已添加到播放列表', AlertCategories.SUCCESS);
         }, 2000);
 
         target.addEventListener('click', onClick);

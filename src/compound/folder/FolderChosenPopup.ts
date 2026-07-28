@@ -44,8 +44,7 @@ export class FolderChosenPopup extends BaseCompound {
             if (!attribute) return;
 
             const id = Number(attribute);
-            if (isNaN(id)) return;
-
+            if (!Number.isFinite(id)) return;
             resolve(id);
         }, {signal: abort.signal});
 

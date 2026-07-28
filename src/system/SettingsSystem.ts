@@ -11,6 +11,8 @@ import {OtherSettings} from "../compound/setting/OtherSettings.ts";
 import {TokenSettings} from "../compound/setting/TokenSettings.ts";
 import {CleanCache} from "../compound/setting/CleanCache.ts";
 import {ActionKey} from "../builtin/ActionKey.ts";
+import {QueueSystem} from "./QueueSystem.ts";
+import {FolderSystem} from "./FolderSystem.ts";
 
 export class SettingsSystem {
     public static PAGE: SettingsPage;
@@ -21,7 +23,7 @@ export class SettingsSystem {
         const dsd = new Dsd(audio);
 
         builder.singleton('settings-page', this.PAGE);
-        builder.singleton('select-local', new SelectLocalAudio());
+        builder.singleton('select-local', new SelectLocalAudio(QueueSystem.QUEUE, FolderSystem.ACCESSOR, FolderSystem.POPUP));
         builder.singleton('dsd', dsd);
         builder.singleton('dsd-canvas', new DsdCanvas(dsd));
         builder.singleton('setting-shortcut', new SettingShortcut());

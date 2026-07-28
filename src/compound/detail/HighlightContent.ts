@@ -1,6 +1,5 @@
 import {BaseCompound} from "../BaseCompound.ts";
 import {appEvent} from "../../event/EventBus.ts";
-import {QueueSystem} from "../../system/QueueSystem.ts";
 import {DetailContext} from "../../context/DetailContext.ts";
 
 export class HighlightContent extends BaseCompound {
@@ -14,7 +13,7 @@ export class HighlightContent extends BaseCompound {
 
     public mount(target: HTMLElement): Promise<void> {
         appEvent.on('queue:highlight', () => {
-            const current = QueueSystem.QUEUE.current();
+            const current = this.context.queue.current();
             if (!current) return;
 
             this.currentRow = target.querySelector(`[data-uid="${current.uid}"]`);

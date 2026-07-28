@@ -15,7 +15,7 @@ function removeNote(element: HTMLElement, animation: boolean): void {
 
 export function createAlert(
     message: string,
-    category: AlertCategories = 'info',
+    category: AlertCategories = AlertCategories.INFO,
     removeDelay: number = 2500,
     animation: boolean = true
 ): void {
@@ -57,7 +57,7 @@ export function createAlert(
     if (!alert || removeDelay === 0) return;
 
     const index = Array.from(boxChildren).indexOf(alert);
-    const totalDelay = Math.min(removeDelay * (index + 1), 10000);
+    const totalDelay = Math.min(removeDelay * (index + 1), 10_000);
 
     setTimeout(removeNote, totalDelay, alert, animation);
 }

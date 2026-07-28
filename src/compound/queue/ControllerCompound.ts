@@ -9,6 +9,7 @@ import {CoverLoaded} from "../../event/CoverLoaded.ts";
 import {Parsers} from "../../plugin/Parsers.ts";
 import {PlayErrorHandler} from "./PlayErrorHandler.ts";
 import {createAlert} from "../../util/alert.ts";
+import {AlertCategories} from "../../types/AlertCategories.ts";
 
 export class ControllerCompound {
     private readonly audio: HTMLAudioElement;
@@ -105,7 +106,10 @@ export class ControllerCompound {
         }, {once: true, signal: ctrl.signal});
 
         // 外部中断
-        ctrl.signal.addEventListener('abort', () => settle(false), {once: true});
+        ctrl.signal.addEventListener('abort', () => {
+            this.loadCtrl = null;
+            settle(false);
+        }, {once: true});
 
         // 若在注册后立刻处于 aborted, 立刻返回
         if (ctrl.signal.aborted) {
@@ -134,7 +138,7 @@ export class ControllerCompound {
                     break;
                 case 'NotSupportedError':
                     this.errorHandler.abort();
-                    createAlert('不支持的音频源', 'warning');
+                    createAlert('不支持的音频源', AlertCategories.WARN);
             }
         }
 

@@ -10,14 +10,16 @@ import {ShortcutSystem} from "./ShortcutSystem.ts";
 import {appEvent} from "../event/EventBus.ts";
 import {ToggleLyric} from "../event/ToggleLyric.ts";
 import {ActionKey} from "../builtin/ActionKey.ts";
+import {QueueSystem} from "./QueueSystem.ts";
+import {PlayerSystem} from "./PlayerSystem.ts";
 
 export class LyricSystem {
     public static init(builder: PageBuilder, audio: AudioCompound) {
         const context = new LyricContext(audio.audio);
 
-        const render = new LyricRender(context);
+        const render = new LyricRender(context, PlayerSystem.BACKGROUND);
 
-        new LyricLoader(render);
+        new LyricLoader(QueueSystem.QUEUE, render);
         builder.singleton('lyric-scroll', new LyricScroll(context));
         builder.singleton('lyric-content-render', render);
         builder.singleton('lyric-title', new LyricTitle());

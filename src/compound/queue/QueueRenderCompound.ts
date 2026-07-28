@@ -30,19 +30,18 @@ export class QueueRenderCompound extends BaseCompound {
         }
 
         const frag = document.createDocumentFragment();
-        const tasks: Promise<StandardAudio | null>[] = [];
-        const pool = new PromisePool(32);
+        const pool = new PromisePool<StandardAudio | null>(32);
         const job = (info: AudioInfos, plugin: ParserPlugin) => plugin.parse(info);
 
         for (const info of queue) {
             const plugin = Parsers.get(info.plugin);
             if (!plugin) continue;
-            tasks.push(pool.submit(job, info, plugin));
+            pool.spawn(job, info, plugin);
         }
 
         let loadFailed = 0;
         const start = event.append ? this.queue.childElementCount : 0;
-        const parsed = await Promise.allSettled(tasks);
+        const parsed = await pool.join();
         for (let i = 0; i < parsed.length; i++) {
             let standard: StandardAudio;
             const result = parsed[i];

@@ -1,14 +1,16 @@
 import {BaseCompound} from "../BaseCompound.ts";
 import {QueueCompound} from "./QueueCompound.ts";
-import {FolderSystem} from "../../system/FolderSystem.ts";
 import {collectBatch} from "../../database/db_util.ts";
+import {FolderChosenPopup} from "../folder/FolderChosenPopup.ts";
 
 export class QueueBoardTitle extends BaseCompound {
     private readonly queue: QueueCompound;
+    private readonly popup: FolderChosenPopup;
 
-    public constructor(queue: QueueCompound) {
+    public constructor(queue: QueueCompound, popup: FolderChosenPopup) {
         super(true);
         this.queue = queue;
+        this.popup = popup;
         this.queueControl = this.queueControl.bind(this);
     }
 
@@ -24,7 +26,7 @@ export class QueueBoardTitle extends BaseCompound {
     }
 
     private async collectAll() {
-        const folderId = await FolderSystem.POPUP.select();
+        const folderId = await this.popup.select();
         if (!folderId) return;
 
         const queue = this.queue.iter();

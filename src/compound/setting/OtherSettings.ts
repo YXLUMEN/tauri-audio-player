@@ -1,6 +1,7 @@
 import {BaseCompound} from "../BaseCompound.ts";
 import {createAlert} from "../../util/alert.ts";
 import {updateApp} from "../../http/update.ts";
+import {AlertCategories} from "../../types/AlertCategories.ts";
 
 export class OtherSettings extends BaseCompound {
     public constructor() {
@@ -31,7 +32,7 @@ export class OtherSettings extends BaseCompound {
         if (result === 'NoUpdate') {
             createAlert('无可用更新');
         } else if (result === 'UserCancel') {
-            createAlert('开始更新', 'info', 0);
+            createAlert('开始更新', AlertCategories.INFO, 0);
         }
     }
 

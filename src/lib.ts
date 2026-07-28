@@ -49,8 +49,8 @@ export async function run() {
     UiSystem.init();
     ShortcutSystem.init(builder);
     QueueSystem.init(builder, audio);
-    DetailSystem.init(builder, audio);
     FolderSystem.init(builder);
+    DetailSystem.init(builder, audio);
     PlayerSystem.init(builder, audio);
     LyricSystem.init(builder, audio);
     ContextmenuSystem.init(builder);
@@ -67,12 +67,12 @@ export async function run() {
 function preventEvents(signal: AbortSignal) {
     document.addEventListener('keydown', ev => {
         ev.preventDefault();
-        ev.stopPropagation();
+        ev.stopImmediatePropagation();
     }, {signal});
 
     document.addEventListener('contextmenu', ev => {
         ev.preventDefault();
-        ev.stopPropagation();
+        ev.stopImmediatePropagation();
     }, {signal});
 
     window.addEventListener('beforeunload', ev => {

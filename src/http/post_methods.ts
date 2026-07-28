@@ -2,6 +2,7 @@ import {fetch} from '@tauri-apps/plugin-http';
 import {AppFetch} from "../types/AppFetch.ts";
 import {Result} from "../util/Result.ts";
 import {AlertCategories} from "../types/AlertCategories.ts";
+import {createAlert} from "../util/alert.ts";
 
 
 export default async function baseFetch(url: string, opts?: AppFetch): Promise<Result<Response, Error>> {
@@ -35,15 +36,15 @@ export default async function baseFetch(url: string, opts?: AppFetch): Promise<R
 
 // 默认的错误处理
 const errors: Map<number, [string, AlertCategories]> = new Map([
-    [400, ['不支持的请求', 'warning']],
-    [401, ['您还没有登录', 'warning']],
-    [404, ['访问资源不存在', 'warning']],
-    [405, ['不允许的请求', 'error']],
-    [429, ['请求速率限制', 'error']],
-    [500, ['服务器未能处理请求', 'error']],
+    [400, ['不支持的请求', AlertCategories.WARN]],
+    [401, ['您还没有登录', AlertCategories.WARN]],
+    [404, ['访问资源不存在', AlertCategories.WARN]],
+    [405, ['不允许的请求', AlertCategories.ERROR]],
+    [429, ['请求速率限制', AlertCategories.ERROR]],
+    [500, ['服务器未能处理请求', AlertCategories.ERROR]],
 ]);
 
 function statusAlert(statusCode: number = 404) {
-    const msg = errors.get(statusCode) ?? [`未知错误: ${statusCode}`, 'error'];
-    alert(msg[0]);
+    const msg = errors.get(statusCode) ?? [`未知错误: ${statusCode}`, AlertCategories.ERROR];
+    createAlert(msg[0], msg[1]);
 }

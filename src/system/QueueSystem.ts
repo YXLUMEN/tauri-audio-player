@@ -11,7 +11,6 @@ import {UiSystem} from "./UiSystem.ts";
 import {PlayModeAndNextIndex} from "../compound/queue/PlayModeAndNextIndex.ts";
 import {appEvent} from "../event/EventBus.ts";
 import {HighlightCurrent} from "../event/queue/HighlightCurrent.ts";
-import {QueueBoardTitle} from "../compound/queue/QueueBoardTitle.ts";
 import {PlayErrorHandler} from "../compound/queue/PlayErrorHandler.ts";
 import {ActionKey} from "../builtin/ActionKey.ts";
 
@@ -32,7 +31,6 @@ export class QueueSystem {
         builder.singleton('playing-queue', new PlayerPlayQueue(this.QUEUE));
         builder.singleton('loading-ui', new LoadingUi());
         builder.singleton('play-board', this.BOARD);
-        builder.singleton('playing-board-title', new QueueBoardTitle(this.QUEUE));
 
         const dispatcher = ShortcutSystem.DISPATCHER;
         dispatcher.register(ActionKey.PauseAndPlay, () => this.CONTROLLER.togglePause());

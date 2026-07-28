@@ -3,14 +3,15 @@ import {MenuActionDispatcher} from "./MenuActionDispatcher.ts";
 import {ActionType} from "./ActionType.ts";
 
 export class Contextmenu extends BaseCompound {
-    private readonly actionDispatcher = new MenuActionDispatcher();
+    private readonly actionDispatcher: MenuActionDispatcher;
     private chosen: WeakRef<Element> | null = null;
     private type: ActionType = ActionType.None;
 
     private menu: HTMLElement | null = null;
 
-    public constructor() {
+    public constructor(actionDispatcher: MenuActionDispatcher) {
         super(true);
+        this.actionDispatcher = actionDispatcher;
         this.onClick = this.onClick.bind(this);
     }
 

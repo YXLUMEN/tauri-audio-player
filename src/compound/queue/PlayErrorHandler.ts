@@ -8,6 +8,7 @@ import {KeyPair} from "../setting/TokenSettings.ts";
 import {appEvent} from "../../event/EventBus.ts";
 import {SwitchAudio} from "../../event/queue/SwitchAudio.ts";
 import {backoffDelay} from "../../util/Math.ts";
+import {AlertCategories} from "../../types/AlertCategories.ts";
 
 export class PlayErrorHandler {
     private readonly maxRetries = 5;
@@ -57,7 +58,7 @@ export class PlayErrorHandler {
                 return;
             case MediaError.MEDIA_ERR_DECODE:
                 this.abort();
-                createAlert('音频解码失败', 'warning');
+                createAlert('音频解码失败', AlertCategories.WARN);
                 return;
             case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
                 const current = this.queue.current();
@@ -66,7 +67,7 @@ export class PlayErrorHandler {
                     return;
                 }
                 this.abort();
-                createAlert('音频源失效', 'warning');
+                createAlert('音频源失效', AlertCategories.WARN);
                 return;
         }
     }
@@ -98,7 +99,7 @@ export class PlayErrorHandler {
 
         try {
             if (this.retryCount >= this.maxRetries) {
-                createAlert('请检查Api密钥或者文件是否有效', 'error', 0);
+                createAlert('请检查Api密钥或者文件是否有效', AlertCategories.ERROR, 0);
                 this.retryCount = 0;
                 this.cooldownUntil = performance.now() + this.resetMs;
                 return;
@@ -114,7 +115,7 @@ export class PlayErrorHandler {
             // 离线挂起, 上线重载
             if (!navigator.onLine) {
                 if (!this.shouldThrottleAlert()) {
-                    createAlert('当前离线, 网络恢复后将自动重试', 'info');
+                    createAlert('当前离线, 网络恢复后将自动重试', AlertCategories.INFO);
                     this.touchAlert();
                 }
 
@@ -168,7 +169,7 @@ export class PlayErrorHandler {
             if (Error.isError(err)) msg = err.message;
             else if (typeof err === 'string') msg = err;
 
-            createAlert(`第 ${this.retryCount} 次重试失败: ${msg}`, 'warning');
+            createAlert(`第 ${this.retryCount} 次重试失败: ${msg}`, AlertCategories.WARN);
             console.error(err);
 
             this.scheduleRetry(signal, hash);

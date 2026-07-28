@@ -1,6 +1,5 @@
 import {BaseCompound} from "../BaseCompound.ts";
 import {DetailContext} from "../../context/DetailContext.ts";
-import {QueueSystem} from "../../system/QueueSystem.ts";
 import {appEvent} from "../../event/EventBus.ts";
 import {SwitchAudio} from "../../event/queue/SwitchAudio.ts";
 
@@ -20,10 +19,10 @@ export class DetailSelector extends BaseCompound {
         if (!index) return;
 
         if (!this.context.queueMerged && this.context.hasContent()) {
-            QueueSystem.QUEUE.override(this.context.displayed());
+            this.context.queue.override(this.context.displayed());
         }
         this.context.queueMerged = true;
-        QueueSystem.QUEUE.setIndexUnclamp(-1);
+        this.context.queue.setIndexUnclamp(-1);
 
         const num = Number(index);
         if (!Number.isSafeInteger(num)) return;

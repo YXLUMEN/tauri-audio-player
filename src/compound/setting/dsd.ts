@@ -5,7 +5,7 @@ import {BaseCompound} from "../BaseCompound.ts";
 
 export class Dsd extends BaseCompound {
     private readonly audio: HTMLAudioElement;
-    private DSD: SpectrumDiagram | null = null;
+    private dsd: SpectrumDiagram | null = null;
 
     public constructor(audio: AudioCompound) {
         super(true);
@@ -13,22 +13,22 @@ export class Dsd extends BaseCompound {
     }
 
     public async toggleDraw(event: Event) {
-        const canvas = this.DSD!.getCanvas();
+        const canvas = this.dsd!.getCanvas();
 
         if ((event.target as HTMLInputElement).checked) {
-            await this.DSD!.startDraw();
+            await this.dsd!.startDraw();
             if (canvas) canvas.style.display = 'block';
             return;
         }
-        this.DSD!.stopDraw();
+        this.dsd!.stopDraw();
         if (canvas) canvas.style.display = 'none';
     }
 
     public async switchDrawMode() {
-        this.DSD!.stopDraw();
+        this.dsd!.stopDraw();
 
         const selectedRadio = document.querySelector('input[name="draw-mode"]:checked') as HTMLInputElement;
-        if (selectedRadio) await this.DSD!.startDraw(selectedRadio.value)
+        if (selectedRadio) await this.dsd!.startDraw(selectedRadio.value)
     }
 
     public changeFFTSize() {
@@ -39,7 +39,7 @@ export class Dsd extends BaseCompound {
             alert('必须为2的次方并且满足[32,32768]');
             return false;
         }
-        this.DSD!.setAnalyser({fftSize: num});
+        this.dsd!.setAnalyser({fftSize: num});
     }
 
     public changeDrawInterval() {
@@ -47,7 +47,7 @@ export class Dsd extends BaseCompound {
         const value = target.value;
         const tick = value === '' ? 10 : Number(value);
         if (!Number.isInteger(tick)) return;
-        this.DSD!.setDrawInterval(tick);
+        this.dsd!.setDrawInterval(tick);
     }
 
     public changeDecibels() {
@@ -58,7 +58,7 @@ export class Dsd extends BaseCompound {
         const maxV = maxEle.value;
         const [min, max] = [minV === '' ? -100 : Number(minV), maxV === '' ? -10 : Number(maxV)];
         if (!Number.isInteger(min) || !Number.isInteger(max) || min >= max) return;
-        this.DSD!.setAnalyser({
+        this.dsd!.setAnalyser({
             minDecibels: min,
             maxDecibels: max,
         });
@@ -87,7 +87,7 @@ export class Dsd extends BaseCompound {
     }
 
     public setDsd(dsd: SpectrumDiagram) {
-        this.DSD = dsd;
+        this.dsd = dsd;
     }
 
     public mount(target: HTMLElement) {
@@ -95,7 +95,7 @@ export class Dsd extends BaseCompound {
 
         // 初始化频谱分析
         this.assert(target, '#toggle-fft')!.addEventListener('change', async () => {
-            const dsd = this.DSD;
+            const dsd = this.dsd;
             if (!dsd) return;
             ctrl.abort();
 

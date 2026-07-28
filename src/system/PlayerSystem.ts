@@ -15,6 +15,7 @@ import {AudioTotalTimeRender} from "../compound/player/AudioTotalTimeRender.ts";
 import {QueueSystem} from "./QueueSystem.ts";
 import {UiSystem} from "./UiSystem.ts";
 import {ActionKey} from "../builtin/ActionKey.ts";
+import {FolderSystem} from "./FolderSystem.ts";
 
 export class PlayerSystem {
     public static BACKGROUND: PlayerBackground;
@@ -35,7 +36,8 @@ export class PlayerSystem {
         builder.singleton('play-icon', new PlayIconCompound(compound.audio));
         builder.singleton('mode-icon', modeIcon);
         builder.singleton('player-volume', volume);
-        builder.singleton('player-controller-btn', new PlayerControllerBtn(context, QueueSystem.MODE, volume, QueueSystem.BOARD));
+        builder.singleton('player-controller-btn', new PlayerControllerBtn(
+            context, QueueSystem.MODE, volume, QueueSystem.BOARD, FolderSystem.POPUP, FolderSystem.ACCESSOR));
         builder.singleton('player-title', new PlayerTitle());
         builder.singleton('total-time', new AudioTotalTimeRender(context));
 

@@ -1,15 +1,19 @@
 import {AudioInfos} from "../audio/AudioInfos.ts";
+import {QueueCompound} from "../compound/queue/QueueCompound.ts";
+import {AudioCompound} from "../compound/global/AudioCompound.ts";
 
 
 export class DetailContext {
     public readonly audio: HTMLAudioElement
+    public readonly queue: QueueCompound;
     public queueMerged: boolean = false;
 
     private readonly content: AudioInfos[] = [];
     private chosen: HTMLElement | null = null;
 
-    public constructor(audio: HTMLAudioElement) {
-        this.audio = audio;
+    public constructor(audio: AudioCompound, queue: QueueCompound) {
+        this.audio = audio.audio;
+        this.queue = queue;
     }
 
     public setChosen(row: HTMLElement | null): void {

@@ -6,14 +6,22 @@ import {ToggleLoading} from "../../event/queue/ToggleLoading.ts";
 import {AudioInfos} from "../../audio/AudioInfos.ts";
 import {SwitchAudio} from "../../event/queue/SwitchAudio.ts";
 import {BaseCompound} from "../BaseCompound.ts";
-import {QueueSystem} from "../../system/QueueSystem.ts";
-import {FolderSystem} from "../../system/FolderSystem.ts";
 import {collectBatch} from "../../database/db_util.ts";
 import {DetailAppend} from "../../event/detail/DetailAppend.ts";
+import {QueueCompound} from "../queue/QueueCompound.ts";
+import {FolderAccessor} from "../folder/FolderAccessor.ts";
+import {FolderChosenPopup} from "../folder/FolderChosenPopup.ts";
 
 export class SelectLocalAudio extends BaseCompound {
-    public constructor() {
+    private readonly queue: QueueCompound;
+    private readonly folder: FolderAccessor;
+    private readonly popup: FolderChosenPopup;
+
+    public constructor(queue: QueueCompound, folder: FolderAccessor, popup: FolderChosenPopup) {
         super(true);
+        this.queue = queue;
+        this.folder = folder;
+        this.popup = popup;
         this.select = this.select.bind(this);
     }
 
@@ -35,13 +43,12 @@ export class SelectLocalAudio extends BaseCompound {
                 const hash = await invoke('calculate_hash', {filePath: path});
                 return {hash, path};
             };
-            const pool = new PromisePool(16);
-            const tasks: Promise<Result>[] = [];
+            const pool = new PromisePool<Result>(16);
             for (const path of filePath) {
-                tasks.push(pool.submit(job, path));
+                pool.spawn(job, path);
             }
 
-            const results = await Promise.allSettled(tasks);
+            const results = await pool.join();
             const list: AudioInfos[] = results
                 .reduce((acc, res) => {
                     if (res.status !== 'fulfilled') return acc;
@@ -52,20 +59,19 @@ export class SelectLocalAudio extends BaseCompound {
                     return acc;
                 }, [] as AudioInfos[]);
 
-            const queue = QueueSystem.QUEUE;
-            const index = queue.index();
-            queue.insert(index + 1, ...list);
+            const index = this.queue.index();
+            this.queue.insert(index + 1, ...list);
 
             if (target.getAttribute('action') !== 'local-collect') {
                 appEvent.emit(new SwitchAudio(index + 1));
                 return;
             }
 
-            const folder = await FolderSystem.POPUP.select();
+            const folder = await this.popup.select();
             if (!folder) return;
 
             const inners = await collectBatch(folder, list);
-            if (FolderSystem.ACCESSOR.isId(folder) && inners) {
+            if (this.folder.isId(folder) && inners) {
                 appEvent.emit(new DetailAppend(...inners));
             }
         } catch (err) {
