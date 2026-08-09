@@ -1,0 +1,64 @@
+# Release: 打 tag(v*)时构建带签名的 MSI + 更新器产物,并上传到 GitHub Release
+# 版本号以 src-tauri/tauri.conf.json 的 version 为准(tag 应为 v0.3.4 这样的格式)
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: # 允许手动触发(从任意分支构建)
+
+permissions:
+  contents: write # 创建 GitHub Release 需要
+
+jobs:
+  build:
+    name: Build MSI & publish
+    runs-on: windows-latest
+    env:
+      # 更新器签名私钥(必填,tauri.conf.json 里的 pubkey 对应的私钥)
+      # 生成方式: npm run tauri signer generate -w .tauri/lumen.key
+      # 然后把 .tauri/lumen.key 的完整内容填入仓库 Secrets: TAURI_SIGNING_PRIVATE_KEY
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      # 若私钥设置了密码,再配置 TAURI_SIGNING_PRIVATE_KEY_PASSWORD,否则留空
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (with npm cache)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo (src-tauri)
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      # tauri-action 会执行 tauri.conf.json 中的 beforeBuildCommand(npm run build),
+      # 然后打包 MSI,并生成更新器产物(.msi + .sig + latest.json)
+      - name: Build & publish to GitHub Release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # __VERSION__ 占位符会被替换为 tauri.conf.json 中的 version
+          tagName: v__VERSION__
+          releaseName: 'Lumen Audio Player v__VERSION__'
+          releaseBody: |
+            自动构建产物(MSI 安装包 + 更新器签名包)。
+            发布前请检查 latest.json 与签名是否匹配。
+          releaseDraft: true # 先创建草稿,人工确认后再公开发布
+          prerelease: false
+
+      # 可选: 若更新器 endpoints 指向自有服务器(如 arctic-red-tide.xyz),
+      # 需要把 latest.json 与 .msi.zip/.sig 上传到服务器对应目录。
+      # 可在此追加部署步骤(需在 Secrets 中配置服务器凭据),或从 Release 手动下载部署。

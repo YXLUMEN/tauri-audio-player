@@ -1,11 +1,11 @@
-import {ShortcutGuard} from "../compound/shortchut/ShortcutGuard.ts";
-import {ShortcutRegistry} from "../compound/shortchut/ShortcutRegistry.ts";
+import {ShortcutGuard} from "../compound/shortcut/ShortcutGuard.ts";
+import {ShortcutRegistry} from "../compound/shortcut/ShortcutRegistry.ts";
 import {DefaultShortcuts} from "../builtin/DefaultShortcuts.ts";
-import {ShortcutDispatcher} from "../compound/shortchut/ShortcutDispatcher.ts";
+import {ShortcutDispatcher} from "../compound/shortcut/ShortcutDispatcher.ts";
 import {UiSystem} from "./UiSystem.ts";
 import {Parsers} from "../plugin/Parsers.ts";
 import {PageBuilder} from "../page/PageBuilder.ts";
-import {LoadCustomShortcut} from "../compound/shortchut/LoadCustomShortcut.ts";
+import {LoadCustomShortcut} from "../compound/shortcut/LoadCustomShortcut.ts";
 import {ActionKey} from "../builtin/ActionKey.ts";
 
 export class ShortcutSystem {

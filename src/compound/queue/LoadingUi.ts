@@ -21,7 +21,7 @@ export class LoadingUi extends BaseCompound {
             return;
         }
 
-        if (this.loadCounts <= 0) {
+        if (!event.show && this.loadCounts <= 0) {
             this.loadCounts = 0;
             this.toggle(false);
         }
@@ -35,6 +35,8 @@ export class LoadingUi extends BaseCompound {
 
     public mount(target: HTMLElement): Promise<void> {
         this.tracked.add(target);
+        target.classList.toggle('show', this.loadCounts > 0);
+
         return Promise.resolve();
     }
 }

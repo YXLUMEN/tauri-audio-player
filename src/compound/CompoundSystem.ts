@@ -1,6 +1,5 @@
 import {PageMounted} from "../event/PageMounted.ts";
 import {CompoundSupplier} from "../types/types.ts";
-import {isDev} from "../builtin/Global.ts";
 
 export class CompoundSystem {
     private readonly compounds: Map<string, CompoundSupplier>;
@@ -52,7 +51,7 @@ export class CompoundSystem {
         for (const name of names) {
             const mountedNodes = this.mounted.getOrInsertComputed(name, this.createSet);
             if (mountedNodes.has(target)) {
-                if (isDev) console.warn(`[CompoundSystem] Duplicate mount prevented for "${name}" on`, target);
+                console.warn(`[CompoundSystem] Duplicate mount prevented for "${name}" on`, target);
                 continue;
             }
 

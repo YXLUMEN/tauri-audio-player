@@ -28,8 +28,8 @@ export class ShortcutDispatcher {
     private onKeyDown(e: KeyboardEvent): void {
         if (
             e.key === 'F5' ||
-            (e.ctrlKey && e.key === 'r') ||
-            (e.metaKey && e.key === 'r')
+            (e.ctrlKey && e.code === 'KeyR') ||
+            (e.metaKey && e.code === 'KeyR')
         ) {
             e.preventDefault();
             e.stopPropagation();
