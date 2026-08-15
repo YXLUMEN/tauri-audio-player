@@ -46,7 +46,7 @@ export class OtherSettings extends BaseCompound {
     private quitToTray(element: HTMLElement) {
         if (!(element instanceof HTMLInputElement)) return;
 
-        if (element.checked) localStorage.removeItem('quit-to-tray');
+        if (element.checked) localStorage.removeItem('not_quit_to_tray');
         else localStorage.setItem('not_quit_to_tray', 'true');
     }
 
