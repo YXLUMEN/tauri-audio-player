@@ -11,6 +11,9 @@ on:
 permissions:
   contents: write # 创建 GitHub Release 需要
 
+env:
+  NODE_VERSION: '24'
+
 jobs:
   build:
     name: Build MSI & publish
@@ -29,7 +32,7 @@ jobs:
       - name: Setup Node.js (with npm cache)
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
       - name: Setup Rust toolchain
