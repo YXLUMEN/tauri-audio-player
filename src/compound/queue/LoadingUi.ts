@@ -4,6 +4,7 @@ import {ToggleLoading} from "../../event/queue/ToggleLoading.ts";
 
 export class LoadingUi extends BaseCompound {
     private readonly tracked: Set<HTMLElement> = new Set();
+    private loadCounts: number = 0;
 
     public constructor() {
         super();
@@ -13,7 +14,17 @@ export class LoadingUi extends BaseCompound {
     }
 
     private onLoading(event: ToggleLoading): void {
-        this.toggle(event.show);
+        this.loadCounts += event.show ? 1 : -1;
+
+        if (event.show && this.loadCounts === 1) {
+            this.toggle(true);
+            return;
+        }
+
+        if (!event.show && this.loadCounts <= 0) {
+            this.loadCounts = 0;
+            this.toggle(false);
+        }
     }
 
     private toggle(force: boolean) {
@@ -24,7 +35,7 @@ export class LoadingUi extends BaseCompound {
 
     public mount(target: HTMLElement): Promise<void> {
         this.tracked.add(target);
-        target.classList.toggle('show', false);
+        target.classList.toggle('show', this.loadCounts > 0);
 
         return Promise.resolve();
     }

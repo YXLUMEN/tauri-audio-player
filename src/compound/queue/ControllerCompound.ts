@@ -89,7 +89,6 @@ export class ControllerCompound {
 
         let timer: number | undefined;
         const settle = (ok: boolean) => {
-            if (ctrl.signal.aborted) return;
             ctrl.abort();
             clearTimeout(timer);
             resolve(ok);
