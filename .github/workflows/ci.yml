@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '24'
+  NODE_VERSION: '26'
 
 jobs:
   check:
@@ -36,6 +36,8 @@ jobs:
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.1'
 
       - name: Cache Cargo (src-tauri)
         uses: Swatinem/rust-cache@v2

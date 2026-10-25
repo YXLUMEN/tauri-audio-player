@@ -10,7 +10,6 @@ export class Parsers {
     public static readonly LOCAL = this.register('local', LocalParser);
 
     public static async loadAll(): Promise<void> {
-        // await this.ART.auth.login('019f355b-90ce-3fc1-4b5b-a702f5337048', 'byyH4gPw0x2wT988SI0BdgkaiHfkIhbb');
         for (const plugin of this.MAP.values()) {
             await plugin.init();
         }

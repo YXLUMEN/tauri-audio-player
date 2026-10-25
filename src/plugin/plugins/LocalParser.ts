@@ -88,7 +88,7 @@ export class LocalParser extends ParserPlugin {
         return true;
     }
 
-    public async clearCache() {
+    public override async clearCache() {
         this.epoch++;
         this.cache.clear();
         await Promise.allSettled(this.pending.values());

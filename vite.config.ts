@@ -1,8 +1,7 @@
 import {defineConfig} from "vite";
-import {publicFileCount} from "./vite-plugin/vite-plugin-file-count";
+import {publicFileCount} from "./vite-plugin/vite-plugin-file-count.ts";
 import InlineEnum from 'unplugin-inline-enum/vite';
 
-// @ts-expect-error process is a node.js global
 const host = process.env.TAURI_DEV_HOST;
 
 export default defineConfig({

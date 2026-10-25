@@ -34,10 +34,12 @@ export abstract class ParserPlugin {
         return Promise.resolve();
     }
 
+    /** 持久化预处理 */
     public modify(record: AudioRecord) {
         return record;
     }
 
+    /** 从持久化恢复 */
     public recover(record: AudioRecord) {
         return new AudioInfos(record.uid, record.plugin, record.url);
     }

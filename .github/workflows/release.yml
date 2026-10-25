@@ -12,7 +12,7 @@ permissions:
   contents: write # 创建 GitHub Release 需要
 
 env:
-  NODE_VERSION: '24'
+  NODE_VERSION: '26'
 
 jobs:
   build:
@@ -37,6 +37,8 @@ jobs:
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.1'
 
       - name: Cache Cargo (src-tauri)
         uses: Swatinem/rust-cache@v2

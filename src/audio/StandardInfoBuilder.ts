@@ -8,7 +8,7 @@ export class StandardInfoBuilder extends AudioInfoBuilder {
     private _artist?: string;
     private _cover?: string;
 
-    public from(item: AudioRecord): this {
+    public override from(item: AudioRecord): this {
         super.from(item);
         if (item instanceof StandardAudio) {
             this._title = item.title;
@@ -39,7 +39,7 @@ export class StandardInfoBuilder extends AudioInfoBuilder {
         return this;
     }
 
-    public build(): StandardAudio {
+    public override build(): StandardAudio {
         if (!this._uid) {
             throw new Error(`AudioInfos required an id`);
         }

@@ -19,6 +19,7 @@
     "strict": true,
     "strictNullChecks": true,
     "noUnusedLocals": true,
+    "noImplicitOverride": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },

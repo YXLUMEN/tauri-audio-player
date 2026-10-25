@@ -176,30 +176,30 @@ export class ArtParser extends ParserPlugin {
         return `${ArtParser.PLAY_URL}/${id}?token=${this.auth.access()}`;
     }
 
-    public clearCache(): Promise<void> {
+    public override clearCache(): Promise<void> {
         this.cache.length = 0;
         this.seq = 0;
         return Promise.resolve();
     }
 
-    public reload(): Promise<boolean> {
+    public override reload(): Promise<boolean> {
         return this.auth.refresh();
     }
 
-    public reAuth(key: string, psd: string): Promise<boolean> {
+    public override reAuth(key: string, psd: string): Promise<boolean> {
         return this.auth.login(key, psd);
     }
 
-    public init(): Promise<void> {
+    public override init(): Promise<void> {
         return this.auth.loadToken();
     }
 
-    public modify(record: AudioRecord): AudioRecord {
+    public override modify(record: AudioRecord): AudioRecord {
         record.url = undefined;
         return record;
     }
 
-    public recover(record: StandardRecord): AudioInfos {
+    public override recover(record: StandardRecord): AudioInfos {
         return new StandardInfoBuilder()
             .from(record)
             .plugin(this.name)

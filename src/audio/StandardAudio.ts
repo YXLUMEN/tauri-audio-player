@@ -35,7 +35,7 @@ export class StandardAudio extends AudioInfos {
         this.cover = cover;
     }
 
-    public persistable(parent?: number): StandardRecord {
+    public override persistable(parent?: number): StandardRecord {
         return {
             parent,
             uid: this.uid,
@@ -56,7 +56,7 @@ export class StandardAudio extends AudioInfos {
         return hash;
     }
 
-    public equal(other: unknown): boolean {
+    public override equal(other: unknown): boolean {
         if (!super.equal(other)) return false;
         if (other instanceof StandardAudio) {
             return other.title === this.title &&

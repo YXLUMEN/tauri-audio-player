@@ -63,7 +63,6 @@ export class PageSplicer {
 
             content.setAttribute('data-page-path', url);
             page.replaceWith(content);
-
             page.remove();
             doc.close();
 

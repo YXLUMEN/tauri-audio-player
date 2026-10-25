@@ -6,13 +6,14 @@ authors = ["YXLumen"]
 license = "MIT"
 repository = ""
 edition = "2021"
-rust-version = "1.77.2"
+rust-version = "1.90"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [profile.dev]
 incremental = true # 以较小的步骤编译二进制文件。
 opt-level = 1
+debug = false
 
 [profile.release]
 codegen-units = 1 # 允许 LLVM 执行更好地优化
