@@ -7,9 +7,10 @@ import {convertFileSrc} from "@tauri-apps/api/core";
 import {AudioMeta} from "../../audio/AudioMeta.ts";
 import {randomCover} from "../../util/random.ts";
 import {fetchMeta} from "../../util/ipc.ts";
+import {StandardInfoBuilder} from "../../audio/StandardInfoBuilder.ts";
 
 export class LocalParser extends ParserPlugin {
-    private readonly pending: Map<string, Promise<StandardAudio | null>> = new Map();
+    private readonly pending: Map<string, Promise<StandardAudio>> = new Map();
     private readonly cache = new MemoryLRU<string, StandardAudio>(
         64,
         event => {
@@ -19,30 +20,40 @@ export class LocalParser extends ParserPlugin {
     );
     private epoch: number = 0;
 
-    public parse(info: AudioInfos): Promise<StandardAudio | null> {
+    public parse(info: AudioInfos): Promise<StandardAudio> {
         const uid = info.uid;
         const cache = this.cache.get(uid);
         if (cache) return Promise.resolve(cache);
 
-        return this.pending.getOrInsertComputed(uid, () => this.parseTask(info, uid, this.epoch));
+        return this.pending.getOrInsertComputed(uid, () => this.parseTask(info, this.epoch));
     }
 
-    private async parseTask(info: AudioInfos, uid: string, epoch: number): Promise<StandardAudio | null> {
-        try {
-            const url = info.url === undefined ? '' : info.url.trim();
-            if (url.length === 0) return null;
+    private async parseTask(info: AudioInfos, epoch: number): Promise<StandardAudio> {
+        const uid = info.uid;
+        const builder = new StandardInfoBuilder().from(info);
 
-            const metadata = await fetchMeta(url);
-            if (!metadata || epoch !== this.epoch) return null;
+        try {
+            const path = info.url === undefined ? '' : info.url.trim();
+            if (path.length === 0) return builder.build();
+
+            const metadata = await fetchMeta(path);
+            if (!metadata || epoch !== this.epoch) return builder.build();
 
             const coverUrl = this.buildCoverUrl(metadata);
-            const standard = this.buildStandardAudio(uid, url, metadata, coverUrl);
+            const standard = builder
+                .plugin('local')
+                .url(convertFileSrc(path))
+                .title(metadata.title)
+                .album(metadata.album || StandardAudio.DEFAULT.album)
+                .artist(metadata.artist || StandardAudio.DEFAULT.artist)
+                .cover(coverUrl)
+                .build();
 
             this.cache.set(uid, standard);
             return standard;
         } catch (error) {
             console.error('Failed to parse local audio:', error);
-            return null;
+            return builder.build();
         } finally {
             this.pending.delete(uid);
         }
@@ -56,23 +67,6 @@ export class LocalParser extends ParserPlugin {
             {type: metadata.cover_mime_type}
         );
         return URL.createObjectURL(blob);
-    }
-
-    private buildStandardAudio(
-        id: string,
-        originalPath: string,
-        metadata: AudioMeta,
-        coverUrl: string
-    ): StandardAudio {
-        return new StandardAudio(
-            id,
-            'local',
-            convertFileSrc(originalPath),
-            metadata.title,
-            metadata.album || StandardAudio.DEFAULT.album,
-            metadata.artist || StandardAudio.DEFAULT.artist,
-            coverUrl
-        );
     }
 
     public audios(): Promise<AudioInfos[] | StandardAudio[] | null> {

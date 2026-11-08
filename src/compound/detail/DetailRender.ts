@@ -62,11 +62,10 @@ export class DetailRender extends BaseCompound {
         const container = this.container;
 
         const index = event.index;
-        const inner = displayed[index];
         const element = container.children[index];
 
-        if (!element || inner.uid !== element.getAttribute('data-uid')) {
-            console.warn(`[DetailRender] Remove target mismatch`, inner, element);
+        if (!element) {
+            console.warn(`[DetailRender] Remove target mismatch`, element);
             return;
         }
 

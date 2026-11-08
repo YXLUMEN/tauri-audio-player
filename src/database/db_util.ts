@@ -171,7 +171,7 @@ export async function deCollectAudio(parent: number, itemId: string): Promise<an
 
     request.onsuccess = () => {
         const key = request.result as number | undefined;
-        if (key == undefined) {
+        if (key == null) {
             createAlert('未找到要取消的收藏项', AlertCategories.INFO);
             resolve(Result.ok(-1));
             return;

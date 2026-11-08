@@ -10,7 +10,7 @@ export abstract class ParserPlugin {
         this.name = name;
     }
 
-    public abstract parse(item: AudioInfos): Promise<StandardAudio | null>;
+    public abstract parse(item: AudioInfos): Promise<StandardAudio>;
 
     public abstract audios(): Promise<AudioInfos[] | StandardAudio[] | null>;
 

@@ -26,7 +26,7 @@ export class ArtParser extends ParserPlugin {
     private refresh: boolean = false;
     private searchString: string = '';
 
-    public parse(item: AudioInfos): Promise<StandardAudio | null> {
+    public parse(item: AudioInfos): Promise<StandardAudio> {
         const builder = new StandardInfoBuilder();
         builder
             .from(item)
