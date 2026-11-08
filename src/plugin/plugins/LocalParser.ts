@@ -3,9 +3,10 @@ import {FormatLyric} from "../../types/Lyric.ts";
 import {StandardAudio} from "../../audio/StandardAudio.ts";
 import {ParserPlugin} from "../ParserPlugin.ts";
 import {MemoryLRU} from "../../util/MemoryLRU.ts";
-import {convertFileSrc, invoke} from "@tauri-apps/api/core";
+import {convertFileSrc} from "@tauri-apps/api/core";
 import {AudioMeta} from "../../audio/AudioMeta.ts";
 import {randomCover} from "../../util/random.ts";
+import {fetchMeta} from "../../util/ipc.ts";
 
 export class LocalParser extends ParserPlugin {
     private readonly pending: Map<string, Promise<StandardAudio | null>> = new Map();
@@ -31,9 +32,7 @@ export class LocalParser extends ParserPlugin {
             const url = info.url === undefined ? '' : info.url.trim();
             if (url.length === 0) return null;
 
-            const metadata: AudioMeta = await invoke('fetch_meta', {
-                path: url,
-            });
+            const metadata = await fetchMeta(url);
             if (!metadata || epoch !== this.epoch) return null;
 
             const coverUrl = this.buildCoverUrl(metadata);

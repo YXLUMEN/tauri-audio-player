@@ -1,5 +1,4 @@
 import {open} from "@tauri-apps/plugin-dialog";
-import {invoke} from "@tauri-apps/api/core";
 import {PromisePool} from "../../util/PromisePool.ts";
 import {appEvent} from "../../event/EventBus.ts";
 import {ToggleLoading} from "../../event/queue/ToggleLoading.ts";
@@ -11,6 +10,7 @@ import {DetailAppend} from "../../event/detail/DetailAppend.ts";
 import {QueueCompound} from "../queue/QueueCompound.ts";
 import {FolderAccessor} from "../folder/FolderAccessor.ts";
 import {FolderChosenPopup} from "../folder/FolderChosenPopup.ts";
+import {calculateHash} from "../../util/ipc.ts";
 
 export class SelectLocalAudio extends BaseCompound {
     private readonly queue: QueueCompound;
@@ -40,7 +40,7 @@ export class SelectLocalAudio extends BaseCompound {
             appEvent.emit(new ToggleLoading(true));
 
             const job = async (path: string) => {
-                const hash = await invoke('calculate_hash', {filePath: path});
+                const hash = await calculateHash(path);
                 return {hash, path};
             };
             const pool = new PromisePool<Result>(16);
