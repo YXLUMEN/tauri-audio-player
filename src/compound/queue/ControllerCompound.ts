@@ -54,6 +54,7 @@ export class ControllerCompound {
             if (!standard) return;
 
             const loaded = await this.loadAudio(standard);
+            console.log(loaded);
             if (!loaded) return;
 
             appEvent.emit(new HighlightCurrent(event.scroll));
@@ -85,10 +86,12 @@ export class ControllerCompound {
 
         const {promise, resolve} = Promise.withResolvers<boolean>();
         const ctrl = new AbortController();
+        const signal = ctrl.signal;
         this.loadCtrl = ctrl;
 
         let timer: number | undefined;
         const settle = (ok: boolean) => {
+            if (signal.aborted) return;
             ctrl.abort();
             clearTimeout(timer);
             resolve(ok);
@@ -98,22 +101,20 @@ export class ControllerCompound {
 
         audio.addEventListener('canplay', () => {
             settle(true);
-        }, {once: true, signal: ctrl.signal});
+        }, {once: true, signal});
 
         audio.addEventListener('error', () => {
             settle(false);
-        }, {once: true, signal: ctrl.signal});
+        }, {once: true, signal});
 
         // 外部中断
-        ctrl.signal.addEventListener('abort', () => {
+        signal.addEventListener('abort', () => {
             this.loadCtrl = null;
             settle(false);
         }, {once: true});
 
         // 若在注册后立刻处于 aborted, 立刻返回
-        if (ctrl.signal.aborted) {
-            settle(false);
-        }
+        if (signal.aborted) settle(false);
         return promise;
     }
 

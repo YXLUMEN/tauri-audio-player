@@ -99,7 +99,7 @@ export class QueueRenderCompound extends BaseCompound {
 
         appEvent.on('queue:highlight', event => {
             const current = target.querySelector(
-                `[data-index='${this.queueCompound.index()}']`
+                `[data-index="${this.queueCompound.index()}"]`
             );
             if (!(current instanceof HTMLElement)) return;
 
