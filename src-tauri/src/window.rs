@@ -5,6 +5,7 @@ use tauri::{AppHandle, Emitter, Manager, Window, WindowEvent};
 pub fn show_window(app: &AppHandle) {
     let main = app.get_webview_window("main");
     if let Some(main) = main {
+        let _ = main.show();
         let _ = main.unminimize();
         let _ = main.set_focus();
     } else {
